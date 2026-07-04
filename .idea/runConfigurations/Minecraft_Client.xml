@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Minecraft Client" type="Application" factoryName="Application">
+    <option name="ALTERNATIVE_JRE_PATH" value="jbr-21" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+    <option name="MAIN_CLASS_NAME" value="net.fabricmc.devlaunchinjector.Main" />
+    <module name="Safe_Guard.main" />
+    <option name="PROGRAM_PARAMETERS" value="--username yangguangMC" />
+    <shortenClasspath name="ARGS_FILE" />
+    <option name="VM_PARAMETERS" value="-Dfabric.dli.config=D:\JavaDevelopments\Projects\Safe@@0020Guard\.gradle\loom-cache\launch.cfg -Dfabric.dli.env=client -Dfabric.dli.main=net.fabricmc.loader.impl.launch.knot.KnotClient -javaagent:D:\JavaDevelopments\.gradle\caches\modules-2\files-2.1\net.fabricmc\sponge-mixin\0.15.5+mixin.0.8.7\22f9eb729e216a091673a574a5906dc1b9027fb3\sponge-mixin-0.15.5+mixin.0.8.7.jar" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/run/" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
