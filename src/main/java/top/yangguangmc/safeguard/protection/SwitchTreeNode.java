@@ -197,7 +197,7 @@ public class SwitchTreeNode {
         int lastSlash = path.lastIndexOf('/');
         if (lastSlash == -1) return null;
         String parentPath = path.substring(0, lastSlash);
-        return new Identifier(id.getNamespace(), parentPath);
+        return Identifier.of(id.getNamespace(), parentPath);
     }
 
     /**

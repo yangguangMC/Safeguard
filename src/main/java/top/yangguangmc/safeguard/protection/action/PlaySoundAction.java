@@ -1,7 +1,6 @@
 package top.yangguangmc.safeguard.protection.action;
 
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.sound.SoundManager;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.sound.SoundEvent;
@@ -22,7 +21,7 @@ public class PlaySoundAction extends Action {
     }
 
     public void play(SoundManager soundManager) {
-        soundManager.play(PositionedSoundInstance.master(sound, pitch));
+        soundManager.play(createSoundInstance(sound, pitch));
     }
 
     public void setPlaying(boolean playing) {

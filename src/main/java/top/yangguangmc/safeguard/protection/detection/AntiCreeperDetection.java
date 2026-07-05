@@ -50,22 +50,22 @@ public class AntiCreeperDetection extends Detection {
             if (minD <= distance * distance) {
                 double d2 = Math.sqrt(minD);
                 if (e.getVelocity().lengthSquared() >= 0.0001) {
-                    ActionBarTitleAction action = getBoundAction(new Identifier(ModContext.MOD_ID, "passive/hud/action_bar_title"));
+                    ActionBarTitleAction action = getBoundAction(Identifier.of(ModContext.MOD_ID, "passive/hud/action_bar_title"));
                     if (isActionEffectivelyEnabled(action)) action.updateTitle(client, d2, style -> {
                         if (d2 <= 1 / 2.0 * distance) return style.withColor(Formatting.RED).withBold(true);
                         else if (d2 <= 3 / 4.0 * distance) return style.withColor(Formatting.GOLD);
                         else return style.withColor(Formatting.YELLOW);
                     });
                 }
-                PlaySoundAction action2 = getBoundAction(new Identifier(ModContext.MOD_ID, "passive/other/play_sound"));
+                PlaySoundAction action2 = getBoundAction(Identifier.of(ModContext.MOD_ID, "passive/other/play_sound"));
                 if (isActionEffectivelyEnabled(action2)) {
                     action2.tick(client);
-                    action2.setPlaying(e.getClientFuseTime(client.getTickDelta()) > 0);
+                    action2.setPlaying(e.getLerpedFuseTime(client.getRenderTickCounter().getTickProgress(world.getTickManager().shouldSkipTick(e))) > 0);
                 }
                 if (d2 <= 2 / 3.0 * distance) {
-                    QuitAction action3 = getBoundAction(new Identifier(ModContext.MOD_ID, "active/afk/quit"));
+                    QuitAction action3 = getBoundAction(Identifier.of(ModContext.MOD_ID, "active/afk/quit"));
                     if (isActionEffectivelyEnabled(action3)) action3.quit(client, world, getName());
-                    PauseAction action4 = getBoundAction(new Identifier(ModContext.MOD_ID, "active/afk/pause"));
+                    PauseAction action4 = getBoundAction(Identifier.of(ModContext.MOD_ID, "active/afk/pause"));
                     if (isActionEffectivelyEnabled(action4)) action4.pause(client, getName());
                 }
             }

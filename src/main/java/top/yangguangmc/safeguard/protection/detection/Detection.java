@@ -15,7 +15,7 @@ public abstract class Detection implements SwitchTreeItem {
     protected ModContext modContext;
 
     protected Detection(String path, Action... actions) {
-        id = new Identifier(ModContext.MOD_ID, path);
+        id = Identifier.of(ModContext.MOD_ID, path);
         Set<Identifier> set = new HashSet<>();
         if (!Arrays.stream(actions).map(Action::getId).allMatch(set::add))
             throw new IllegalArgumentException("Action IDs duplicated");
