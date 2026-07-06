@@ -13,6 +13,11 @@ public class QuitAction extends Action {
         super("active/afk/quit");
     }
 
+    @Override
+    public boolean isEnabledByDefault() {
+        return false;
+    }
+
     public void quit(MinecraftClient client, ClientWorld world, MutableText moduleName) {
         client.send(() -> client.getAbuseReportContext().tryShowDraftScreen(client, null, () -> client.disconnect(ClientWorld.QUITTING_MULTIPLAYER_TEXT), true));
         client.getSoundManager().play(createSoundInstance(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F));

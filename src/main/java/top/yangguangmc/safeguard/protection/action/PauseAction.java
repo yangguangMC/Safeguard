@@ -14,6 +14,11 @@ public class PauseAction extends Action {
         super("active/afk/pause");
     }
 
+    @Override
+    public boolean isEnabledByDefault() {
+        return false;
+    }
+
     public void pause(MinecraftClient client, MutableText moduleName) {
         if (!client.isInSingleplayer()) {
             client.getToastManager().add(new SystemToast(ModContext.SAFEGUARD_PAUSE_UNAVAILABLE, Text.translatable("messages.safeguard.name"), Text.literal("检测到非单人游戏，暂停不可用！")));
