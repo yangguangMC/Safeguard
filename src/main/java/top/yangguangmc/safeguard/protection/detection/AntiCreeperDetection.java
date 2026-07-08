@@ -38,7 +38,7 @@ public class AntiCreeperDetection extends Detection {
         double minD = Double.POSITIVE_INFINITY;
         CreeperEntity e = null;
         for (Entity entity : world.getEntities()) {
-            if (entity instanceof CreeperEntity c) {
+            if (entity instanceof CreeperEntity c && !c.isDead()) {
                 double d = player.squaredDistanceTo(entity);
                 if (d < minD) {
                     minD = d;
