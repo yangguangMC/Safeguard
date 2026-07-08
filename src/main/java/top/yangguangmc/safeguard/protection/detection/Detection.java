@@ -38,6 +38,10 @@ public abstract class Detection implements SwitchTreeItem {
         return Collections.unmodifiableSet(boundActions.keySet());
     }
 
+    public boolean isBindingEnabled(Identifier actionId) {
+        return boundActions.get(getBoundAction(actionId));
+    }
+
     public void setBindingEnabled(Identifier actionId, boolean enabled) {
         boundActions.put(getBoundAction(actionId), enabled);
     }

@@ -48,7 +48,7 @@ public class SwitchTreeNode {
      * 获取当前节点的父节点。
      * 如果当前节点是根节点，将返回{@code null}。
      */
-    public @Nullable SwitchTreeNode getParent() {
+    public SwitchTreeNode getParent() {
         return parent;
     }
 
@@ -57,7 +57,7 @@ public class SwitchTreeNode {
      * 注意：无递归，不包括子节点的子节点。
      * 若不存在，返回{@code null}。
      */
-    public @Nullable SwitchTreeNode getChild(Identifier id) {
+    public SwitchTreeNode getChild(Identifier id) {
         return children.get(id);
     }
 
@@ -74,7 +74,7 @@ public class SwitchTreeNode {
      * 可从任意节点调用，非根节点将自动先找到根节点。
      * 若不存在，返回{@code null}。
      */
-    public @Nullable SwitchTreeNode getNode(Identifier id) {
+    public SwitchTreeNode getNode(Identifier id) {
         if (nodeMap != null) return nodeMap.get(id);
         SwitchTreeNode root = this;
         while (root.parent != null) root = root.parent;
@@ -226,13 +226,13 @@ public class SwitchTreeNode {
         }
 
         @Override
-        public @Nullable SwitchTreeNode getParent() {
+        public SwitchTreeNode getParent() {
             SwitchTreeNode parent = SwitchTreeNode.this.getParent();
             return parent == null ? null : parent.unmodifiableView();
         }
 
         @Override
-        public @Nullable SwitchTreeNode getChild(Identifier id) {
+        public SwitchTreeNode getChild(Identifier id) {
             SwitchTreeNode child = SwitchTreeNode.this.getChild(id);
             return child == null ? null : child.unmodifiableView();
         }
@@ -243,7 +243,7 @@ public class SwitchTreeNode {
         }
 
         @Override
-        public @Nullable SwitchTreeNode getNode(Identifier id) {
+        public SwitchTreeNode getNode(Identifier id) {
             SwitchTreeNode node = SwitchTreeNode.this.getNode(id);
             return node == null ? null : node.unmodifiableView();
         }

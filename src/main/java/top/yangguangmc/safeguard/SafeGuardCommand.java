@@ -12,7 +12,7 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import top.yangguangmc.safeguard.gui.screen.ProtectionScreen;
+import top.yangguangmc.safeguard.gui.screen.ConfigScreen;
 import top.yangguangmc.safeguard.protection.SwitchTreeNode;
 
 public class SafeGuardCommand {
@@ -23,7 +23,7 @@ public class SafeGuardCommand {
                                 ClientCommandManager.literal("screen")
                                         .executes(context -> {
                                             MinecraftClient client = context.getSource().getClient();
-                                            client.send(() -> client.setScreen(new ProtectionScreen(client.currentScreen)));
+                                            client.send(() -> client.setScreen(ConfigScreen.create(client.currentScreen)));
                                             return Command.SINGLE_SUCCESS;
                                         })
                         ).then(
