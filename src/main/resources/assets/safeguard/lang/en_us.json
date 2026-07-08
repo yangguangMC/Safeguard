@@ -1,5 +1,6 @@
 {
   "messages.safeguard.name": "Safe Guard",
   "messages.safeguard.prefix": "[SafeGuard] ",
-  "screen.safeguard.config": "Safe Guard Configurations"
+  "screen.safeguard.config": "Safe Guard Configurations",
+  "category.safeguard.detections": "Detections"
 }
