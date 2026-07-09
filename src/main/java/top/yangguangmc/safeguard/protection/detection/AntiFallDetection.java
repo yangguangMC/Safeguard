@@ -5,6 +5,8 @@ import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.ToolComponent;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -37,7 +39,9 @@ public class AntiFallDetection extends Detection {
             BlockPos pos = ((BlockHitResult) client.crosshairTarget).getBlockPos();
             if (pos.equals(player.supportingBlockPos.orElse(null))) {
                 ItemStack item = player.getActiveItem();
-                if (client.options.attackKey.isPressed() || (player.getPitch() > 0 && item.getItem().canMine(item, world.getBlockState(pos), world, pos, player))) {
+                ToolComponent toolComponent = item.get(DataComponentTypes.TOOL);
+                boolean canDestroy = toolComponent != null && toolComponent.isCorrectForDrops(world.getBlockState(pos));
+                if (!client.options.useKey.isPressed() && (client.options.attackKey.isPressed() || (player.getPitch() > 0 && canDestroy))) {
                     List<SafeResult> result = checkSafety(8, pos, world, player);
                     result.removeIf(r -> r.unsafety() <= 0);
                     if (!result.isEmpty()) {
