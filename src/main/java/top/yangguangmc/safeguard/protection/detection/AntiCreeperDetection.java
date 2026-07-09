@@ -6,14 +6,15 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.text.Style;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 import top.yangguangmc.safeguard.ModContext;
-import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
-import top.yangguangmc.safeguard.protection.action.PauseAction;
-import top.yangguangmc.safeguard.protection.action.PlaySoundAction;
-import top.yangguangmc.safeguard.protection.action.QuitAction;
+import top.yangguangmc.safeguard.protection.action.*;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
+
+import java.util.function.UnaryOperator;
 
 public class AntiCreeperDetection extends Detection {
     private final double distance = 8;
@@ -69,6 +70,16 @@ public class AntiCreeperDetection extends Detection {
                     if (isActionEffectivelyEnabled(action4)) action4.pause(client, getName());
                 }
             }
+        }
+    }
+
+    private static class ActionBarTitleAction extends Action {
+        public ActionBarTitleAction() {
+            super("passive/hud/action_bar_title");
+        }
+
+        public void updateTitle(MinecraftClient client, double distance, UnaryOperator<Style> styleProvider) {
+            client.inGameHud.setOverlayMessage(Text.literal("警告：苦力怕距离你 %.1f 方块".formatted(distance)).styled(styleProvider), false);
         }
     }
 }

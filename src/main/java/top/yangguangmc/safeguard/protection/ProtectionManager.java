@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import top.yangguangmc.safeguard.ModContext;
 import top.yangguangmc.safeguard.protection.action.Action;
 import top.yangguangmc.safeguard.protection.detection.AntiCreeperDetection;
+import top.yangguangmc.safeguard.protection.detection.AntiFallDetection;
 import top.yangguangmc.safeguard.protection.detection.Detection;
 
 import java.util.Collection;
@@ -23,6 +24,7 @@ public class ProtectionManager {
     public void init(ModContext ctx) {
         this.ctx = ctx;
         register(new AntiCreeperDetection());
+        register(new AntiFallDetection());
         LOGGER.info("Protections initialized with {} detections and {} actions.", protections.size(), protections.values().stream().mapToLong(Collection::size).sum());
     }
 
