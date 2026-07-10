@@ -38,7 +38,7 @@ public class AntiFallDetection extends Detection {
         if (client.crosshairTarget != null && client.crosshairTarget.getType() == HitResult.Type.BLOCK) {
             BlockPos pos = ((BlockHitResult) client.crosshairTarget).getBlockPos();
             if (pos.equals(player.supportingBlockPos.orElse(null))) {
-                ItemStack item = player.getActiveItem();
+                ItemStack item = player.getActiveOrMainHandStack();
                 ToolComponent toolComponent = item.get(DataComponentTypes.TOOL);
                 boolean canDestroy = toolComponent != null && toolComponent.isCorrectForDrops(world.getBlockState(pos));
                 if (!client.options.useKey.isPressed() && (client.options.attackKey.isPressed() || (player.getPitch() > 0 && canDestroy))) {
