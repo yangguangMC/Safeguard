@@ -11,15 +11,13 @@ import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.waypoint.EntityTickProgress;
 import top.yangguangmc.safeguard.ModContext;
 import top.yangguangmc.safeguard.protection.action.Action;
 import top.yangguangmc.safeguard.protection.action.PauseAction;
 import top.yangguangmc.safeguard.protection.action.PlaySoundAction;
 import top.yangguangmc.safeguard.protection.action.QuitAction;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
+import top.yangguangmc.safeguard.util.Utils;
 
 import java.util.function.UnaryOperator;
 
@@ -85,24 +83,8 @@ public class AntiCreeperDetection extends Detection {
 
         public void updateTitle(MinecraftClient client, ClientWorld world, CreeperEntity creeper, double distance, UnaryOperator<Style> styleProvider) {
             Camera camera = client.gameRenderer.getCamera();
-            double relativeYaw = getRelativeYaw(camera.getCameraPos(), camera.getCameraYaw(), creeper, e -> client.getRenderTickCounter().getTickProgress(!world.getTickManager().shouldSkipTick(e)));
-            String directionIndicator;
-            if (relativeYaw < -180 || relativeYaw > 180) throw new AssertionError();
-            if (relativeYaw >= -157.5 && relativeYaw < -112.5) directionIndicator = "↙";
-            else if (relativeYaw >= -112.5 && relativeYaw < -67.5) directionIndicator = "←";
-            else if (relativeYaw >= -67.5 && relativeYaw < -22.5) directionIndicator = "↖";
-            else if (relativeYaw >= -22.5 && relativeYaw < 22.5) directionIndicator = "↑";
-            else if (relativeYaw >= 22.5 && relativeYaw < 67.5) directionIndicator = "↗";
-            else if (relativeYaw >= 67.5 && relativeYaw < 112.5) directionIndicator = "→";
-            else if (relativeYaw >= 112.5 && relativeYaw < 157.5) directionIndicator = "↘";
-            else directionIndicator = "↓";  // relativeYaw <= -157.5 || relativeYaw >= 157.5
+            String directionIndicator = Utils.getDirectionIndicator(client, world, creeper, camera);
             client.inGameHud.setOverlayMessage(Text.literal("警告：苦力怕距离你 %.1f 方块 %s".formatted(distance, directionIndicator)).styled(styleProvider), false);
-        }
-
-        private double getRelativeYaw(Vec3d cameraPos, float yaw, Entity entity, EntityTickProgress tickProgress) {
-            Vec3d vec3d = cameraPos.subtract(entity.getCameraPosVec(tickProgress.getTickProgress(entity))).rotateYClockwise();
-            float f = (float) MathHelper.atan2(vec3d.getZ(), vec3d.getX()) * (180.0F / (float) Math.PI);
-            return MathHelper.subtractAngles(yaw, f);
         }
     }
 }
