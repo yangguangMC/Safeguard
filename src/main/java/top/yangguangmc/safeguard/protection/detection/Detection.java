@@ -14,14 +14,18 @@ public abstract class Detection implements SwitchTreeItem {
     private final Map<Action, Boolean> boundActions = new HashMap<>();    // 一般地，我们要求单个检测项注册的保护动作的ID要是不能重复的
     protected ModContext modContext;
 
-    protected Detection(String path, Action... actions) {
-        id = Identifier.of(ModContext.MOD_ID, path);
+    public Detection(Identifier id, Action... actions) {
+        this.id = id;
         Set<Identifier> set = new HashSet<>();
         if (!Arrays.stream(actions).map(Action::getId).allMatch(set::add))
             throw new IllegalArgumentException("Action IDs duplicated");
         for (Action action : actions) {
             boundActions.put(action, true);
         }
+    }
+
+    protected Detection(String path, Action... actions) {
+        this(Identifier.of(ModContext.MOD_ID, path), actions);
     }
 
     public void init(ModContext ctx) {

@@ -16,8 +16,12 @@ public abstract class Action implements SwitchTreeItem {
     private final Identifier id;
     protected ModContext modContext;
 
+    public Action(Identifier id) {
+        this.id = id;
+    }
+
     public Action(String path) {
-        id = Identifier.of(ModContext.MOD_ID, path);
+        this(Identifier.of(ModContext.MOD_ID, path));
     }
 
     @Override
