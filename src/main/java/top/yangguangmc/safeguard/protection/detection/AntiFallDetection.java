@@ -1,5 +1,6 @@
 package top.yangguangmc.safeguard.protection.detection;
 
+import com.google.common.collect.ImmutableSet;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
@@ -7,7 +8,10 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ToolComponent;
+import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -15,19 +19,24 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.attribute.EnvironmentAttributes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import top.yangguangmc.safeguard.ModContext;
 import top.yangguangmc.safeguard.protection.action.Action;
 import top.yangguangmc.safeguard.protection.action.PauseAction;
 import top.yangguangmc.safeguard.protection.action.QuitAction;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
+import top.yangguangmc.safeguard.util.Utils;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
 public class AntiFallDetection extends Detection {
     public AntiFallDetection() {
-        super("environment/anti_fall", new ActionBarTitleAction(), new QuitAction(), new PauseAction());
+        super("environment/anti_fall", new ActionBarTitleAction(), new QuitAction(), new PauseAction(), new MLGAction());
         ClientPlayerTickEvents.START_TICK.register((client, world, player) -> {
             if (getStateNode().isEffectivelyEnabled()) onStartTick(client, world, player);
         });
@@ -57,6 +66,8 @@ public class AntiFallDetection extends Detection {
             if (isActionEffectivelyEnabled(action1)) action1.pause(client, getName());
             QuitAction action2 = getBoundAction(Identifier.of(ModContext.MOD_ID, "active/afk/quit"));
             if (isActionEffectivelyEnabled(action2)) action2.quit(client, world, getName());
+            MLGAction action3 = getBoundAction(Identifier.of(ModContext.MOD_ID, "active/other/mlg"));
+            if (isActionEffectivelyEnabled(action3)) action3.tick(client, world, player);
         }
     }
 
@@ -82,6 +93,95 @@ public class AntiFallDetection extends Detection {
     }
 
     private record SafeResult(Text name, int posBelow, int unsafety) {
+    }
+
+    private static class MLGAction extends Action {
+        private static final Logger LOGGER = LoggerFactory.getLogger(ModContext.MOD_ID);
+        private static final Collection<Item> MLG_ITEMS_NETHER = ImmutableSet.of(
+                Items.SCAFFOLDING,
+                Items.COBWEB,
+                Items.POWDER_SNOW_BUCKET,
+                Items.HAY_BLOCK,
+                Items.SLIME_BLOCK,
+                Items.HONEY_BLOCK,
+                Items.TWISTING_VINES
+        );
+        private static final Collection<Item> MLG_ITEMS_NORMAL = ImmutableSet.of(
+                Items.WATER_BUCKET,
+                Items.SCAFFOLDING,
+                Items.COBWEB,
+                Items.POWDER_SNOW_BUCKET,
+                Items.HAY_BLOCK,
+                Items.SLIME_BLOCK,
+                Items.HONEY_BLOCK,
+                Items.TWISTING_VINES
+        );
+        private int placementSchedule = -1;
+
+        public MLGAction() {
+            super("active/other/mlg");
+        }
+
+        public void tick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
+            // 若已经计划好位置了
+            if (placementSchedule >= 0) {
+                if (placementSchedule <= 5) {
+                    List<ItemStack> hotbar = player.getInventory().getMainStacks().stream().limit(9).toList();
+                    int slot = 8;
+                    for (int i = 0; i < hotbar.size(); i++) {
+                        if (world.getEnvironmentAttributes().getAttributeValue(EnvironmentAttributes.WATER_EVAPORATES_GAMEPLAY)
+                                ? MLG_ITEMS_NETHER.contains(hotbar.get(i).getItem())
+                                : MLG_ITEMS_NORMAL.contains(hotbar.get(i).getItem())) {
+                            slot = i;
+                            break;
+                        }
+                    }
+                    player.getInventory().setSelectedSlot(slot);
+                    player.setPitch(89.5F);
+                }
+                if (placementSchedule == 0) {
+                    Utils.simulatePress(client.options.useKey);
+                }
+                placementSchedule--;
+                return;
+            }
+            // 开始进行位置计划
+            if (player.hasStatusEffect(StatusEffects.SLOW_FALLING)) {
+                placementSchedule = -1;
+                return;
+            }
+            if (player.getInventory().getMainStacks().stream().limit(9).map(ItemStack::getItem)
+                    .noneMatch(world.getEnvironmentAttributes().getAttributeValue(EnvironmentAttributes.WATER_EVAPORATES_GAMEPLAY)
+                            ? MLG_ITEMS_NETHER::contains : MLG_ITEMS_NORMAL::contains)) {
+                placementSchedule = -1;
+                return;
+            }
+            LOGGER.debug("[MLG Action] Start water placement reasoning.");
+            BlockPos blockPos = player.getBlockPos();
+            while (world.getBlockState(blockPos).isAir() && !world.isOutOfHeightLimit(blockPos))
+                blockPos = blockPos.down();
+            if (world.getBlockState(blockPos).isAir() || world.getBlockState(blockPos).isOf(Blocks.WATER)) {
+                placementSchedule = -1;
+                return;
+            }
+            blockPos = blockPos.up();
+            double posY = player.getEyeY();
+            double targetY = blockPos.getY();
+            double velocityY = player.getVelocity().y;
+            double lastDistance = posY - targetY;
+            for (int i = 1; ; i++) {
+                velocityY = (velocityY - player.getFinalGravity()) * 0.98;
+                posY = posY + velocityY;
+                double distance = posY - targetY;
+                if (distance <= player.getBlockInteractionRange() || distance > lastDistance) {
+                    LOGGER.debug("[MLG Action] Scheduled water placement at {} ticks later. PosY: {}, distance: {}, velocityY: {}",
+                            i, posY, distance, velocityY);
+                    placementSchedule = i;
+                    break;
+                }
+                if (distance < lastDistance) lastDistance = distance;
+            }
+        }
     }
 
     private static class ActionBarTitleAction extends Action {
