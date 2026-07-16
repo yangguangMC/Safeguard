@@ -12,6 +12,7 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
+import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -66,9 +67,9 @@ public class AntiFallDetection extends Detection {
             if (isActionEffectivelyEnabled(action1)) action1.pause(client, getName());
             QuitAction action2 = getBoundAction(Identifier.of(ModContext.MOD_ID, "active/afk/quit"));
             if (isActionEffectivelyEnabled(action2)) action2.quit(client, world, getName());
-            MLGAction action3 = getBoundAction(Identifier.of(ModContext.MOD_ID, "active/other/mlg"));
-            if (isActionEffectivelyEnabled(action3)) action3.tick(client, world, player);
         }
+        MLGAction action3 = getBoundAction(Identifier.of(ModContext.MOD_ID, "active/other/mlg"));
+        if (isActionEffectivelyEnabled(action3)) action3.tick(client, world, player);
     }
 
     private List<SafeResult> checkSafety(int checkHeight, BlockPos pos, ClientWorld world, ClientPlayerEntity player) {
@@ -123,6 +124,7 @@ public class AntiFallDetection extends Detection {
         }
 
         public void tick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
+            if (placementSchedule != -1) LOGGER.debug("Schedule: {}", placementSchedule);
             // 若已经计划好位置了
             if (placementSchedule >= 0) {
                 if (placementSchedule <= 5) {
@@ -140,9 +142,17 @@ public class AntiFallDetection extends Detection {
                     player.setPitch(89.5F);
                 }
                 if (placementSchedule == 0) {
+                    LOGGER.debug("[MLG Action] Simulated use.");
+                    client.getSoundManager().play(createSoundInstance(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F));
                     Utils.simulatePress(client.options.useKey);
+                    placementSchedule = -1;
+                    return;
                 }
                 placementSchedule--;
+                return;
+            }
+            if (player.isOnGround() || player.fallDistance < 1.5) {
+                placementSchedule = -1;
                 return;
             }
             // 开始进行位置计划
@@ -156,7 +166,6 @@ public class AntiFallDetection extends Detection {
                 placementSchedule = -1;
                 return;
             }
-            LOGGER.debug("[MLG Action] Start water placement reasoning.");
             BlockPos blockPos = player.getBlockPos();
             while (world.getBlockState(blockPos).isAir() && !world.isOutOfHeightLimit(blockPos))
                 blockPos = blockPos.down();
@@ -165,21 +174,24 @@ public class AntiFallDetection extends Detection {
                 return;
             }
             blockPos = blockPos.up();
+            LOGGER.debug("[MLG Action] Start placement reasoning. CurrentY: {}, groundY: {}", player.getY(), blockPos.getY());
             double posY = player.getEyeY();
             double targetY = blockPos.getY();
             double velocityY = player.getVelocity().y;
             double lastDistance = posY - targetY;
             for (int i = 1; ; i++) {
-                velocityY = (velocityY - player.getFinalGravity()) * 0.98;
                 posY = posY + velocityY;
+                velocityY = (velocityY - player.getFinalGravity()) * 0.98;
                 double distance = posY - targetY;
                 if (distance <= player.getBlockInteractionRange() || distance > lastDistance) {
-                    LOGGER.debug("[MLG Action] Scheduled water placement at {} ticks later. PosY: {}, distance: {}, velocityY: {}",
-                            i, posY, distance, velocityY);
+                    i -= Math.abs(velocityY) < 2 ? 1 : 2; // 推测应该是按键响应延迟，必须提前1刻以防摔死
+                    LOGGER.debug("[MLG Action] Scheduled water placement at {} ticks later. TargetY: {}, endPlayerY: {}, endDistance: {}, endVelocityY: {}",
+                            i, targetY, posY, distance, velocityY);
                     placementSchedule = i;
                     break;
                 }
                 if (distance < lastDistance) lastDistance = distance;
+                if (i > 320) throw new AssertionError("Too high iteration count! This should not happen!");
             }
         }
     }

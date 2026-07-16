@@ -51,9 +51,7 @@ public class Utils {
             boundKeyField.setAccessible(true);
             InputUtil.Key key = (InputUtil.Key) boundKeyField.get(keyBinding);
             KeyBinding.setKeyPressed(key, true);
-            for (int i = 0; i < 3; i++) {
-                KeyBinding.onKeyPressed(key);
-            }
+            KeyBinding.onKeyPressed(key);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
