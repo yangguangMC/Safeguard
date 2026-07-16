@@ -9,10 +9,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.waypoint.EntityTickProgress;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.util.Arrays;
+import top.yangguangmc.safeguard.injection.mixin.KeyBindingAccessor;
 
 public class Utils {
     private Utils() {
@@ -42,18 +39,8 @@ public class Utils {
 
     public static void simulatePress(KeyBinding keyBinding) {
         // 反射是不是不如 Mixin？但 Access Widener 又相当复杂，委曲求全用反射。
-        try {
-            Field boundKeyField = Arrays.stream(KeyBinding.class.getDeclaredFields())
-                    .filter(field -> field.getType() == InputUtil.Key.class)
-                    .filter(field -> !Modifier.isStatic(field.getModifiers()))
-                    .filter(field -> !Modifier.isFinal(field.getModifiers()))
-                    .findAny().orElseThrow();
-            boundKeyField.setAccessible(true);
-            InputUtil.Key key = (InputUtil.Key) boundKeyField.get(keyBinding);
-            KeyBinding.setKeyPressed(key, true);
-            KeyBinding.onKeyPressed(key);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        InputUtil.Key key = ((KeyBindingAccessor) keyBinding).safeguard$getBoundKey();
+        KeyBinding.setKeyPressed(key, true);
+        KeyBinding.onKeyPressed(key);
     }
 }

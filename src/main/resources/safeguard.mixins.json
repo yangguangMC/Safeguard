@@ -4,7 +4,8 @@
   "package": "top.yangguangmc.safeguard.injection.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "ClientPlayerEntityMixin"
+    "ClientPlayerEntityMixin",
+    "KeyBindingAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

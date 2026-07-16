@@ -127,7 +127,7 @@ public class AntiFallDetection extends Detection {
             if (placementSchedule != -1) LOGGER.debug("Schedule: {}", placementSchedule);
             // 若已经计划好位置了
             if (placementSchedule >= 0) {
-                if (placementSchedule <= 5) {
+                if (placementSchedule <= 10) {
                     List<ItemStack> hotbar = player.getInventory().getMainStacks().stream().limit(9).toList();
                     int slot = 8;
                     for (int i = 0; i < hotbar.size(); i++) {
@@ -139,7 +139,7 @@ public class AntiFallDetection extends Detection {
                         }
                     }
                     player.getInventory().setSelectedSlot(slot);
-                    player.setPitch(89.5F);
+                    player.setPitch(Math.min(player.getPitch() + 22.5F, 90.0F));
                 }
                 if (placementSchedule == 0) {
                     LOGGER.debug("[MLG Action] Simulated use.");
@@ -151,21 +151,14 @@ public class AntiFallDetection extends Detection {
                 placementSchedule--;
                 return;
             }
-            if (player.isOnGround() || player.fallDistance < 1.5) {
-                placementSchedule = -1;
-                return;
-            }
-            // 开始进行位置计划
-            if (player.hasStatusEffect(StatusEffects.SLOW_FALLING)) {
-                placementSchedule = -1;
-                return;
-            }
-            if (player.getInventory().getMainStacks().stream().limit(9).map(ItemStack::getItem)
+            if (player.isOnGround() || player.fallDistance < 1.5 || player.hasStatusEffect(StatusEffects.SLOW_FALLING)
+                    || player.getInventory().getMainStacks().stream().limit(9).map(ItemStack::getItem)
                     .noneMatch(world.getEnvironmentAttributes().getAttributeValue(EnvironmentAttributes.WATER_EVAPORATES_GAMEPLAY)
                             ? MLG_ITEMS_NETHER::contains : MLG_ITEMS_NORMAL::contains)) {
                 placementSchedule = -1;
                 return;
             }
+            // 开始进行位置计划
             BlockPos blockPos = player.getBlockPos();
             while (world.getBlockState(blockPos).isAir() && !world.isOutOfHeightLimit(blockPos))
                 blockPos = blockPos.down();
