@@ -174,6 +174,10 @@ public class AntiFallDetection extends Detection {
                 return;
             }
             blockPos = blockPos.up();
+            if (player.getY() - blockPos.getY() <= 4) {
+                placementSchedule = -1;
+                return;
+            }
             LOGGER.debug("[MLG Action] Start placement reasoning. CurrentY: {}, groundY: {}", player.getY(), blockPos.getY());
             double posY = player.getEyeY();
             double targetY = blockPos.getY();
@@ -184,7 +188,7 @@ public class AntiFallDetection extends Detection {
                 velocityY = (velocityY - player.getFinalGravity()) * 0.98;
                 double distance = posY - targetY;
                 if (distance <= player.getBlockInteractionRange() || distance > lastDistance) {
-                    i -= Math.abs(velocityY) < 2 ? 1 : 2; // 推测应该是按键响应延迟，必须提前1刻以防摔死
+                    i -= Math.abs(velocityY) < 1.85 ? 1 : 2; // 推测应该是按键响应延迟，必须提前1刻以防摔死
                     LOGGER.debug("[MLG Action] Scheduled water placement at {} ticks later. TargetY: {}, endPlayerY: {}, endDistance: {}, endVelocityY: {}",
                             i, targetY, posY, distance, velocityY);
                     placementSchedule = i;
