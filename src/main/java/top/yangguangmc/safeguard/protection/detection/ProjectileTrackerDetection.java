@@ -29,6 +29,7 @@ public class ProjectileTrackerDetection extends Detection {
         float relativeAngle = Float.POSITIVE_INFINITY;
         for (Entity entity : world.getEntities()) {
             if (entity instanceof ProjectileEntity proj) {
+                if (player.equals(proj.getOwner())) continue;
                 Vec3d arrowPos = proj.getEntityPos();
                 Vec3d velocity = proj.getVelocity();
                 if (velocity.lengthSquared() < 0.0001) continue;
