@@ -124,7 +124,7 @@ public class AntiFallDetection extends Detection {
         }
 
         public void tick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
-            if (placementSchedule != -1) LOGGER.debug("Schedule: {}", placementSchedule);
+            if (placementSchedule != -1) LOGGER.debug("[MLG Action] Schedule: {}", placementSchedule);
             // 若已经计划好位置了
             if (placementSchedule >= 0) {
                 if (placementSchedule <= 10) {
@@ -152,7 +152,7 @@ public class AntiFallDetection extends Detection {
                 return;
             }
             if (player.isOnGround() || player.fallDistance < 1.5 || player.hasStatusEffect(StatusEffects.SLOW_FALLING)
-                    || player.getInventory().getMainStacks().stream().limit(9).map(ItemStack::getItem)
+                    || player.isGliding() || player.getInventory().getMainStacks().stream().limit(9).map(ItemStack::getItem)
                     .noneMatch(world.getEnvironmentAttributes().getAttributeValue(EnvironmentAttributes.WATER_EVAPORATES_GAMEPLAY)
                             ? MLG_ITEMS_NETHER::contains : MLG_ITEMS_NORMAL::contains)) {
                 placementSchedule = -1;
@@ -180,8 +180,8 @@ public class AntiFallDetection extends Detection {
                 posY = posY + velocityY;
                 velocityY = (velocityY - player.getFinalGravity()) * 0.98;
                 double distance = posY - targetY;
-                if (distance <= player.getBlockInteractionRange() || distance > lastDistance) {
-                    i -= Math.abs(velocityY) < 1.85 ? 1 : 2; // 推测应该是按键响应延迟，必须提前1刻以防摔死
+                if (distance <= player.getBlockInteractionRange() || (distance > lastDistance && velocityY < 0)) {
+                    i -= Math.abs(velocityY) < 1.85 ? 1 : 2; // 不知道是响应延迟还是模拟误差，必须根据速度提前 1 ~ 2 刻以防摔死
                     LOGGER.debug("[MLG Action] Scheduled water placement at {} ticks later. TargetY: {}, endPlayerY: {}, endDistance: {}, endVelocityY: {}",
                             i, targetY, posY, distance, velocityY);
                     placementSchedule = i;

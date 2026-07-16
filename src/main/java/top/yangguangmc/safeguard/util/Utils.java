@@ -1,5 +1,6 @@
 package top.yangguangmc.safeguard.util;
 
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.Camera;
@@ -11,7 +12,25 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.waypoint.EntityTickProgress;
 import top.yangguangmc.safeguard.injection.mixin.KeyBindingAccessor;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class Utils {
+    private static final Map<KeyBinding, Integer> SIMULATE_RELEASE_TICKS = new HashMap<>();
+
+    static {
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            for (KeyBinding keyBinding : SIMULATE_RELEASE_TICKS.keySet()) {
+                int ticks = SIMULATE_RELEASE_TICKS.get(keyBinding) - 1;
+                if (ticks > 0) SIMULATE_RELEASE_TICKS.put(keyBinding, ticks);
+                else {
+                    keyBinding.setPressed(false);
+                    SIMULATE_RELEASE_TICKS.remove(keyBinding);
+                }
+            }
+        });
+    }
+
     private Utils() {
         throw new AssertionError();
     }
@@ -38,9 +57,9 @@ public class Utils {
     }
 
     public static void simulatePress(KeyBinding keyBinding) {
-        // 反射是不是不如 Mixin？但 Access Widener 又相当复杂，委曲求全用反射。
         InputUtil.Key key = ((KeyBindingAccessor) keyBinding).safeguard$getBoundKey();
         KeyBinding.setKeyPressed(key, true);
         KeyBinding.onKeyPressed(key);
+        SIMULATE_RELEASE_TICKS.put(keyBinding, 8);
     }
 }
