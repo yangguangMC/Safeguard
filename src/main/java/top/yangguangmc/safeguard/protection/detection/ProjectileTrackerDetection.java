@@ -60,9 +60,9 @@ public class ProjectileTrackerDetection extends Detection {
 
         public void updateTitle(MinecraftClient client, ClientWorld world, ProjectileEntity projectile, @Nullable Entity projectileSource) {
             if (projectileSource == null)
-                client.inGameHud.setOverlayMessage(Text.literal("警告：").append(projectile.getDisplayName()).append(" 弹射物靠近 ").append(Utils.getDirectionIndicator(client, world, projectile, client.gameRenderer.getCamera())).styled(style -> style.withColor(Formatting.RED)), false);
+                client.inGameHud.setOverlayMessage(Text.literal("警告：").append(projectile.getDisplayName()).append(" 靠近 ").append(Utils.getDirectionIndicator(client, world, projectile, client.gameRenderer.getCamera())).styled(style -> style.withColor(Formatting.RED)), false);
             else
-                client.inGameHud.setOverlayMessage(Text.literal("警告：").append(projectileSource.getDisplayName()).append(" 向你发射弹射物 ").append(Utils.getDirectionIndicator(client, world, projectileSource, client.gameRenderer.getCamera())).styled(style -> style.withColor(Formatting.RED)), false);
+                client.inGameHud.setOverlayMessage(Text.literal("警告：").append(projectileSource.getDisplayName()).append(" 向你发射 ").append(projectile.getDisplayName()).append(" ").append(Utils.getDirectionIndicator(client, world, projectileSource, client.gameRenderer.getCamera())).styled(style -> style.withColor(Formatting.RED)), false);
         }
     }
 }
