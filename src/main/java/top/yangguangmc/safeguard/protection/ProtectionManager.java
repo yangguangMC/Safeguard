@@ -6,10 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yangguangmc.safeguard.ModContext;
 import top.yangguangmc.safeguard.protection.action.Action;
-import top.yangguangmc.safeguard.protection.detection.AntiCreeperDetection;
-import top.yangguangmc.safeguard.protection.detection.AntiFallDetection;
-import top.yangguangmc.safeguard.protection.detection.ProjectileTrackerDetection;
-import top.yangguangmc.safeguard.protection.detection.Detection;
+import top.yangguangmc.safeguard.protection.detection.*;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -27,6 +24,7 @@ public class ProtectionManager {
         register(new AntiCreeperDetection());
         register(new AntiFallDetection());
         register(new ProjectileTrackerDetection());
+        register(new AntiAmbushDetection());
         LOGGER.info("Protections initialized with {} detections and {} actions.", protections.size(), protections.values().stream().mapToLong(Collection::size).sum());
     }
 
