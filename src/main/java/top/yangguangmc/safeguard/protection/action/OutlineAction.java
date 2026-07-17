@@ -6,12 +6,17 @@ import net.minecraft.entity.Entity;
 import java.util.*;
 
 public class OutlineAction extends Action {
-    private static final Map<UUID, Integer> OUTLINE_TICKS = new WeakHashMap<>();
-    private static final Map<UUID, Integer> OUTLINE_COLOR = new WeakHashMap<>();
+    private static final Map<UUID, Integer> OUTLINE_TICKS = new HashMap<>();
+    private static final Map<UUID, Integer> OUTLINE_COLOR = new HashMap<>();
 
     static {
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+        ClientTickEvents.END_WORLD_TICK.register(world -> {
             for (UUID uuid : OUTLINE_TICKS.keySet()) {
+                if (world.getEntity(uuid) == null) {
+                    OUTLINE_TICKS.remove(uuid);
+                    OUTLINE_COLOR.remove(uuid);
+                    continue;
+                }
                 int ticks = OUTLINE_TICKS.get(uuid);
                 if (ticks > 0) {
                     OUTLINE_TICKS.put(uuid, ticks - 1);
