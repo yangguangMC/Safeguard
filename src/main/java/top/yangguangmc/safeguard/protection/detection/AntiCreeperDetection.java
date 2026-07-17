@@ -55,8 +55,9 @@ public class AntiCreeperDetection extends Detection {
         if (e != null) {
             if (minD <= distance * distance) {
                 double d2 = Math.sqrt(minD);
+                float fuseTime = e.getLerpedFuseTime(client.getRenderTickCounter().getTickProgress(world.getTickManager().shouldSkipTick(e)));
                 ActionBarTitleAction action = getBoundAction(Identifier.of(ModContext.MOD_ID, "passive/hud/action_bar_title"));
-                if (isActionEffectivelyEnabled(action)) action.updateTitle(client, world, e, d2, style -> {
+                if (isActionEffectivelyEnabled(action)) action.updateTitle(client, world, e, d2, fuseTime, style -> {
                     if (d2 <= 1 / 2.0 * distance) return style.withColor(Formatting.RED).withBold(true);
                     else if (d2 <= 3 / 4.0 * distance) return style.withColor(Formatting.GOLD);
                     else return style.withColor(Formatting.YELLOW);
@@ -64,7 +65,7 @@ public class AntiCreeperDetection extends Detection {
                 PlaySoundAction action2 = getBoundAction(Identifier.of(ModContext.MOD_ID, "passive/other/play_sound"));
                 if (isActionEffectivelyEnabled(action2)) {
                     action2.tick(client);
-                    action2.setPlaying(e.getLerpedFuseTime(client.getRenderTickCounter().getTickProgress(world.getTickManager().shouldSkipTick(e))) > 0);
+                    action2.setPlaying(fuseTime > 0);
                 }
                 if (d2 <= 2 / 3.0 * distance) {
                     QuitAction action3 = getBoundAction(Identifier.of(ModContext.MOD_ID, "active/afk/quit"));
@@ -81,10 +82,10 @@ public class AntiCreeperDetection extends Detection {
             super("passive/hud/action_bar_title");
         }
 
-        public void updateTitle(MinecraftClient client, ClientWorld world, CreeperEntity creeper, double distance, UnaryOperator<Style> styleProvider) {
+        public void updateTitle(MinecraftClient client, ClientWorld world, CreeperEntity creeper, double distance, float fuseTime, UnaryOperator<Style> styleProvider) {
             Camera camera = client.gameRenderer.getCamera();
             String directionIndicator = Utils.getDirectionIndicator(client, world, creeper, camera);
-            client.inGameHud.setOverlayMessage(Text.literal("警告：苦力怕距离你 %.1f 方块 %s".formatted(distance, directionIndicator)).styled(styleProvider), false);
+            client.inGameHud.setOverlayMessage(Text.literal("警告：苦力怕距离你 %.1f 方块 倒计时：%.0f%% %s".formatted(distance, fuseTime * 100, directionIndicator)).styled(styleProvider), false);
         }
     }
 }
