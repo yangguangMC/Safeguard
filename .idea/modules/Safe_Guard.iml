@@ -3,7 +3,8 @@
   <component name="AdditionalModuleElements">
     <content url="file://$MODULE_DIR$/../.." dumb="true">
       <excludeFolder url="file://$MODULE_DIR$/../../backup" />
-      <excludeFolder url="file://$MODULE_DIR$/../../contexts" />
+      <excludeFolder url="file://$MODULE_DIR$/../../contexts/minecraft-1.21.11-yarn-sources" />
+      <excludeFolder url="file://$MODULE_DIR$/../../run" />
     </content>
   </component>
 </module>
