@@ -20,6 +20,7 @@ public abstract class Detection implements SwitchTreeItem {
         if (!Arrays.stream(actions).map(Action::getId).allMatch(set::add))
             throw new IllegalArgumentException("Action IDs duplicated");
         for (Action action : actions) {
+            action.initParent(this);
             boundActions.put(action, true);
         }
     }

@@ -9,11 +9,13 @@ import net.minecraft.util.Identifier;
 import top.yangguangmc.safeguard.ModContext;
 import top.yangguangmc.safeguard.protection.SwitchTreeItem;
 import top.yangguangmc.safeguard.protection.SwitchTreeNode;
+import top.yangguangmc.safeguard.protection.detection.Detection;
 
 import java.util.Objects;
 
 public abstract class Action implements SwitchTreeItem {
     private final Identifier id;
+    private Detection parent;
     protected ModContext modContext;
 
     public Action(Identifier id) {
@@ -27,6 +29,15 @@ public abstract class Action implements SwitchTreeItem {
     @Override
     public Identifier getId() {
         return id;
+    }
+
+    public Detection getParent() {
+        return parent;
+    }
+
+    public void initParent(Detection parent) {
+        if (this.parent != null) throw new IllegalStateException("Duplicate parent initialization");
+        this.parent = parent;
     }
 
     public void init(ModContext ctx) {

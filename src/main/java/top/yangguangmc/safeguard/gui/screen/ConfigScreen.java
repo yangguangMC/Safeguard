@@ -1,17 +1,13 @@
 package top.yangguangmc.safeguard.gui.screen;
 
-import me.shedaniel.clothconfig2.api.ConfigBuilder;
-import me.shedaniel.clothconfig2.api.ConfigCategory;
-import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
-import me.shedaniel.clothconfig2.impl.builders.SubCategoryBuilder;
+import dev.isxander.yacl3.api.*;
+import dev.isxander.yacl3.api.controller.BooleanControllerBuilder;
+import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
 import top.yangguangmc.safeguard.ModContext;
 import top.yangguangmc.safeguard.protection.SwitchTreeNode;
-import top.yangguangmc.safeguard.protection.action.Action;
-import top.yangguangmc.safeguard.protection.detection.Detection;
 
 public class ConfigScreen {
     private static ModContext ctx;
@@ -20,50 +16,67 @@ public class ConfigScreen {
         ConfigScreen.ctx = ctx;
     }
 
-    @SuppressWarnings("SimplifiableConditionalExpression")
     public static Screen create(Screen parent) {
-        ConfigBuilder builder = ConfigBuilder.create()
-                .setParentScreen(parent)
-                .setTitle(Text.translatable("screen.safeguard.config").styled(style -> style.withColor(Formatting.GREEN)));
-
-        ConfigCategory category = builder.getOrCreateCategory(Text.literal("Default"));
-        ConfigEntryBuilder entryBuilder = builder.entryBuilder();
-
-        SubCategoryBuilder subCategoryBuilder1 = entryBuilder.startSubCategory(Text.literal("检测项"));
         SwitchTreeNode root1 = ctx.protectionManager().getDetectionStatesRoot();
-        for (Identifier id : root1.getNodeIds()) {
-            SwitchTreeNode node1 = root1.getNode(id);
-            subCategoryBuilder1.add(entryBuilder.startBooleanToggle(ctx.protectionManager().getDetectionName(id), node1.isEnabled())
-                    .setTooltip(Text.literal("默认值：" + (node1.isLeaf() ? ctx.protectionManager().getDetectionDefaultState(id) : true)), Text.literal(id.toString()))
-                    .setSaveConsumer(node1::setEnabled)
-                    .build());
-        }
-        category.addEntry(subCategoryBuilder1.build());
-
-        SubCategoryBuilder subCategoryBuilder2 = entryBuilder.startSubCategory(Text.literal("保护动作"));
         SwitchTreeNode root2 = ctx.protectionManager().getActionStatesRoot();
-        for (Identifier id : root2.getNodeIds()) {
-            SwitchTreeNode node = root2.getNode(id);
-            subCategoryBuilder2.add(entryBuilder.startBooleanToggle(ctx.protectionManager().getActonName(id), node.isEnabled())
-                    .setTooltip(Text.literal("默认值：" + (node.isLeaf() ? ctx.protectionManager().getActionDefaultState(id) : true)), Text.literal(id.toString()))
-                    .setSaveConsumer(node::setEnabled)
-                    .build());
-        }
-        category.addEntry(subCategoryBuilder2.build());
-
-        SubCategoryBuilder subCategoryBuilder3 = entryBuilder.startSubCategory(Text.literal("链接"));
-        for (Identifier id : ctx.protectionManager().getDetectionStatesRoot().getNodeIds()) {
-            if (!ctx.protectionManager().getDetectionStatesRoot().getNode(id).isLeaf()) continue;
-            Detection detection = ctx.protectionManager().getDetection(id);
-            for (Action action : detection.getBoundActions()) {
-                subCategoryBuilder3.add(entryBuilder.startBooleanToggle(ctx.protectionManager().getDetectionName(id).copy().append(" --> ").append(ctx.protectionManager().getActonName(action.getId())), detection.isBindingEnabled(action.getId()))
-                        .setTooltip(Text.literal("默认值：true"), Text.literal(detection.getId().toString()).append(" --> ").append(action.getId().toString()))
-                        .setSaveConsumer(enabled -> detection.setBindingEnabled(action.getId(), enabled))
-                        .build());
-            }
-        }
-        category.addEntry(subCategoryBuilder3.build());
-
-        return builder.build();
+        return YetAnotherConfigLib.createBuilder()
+                .title(Text.translatable("screen.safeguard.config").styled(style -> style.withColor(Formatting.GREEN)))
+                .category(ConfigCategory.createBuilder()
+                        .name(Text.literal("检测项"))
+                        .group(OptionGroup.createBuilder()
+                                .options(root1.getNodeIds().stream()
+                                        .map(root1::getNode)
+                                        .map(node -> Option.<Boolean>createBuilder()
+                                                .name(Text.literal("    ".repeat((int) node.getId().getPath().chars().filter(c -> c == '/').count())).append(ctx.protectionManager().getDetectionName(node.getId())))
+                                                .description(OptionDescription.createBuilder()
+                                                        .text(Text.literal("有效值：" + node.isEffectivelyEnabled()))
+                                                        .text(Text.literal("默认值：" + (node.isLeaf() ? ctx.protectionManager().getDetectionDefaultState(node.getId()) : true)))
+                                                        .text(Text.literal(node.getId().toString()).styled(style -> style.withColor(Formatting.GRAY)))
+                                                        .build())
+                                                .binding(node.isLeaf() ? ctx.protectionManager().getDetectionDefaultState(node.getId()) : true, node::isEnabled, node::setEnabled)
+                                                .controller(BooleanControllerBuilder::create)
+                                                .build())
+                                        .toList())
+                                .build())
+                        .build())
+                .category(ConfigCategory.createBuilder()
+                        .name(Text.literal("保护动作"))
+                        .group(OptionGroup.createBuilder()
+                                .options(root2.getNodeIds().stream()
+                                        .map(root2::getNode)
+                                        .map(node -> Option.<Boolean>createBuilder()
+                                                .name(Text.literal("    ".repeat((int) node.getId().getPath().chars().filter(c -> c == '/').count())).append(ctx.protectionManager().getActonName(node.getId())))
+                                                .description(OptionDescription.createBuilder()
+                                                        .text(Text.literal("有效值：" + node.isEffectivelyEnabled()))
+                                                        .text(Text.literal("默认值：" + (node.isLeaf() ? ctx.protectionManager().getActionDefaultState(node.getId()) : true)))
+                                                        .text(Text.literal(node.getId().toString()).styled(style -> style.withColor(Formatting.GRAY)))
+                                                        .build())
+                                                .binding(node.isLeaf() ? ctx.protectionManager().getActionDefaultState(node.getId()) : true, node::isEnabled, node::setEnabled)
+                                                .controller(BooleanControllerBuilder::create)
+                                                .build())
+                                        .toList())
+                                .build())
+                        .build())
+                .category(ConfigCategory.createBuilder()
+                        .name(Text.literal("链接"))
+                        .group(OptionGroup.createBuilder()
+                                .options(root1.getNodeIds().stream()
+                                        .filter(id -> root1.getNode(id).isLeaf())
+                                        .map(id -> ctx.protectionManager().getDetection(id))
+                                        .flatMap(detection -> detection.getBoundActions().stream())
+                                        .map(action -> Option.<Boolean>createBuilder()
+                                                .name(ctx.protectionManager().getDetectionName(action.getParent().getId()).copy().append(" --> ").append(ctx.protectionManager().getActonName(action.getId())))
+                                                .description(OptionDescription.createBuilder()
+                                                        .text(Text.literal("默认值：true"))
+                                                        .text(Text.literal(action.getParent().getId().toString()).append(" --> ").append(action.getId().toString()))
+                                                        .build())
+                                                .binding(true, () -> action.getParent().isBindingEnabled(action.getId()), enabled -> action.getParent().setBindingEnabled(action.getId(), enabled))
+                                                .controller(TickBoxControllerBuilder::create)
+                                                .build())
+                                        .toList())
+                                .build())
+                        .build())
+                .build()
+                .generateScreen(parent);
     }
 }

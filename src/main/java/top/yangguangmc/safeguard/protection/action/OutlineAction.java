@@ -4,10 +4,11 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.entity.Entity;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class OutlineAction extends Action {
-    private static final Map<UUID, Integer> OUTLINE_TICKS = new HashMap<>();
-    private static final Map<UUID, Integer> OUTLINE_COLOR = new HashMap<>();
+    private static final Map<UUID, Integer> OUTLINE_TICKS = new ConcurrentHashMap<>();
+    private static final Map<UUID, Integer> OUTLINE_COLOR = new ConcurrentHashMap<>();
 
     static {
         ClientTickEvents.END_WORLD_TICK.register(world -> {
