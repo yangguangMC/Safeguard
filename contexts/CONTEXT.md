@@ -1,8 +1,10 @@
 # SafeGuard 项目上下文文档
 
-> **自动生成于**: 2026-07-23
+> **最后编辑于**: 2026-07-23
 > **目标读者**: 不了解此项目的开发者 / AI 助手
 > **目的**: 快速了解项目结构、模块职责、依赖关系和数据流转
+
+**注意：** 本文档仅代表本项目 **目前的状态**，不对未来发展方向做出任何硬性的规定，同时必须及时更新来保证符合本项目的最新情况。
 
 ---
 
@@ -128,7 +130,10 @@ Safe Guard/
 
 ### 3.5 检测项 (Detection)
 
-所有检测项继承 `Detection`，构造时声明绑定的 Action 列表，通过 `ClientPlayerTickEvents.START_TICK` 每帧执行。
+所有检测项继承 `Detection`，构造时声明绑定的 Action 列表，通过 `ClientPlayerTickEvents.START_TICK` 每帧执行，也可以自己订阅
+Fabric API 的其他事件，但目前为止必须手动检查自身启用状态。 与保护动作不同，检测项是“事实单例”的，可以被使用一个
+`Identifier` 从 `ProtectionManager` 那里获取到唯一的实例， 一个保护项有且仅有一个 ID 与之一一对应。 由于种种原因，检测项和保护动作不带有
+`enabled` 字段。原因见下方 5.4 节。
 
 | 文件                              | ID                      | 职责                                                                                                                                                                                  | 绑定的 Action                                                  |
 |-----------------------------------|-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
@@ -139,6 +144,10 @@ Safe Guard/
 | `ProjectileTrackerDetection.java` | `combat/arrow_tracker`  | **弹射物追踪**。检测飞向玩家的弹射物(箭/火球等)，角度偏差<10°时 ActionBar 警告+发射者信息。                                                                                           | ActionBarTitleAction                                           |
 
 ### 3.6 保护动作 (Action)
+
+所有保护动作继承 `Action`，可以放在 `top.yangguangmc.safeguard.protection.action` 包内，也可以作为检测项的内部类，关键在于它与绑定它的检测项的耦合程度。
+与检测项不同，保护动作 **不是**“事实单例”的，一个 `Identifier` 可能对应不止一个保护动作对象，多个保护动作实例可以对应同一个
+ID，并因此具有共享的配置和开关状态。 其他内容详见 5.4 节。
 
 | 文件                   | ID                         | 职责                                                                                                                                        | 默认启用 |
 |------------------------|----------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|----------|
@@ -253,29 +262,63 @@ ConfigScreen.create(parent)
         绑定: isBindingEnabled() / setBindingEnabled()
 ```
 
-### 5.4 SwitchTreeNode 树结构
+### 5.4 启用状态配置相关
+
+#### 5.4.1 SwitchTreeNode 树结构
+
+由于需要实现的需求是 “一个检测项或保护动作的分类路径上的任何一个节点都有独立的开关状态，仅当这所有祖先节点节点均为‘开’时该节点才‘有效启用’”，
+所以使用树结构来储存所有检测项、保护动作的开关状态。 这样一来，树的枝干节点即为分类，叶节点即为检测项或保护动作本身。
 
 ```
-Root (null)
-├── combat:combat                [枝干节点]
-│   ├── combat:combat/anti_creeper   [叶]
-│   ├── combat:combat/arrow_tracker  [叶]
-│   └── combat:combat/anti_ambush    [叶]
-└── environment:environment      [枝干节点]
-    └── environment:environment/anti_fall  [叶]
-
 isEffectivelyEnabled() = 自身.enabled AND 所有祖先.enabled (递归到根)
 unmodifiableView() → 只读视图 (禁止 addOrGetNode, 允许 setEnabled)
 ```
 
-### 5.5 双重开关控制
+目前使用两棵树，分别保存检测项和保护动作的启用状态。 检测项树（使用 `ProtectionManager#getDetectionStatesRoot` 获取）：
+
+```
+Root (null)
+├── safeguard:combat                [枝干节点]
+│   ├── safeguard:combat/anti_creeper       [叶]
+│   ├── safeguard:combat/projectile_tracker [叶]
+│   └── safeguard:combat/anti_ambush        [叶]
+└── safeguard:environment           [枝干节点]
+    └── safeguard:environment/anti_fall     [叶]
+```
+
+保护动作树（使用 `ProtectionManager#getActionStatesRoot` 获取）：
+
+```
+Root (null)
+├── safeguard:active                [枝干节点]
+│   └── safeguard:active/afk        [枝干节点]
+│       ├── safeguard:active/afk/pause  [叶]
+│       └── safeguard:active/afk/quit   [叶]
+└── safeguard:passive               [枝干节点]
+    ├── safeguard:passive/hud       [枝干节点]
+    │   └── safeguard:passive/hud/action_bar_title  [叶]
+    └── safeguard:passive/other     [枝干节点]
+        ├── safeguard:passive/other/outline [叶]
+        └── passive/other/play_sound        [叶]
+```
+
+但具体的某个检测项能否触发具体的某个保护动作，除 `isEffectivelyEnabled` 外还其取决于检测项保存的一个 Action -> boolean
+的映射表的内容， 其值代表对应的绑定关系是否开启。
+
+#### 5.4.2 双重开关控制
 
 一个 Action 被触发需同时满足:
 
 1. **树开关**: `actionRoot.getNode(actionId).isEffectivelyEnabled()` = true
 2. **绑定开关**: `detection.boundActions.get(action)` = true
 
+其实还有一个事实上的第三重开关，在这两重之前：如果绑定保护动作的检测项没被启用，那就算以上两个条件都满足也显然不会触发。
 PauseAction/QuitAction 执行后自关闭: `getStateNode().setEnabled(false)`
+
+> 这种检查机制有点过于麻烦且容易遗漏，要寻找办法改进。
+> 其实我们搞出这些分类就是希望可以让“active/afk”这样的分类能够默认关闭，在玩家有挂机需求时手动一次性打开所有“AFK适用”的保护动作等。
+> 所以现阶段让 `PauseAction` 和 `QuitAction` 重写 `isEnabledByDefault()` 返回 `false` 其实不是我想要的解决方案。
+> 相反，我们希望“默认启用状态”在树结构中。但当前的两棵树无法满足该需求。难道引入另外两棵树？这不方便且不优美。
 
 ---
 

@@ -299,7 +299,7 @@ public class XxxDetection extends Detection {   // 其实 Detection 的名字要
 - 每帧先检查 `getStateNode().isEffectivelyEnabled()`
 - 触发动作前检查 `isActionEffectivelyEnabled(action)`
 
-如前所述，这一连串启用检查十分繁琐且易遗漏。我们正在筹划改进它。
+如前所述，这一连串启用检查十分繁琐且易遗漏。我们正在筹划改进它。详见 CONTEXT.md 的 5.4 部分。
 
 ### 7.2 保护动作添加规范
 

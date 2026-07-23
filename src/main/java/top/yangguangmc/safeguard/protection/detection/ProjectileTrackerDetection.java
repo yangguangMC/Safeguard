@@ -18,7 +18,7 @@ import top.yangguangmc.safeguard.util.Utils;
 
 public class ProjectileTrackerDetection extends Detection {
     public ProjectileTrackerDetection() {
-        super("combat/arrow_tracker", new ActionBarTitleAction());
+        super("combat/projectile_tracker", new ActionBarTitleAction());
     }
 
     @Override
