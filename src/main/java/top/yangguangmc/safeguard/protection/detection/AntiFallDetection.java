@@ -38,6 +38,11 @@ import java.util.List;
 public class AntiFallDetection extends Detection {
     public AntiFallDetection() {
         super("environment/anti_fall", new ActionBarTitleAction(), new QuitAction(), new PauseAction(), new MLGAction());
+    }
+
+    @Override
+    public void init(ModContext ctx) {
+        super.init(ctx);
         ClientPlayerTickEvents.START_TICK.register((client, world, player) -> {
             if (getStateNode().isEffectivelyEnabled()) onStartTick(client, world, player);
         });

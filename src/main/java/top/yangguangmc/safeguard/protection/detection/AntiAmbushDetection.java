@@ -25,6 +25,11 @@ import java.util.List;
 public class AntiAmbushDetection extends Detection {
     public AntiAmbushDetection() {
         super("combat/anti_ambush", new ActionBarTitleAction(), new OutlineAction());
+    }
+
+    @Override
+    public void init(ModContext ctx) {
+        super.init(ctx);
         ClientPlayerTickEvents.START_TICK.register((client, world, player) -> {
             if (getStateNode().isEffectivelyEnabled()) onStartTick(client, world, player);
         });
