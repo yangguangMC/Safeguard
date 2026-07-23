@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 import top.yangguangmc.safeguard.gui.screen.ConfigScreen;
 import top.yangguangmc.safeguard.protection.ProtectionManager;
 
+import java.io.IOException;
+
 
 public final class SafeGuard implements ClientModInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModContext.MOD_ID);
@@ -15,9 +17,13 @@ public final class SafeGuard implements ClientModInitializer {
     public void onInitializeClient() {
         LOGGER.debug("Debug logging has been enabled.");
         ProtectionManager protectionManager = new ProtectionManager();
-        ModContext ctx = new ModContext(this, protectionManager);
+        ConfigManager configManager = new ConfigManager();
+        ModContext ctx = new ModContext(this, protectionManager, configManager);
+        configManager.init(ctx);
         protectionManager.init(ctx);
-        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> SafeGuardCommand.register(dispatcher, ctx));
+        ClientCommandRegistrationCallback.EVENT.register(
+                (dispatcher, registryAccess) -> SafeGuardCommand.register(dispatcher, ctx)
+        );
         ConfigScreen.init(ctx);
         LOGGER.info("Initialized successfully.");
     }

@@ -45,6 +45,34 @@ public class SwitchTreeNode {
     }
 
     /**
+     * 获取当前节点在树结构中的末尾名称。
+     * 即其 ID 最后一个“/”之后的部分。
+     * 如果当前节点是根节点，将返回空字符串。
+     */
+    public String getIdName() {
+        if (id == null) return "";
+        String[] split = id.getPath().split("/");
+        return split[split.length - 1];
+    }
+
+    /**
+     * 获取当前节点在树结构中的层级序数。
+     * 即其 ID 中“/”的个数。
+     * 如果当前节点是根节点，将抛出异常。
+     * 例子：
+     * <ul>
+     *     <li>“foo:bar”将返回 0</li>
+     *     <li>“foo:bar1/bar2”将返回 1</li>
+     *     <li>“foo:bar1/bar2/bar3”将返回 2</li>
+     *     <li>“foo:bar1_bar2-bar3”将返回 0（“_”“-”均不用于计算层级）</li>
+     * </ul>
+     */
+    public int getLevel() {
+        if (id == null) throw new IllegalStateException("Cannot get level of root node!");
+        return Math.toIntExact(id.getPath().chars().filter(c -> c == '/').count());
+    }
+
+    /**
      * 获取当前节点的父节点。
      * 如果当前节点是根节点，将返回{@code null}。
      */
