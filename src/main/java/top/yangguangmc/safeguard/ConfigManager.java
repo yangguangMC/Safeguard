@@ -2,56 +2,204 @@ package top.yangguangmc.safeguard;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.isxander.yacl3.platform.YACLPlatform;
+import net.minecraft.util.Identifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import top.yangguangmc.safeguard.protection.SwitchTreeNode;
 import top.yangguangmc.safeguard.protection.action.Action;
+import top.yangguangmc.safeguard.protection.detection.Detection;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.Map;
 
 public class ConfigManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ModContext.MOD_ID);
     private ModContext ctx;
 
     public void init(ModContext ctx) {
         this.ctx = ctx;
     }
 
+    public void trySave() {
+        try {
+            save();
+        } catch (Exception e) {
+            LOGGER.error("Could not save config file!", e);
+            LOGGER.info("Trying to backup original file and save again...");
+            try {
+                Path config = getConfig();
+                if (Files.exists(config)) {
+                    Files.copy(config, YACLPlatform.getConfigDir().resolve(ModContext.MOD_ID + ".json.backup"), StandardCopyOption.REPLACE_EXISTING);
+                    Files.delete(config);
+                }
+                save();
+            } catch (Exception ex) {
+                LOGGER.error("Could not save config file again!", ex);
+            }
+        }
+    }
+
     public void save() throws IOException {
-        // FIXME 这个实现不能正常工作，同时在设计上和Bug上。
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         JsonObject json = new JsonObject();
+
         JsonObject detectionJson = new JsonObject();
-        buildTree(detectionJson, ctx.protectionManager().getDetectionStatesRoot());
+        buildDetectionTree(detectionJson, ctx.protectionManager().getDetectionStatesRoot(), true);
         json.add("detection", detectionJson);
+
         JsonObject actionJson = new JsonObject();
-        buildTree(actionJson, ctx.protectionManager().getActionStatesRoot());
+        buildActionTree(actionJson, ctx.protectionManager().getActionStatesRoot(), true);
         json.add("action", actionJson);
-        JsonObject linkJson = new JsonObject();
-        ctx.protectionManager().getDetectionStatesRoot().getNodeIds()
-                .stream()
-                .filter(id -> ctx.protectionManager().getDetectionStatesRoot().getNode(id).isLeaf())
-                .map(id -> ctx.protectionManager().getDetection(id))
-                .flatMap(detection -> detection.getBoundActions().stream())
-                .forEach(action -> linkJson.addProperty(action.getParent().getId() + "->" + action.getId(), action.getParent().isBindingEnabled(action.getId())));
-        json.add("link", linkJson);
+
         Files.writeString(getConfig(), gson.toJson(json), StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
     }
 
-    public void load() {
+    public void tryLoad() {
+        if (!Files.exists(getConfig())) {
+            LOGGER.info("No config file found, using defaults.");
+            return;
+        }
+        try {
+            load();
+        } catch (IOException e) {
+            LOGGER.warn("Failed to load config, using defaults.", e);
+        } catch (Exception e) {
+            LOGGER.warn("Config file corrupted, using defaults.", e);
+        }
     }
 
-    private void buildTree(JsonObject obj, SwitchTreeNode nodeNotLeaf) {
-        for (SwitchTreeNode child : nodeNotLeaf.getChildren()) {
+    public void load() throws IOException {
+        String content = Files.readString(getConfig());
+        JsonObject json = new Gson().fromJson(content, JsonObject.class);
+
+        JsonObject dj = json.getAsJsonObject("detection");
+        if (dj != null) loadDetectionTree(dj, "", "");
+
+        JsonObject aj = json.getAsJsonObject("action");
+        if (aj != null) loadActionTree(aj, "", "");
+    }
+
+    private void buildDetectionTree(JsonObject parent, SwitchTreeNode node, boolean isTopLevel) {
+        for (SwitchTreeNode child : node.getChildren()) {
+            String key = isTopLevel ? child.getId().toString() : child.getIdName();
+            JsonObject childObj = new JsonObject();
+            childObj.addProperty("enabled", child.isEnabled());
+
             if (child.isLeaf()) {
-                obj.addProperty(child.getIdName(), child.isEnabled());
+                Detection detection = ctx.protectionManager().getDetection(child.getId());
+                JsonObject bindings = new JsonObject();
+                for (Action action : detection.getBoundActions()) {
+                    bindings.addProperty(action.getId().toString(), detection.isBindingEnabled(action.getId()));
+                }
+                childObj.add("actionBindings", bindings);
             } else {
-                obj.addProperty(child.getIdName() + "/", child.isEnabled());
-                JsonObject childObj = new JsonObject();
-                obj.add(child.getIdName(), childObj);
-                buildTree(childObj, child);
+                JsonObject childrenObj = new JsonObject();
+                buildDetectionTree(childrenObj, child, false);
+                childObj.add("children", childrenObj);
+            }
+
+            parent.add(key, childObj);
+        }
+    }
+
+    private void buildActionTree(JsonObject parent, SwitchTreeNode node, boolean isTopLevel) {
+        for (SwitchTreeNode child : node.getChildren()) {
+            String key = isTopLevel ? child.getId().toString() : child.getIdName();
+            JsonObject childObj = new JsonObject();
+            childObj.addProperty("enabled", child.isEnabled());
+
+            if (!child.isLeaf()) {
+                JsonObject childrenObj = new JsonObject();
+                buildActionTree(childrenObj, child, false);
+                childObj.add("children", childrenObj);
+            }
+
+            parent.add(key, childObj);
+        }
+    }
+
+    private void loadDetectionTree(JsonObject json, String namespace, String parentPath) {
+        for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
+            String key = entry.getKey();
+            if (!(entry.getValue() instanceof JsonObject nodeObj)) continue;
+
+            Identifier id;
+            String ns = namespace;
+            String newPath;
+
+            if (parentPath.isEmpty()) {
+                id = Identifier.of(key);
+                ns = id.getNamespace();
+                newPath = id.getPath();
+            } else {
+                newPath = parentPath + "/" + key;
+                id = Identifier.of(namespace, newPath);
+            }
+
+            SwitchTreeNode node = ctx.protectionManager().getDetectionStatesRoot().getNode(id);
+            if (node != null) {
+                if (nodeObj.has("enabled")) {
+                    node.setEnabled(nodeObj.get("enabled").getAsBoolean());
+                }
+
+                if (nodeObj.has("actionBindings") && !nodeObj.has("children")) {
+                    try {
+                        Detection detection = ctx.protectionManager().getDetection(id);
+                        JsonObject bindings = nodeObj.getAsJsonObject("actionBindings");
+                        for (Map.Entry<String, JsonElement> be : bindings.entrySet()) {
+                            Identifier actionId = Identifier.of(be.getKey());
+                            detection.setBindingEnabled(actionId, be.getValue().getAsBoolean());
+                        }
+                    } catch (Exception e) {
+                        LOGGER.warn("Failed to restore bindings for detection {}, skipping.", id, e);
+                    }
+                }
+            } else {
+                LOGGER.warn("Detection {} in config not found in tree, skipping.", id);
+            }
+
+            if (nodeObj.has("children")) {
+                loadDetectionTree(nodeObj.getAsJsonObject("children"), ns, newPath);
+            }
+        }
+    }
+
+    private void loadActionTree(JsonObject json, String namespace, String parentPath) {
+        for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
+            String key = entry.getKey();
+            if (!(entry.getValue() instanceof JsonObject nodeObj)) continue;
+
+            Identifier id;
+            String ns = namespace;
+            String newPath;
+
+            if (parentPath.isEmpty()) {
+                id = Identifier.of(key);
+                ns = id.getNamespace();
+                newPath = id.getPath();
+            } else {
+                newPath = parentPath + "/" + key;
+                id = Identifier.of(namespace, newPath);
+            }
+
+            SwitchTreeNode node = ctx.protectionManager().getActionStatesRoot().getNode(id);
+            if (node != null) {
+                if (nodeObj.has("enabled")) {
+                    node.setEnabled(nodeObj.get("enabled").getAsBoolean());
+                }
+            } else {
+                LOGGER.warn("Action {} in config not found in tree, skipping.", id);
+            }
+
+            if (nodeObj.has("children")) {
+                loadActionTree(nodeObj.getAsJsonObject("children"), ns, newPath);
             }
         }
     }
