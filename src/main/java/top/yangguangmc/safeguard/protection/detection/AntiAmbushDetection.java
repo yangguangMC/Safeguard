@@ -23,16 +23,12 @@ import java.util.Comparator;
 import java.util.List;
 
 public class AntiAmbushDetection extends Detection {
+    private static final Identifier ACTION_BAR_TITLE_ID = Identifier.of(ModContext.MOD_ID, "passive/hud/action_bar_title");
+    private static final Identifier OUTLINE_ID = Identifier.of(ModContext.MOD_ID, "passive/other/outline");
+
     public AntiAmbushDetection() {
         super("combat/anti_ambush", new ActionBarTitleAction(), new OutlineAction());
-    }
-
-    @Override
-    public void init(ModContext ctx) {
-        super.init(ctx);
-        ClientPlayerTickEvents.START_TICK.register((client, world, player) -> {
-            if (getStateNode().isEffectivelyEnabled()) onStartTick(client, world, player);
-        });
+        listen(ClientPlayerTickEvents.GATED_START_TICK, this::onStartTick);
     }
 
     private void onStartTick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
@@ -57,13 +53,12 @@ public class AntiAmbushDetection extends Detection {
                 .toList();
         @SuppressWarnings("DataFlowIssue") final int color = Formatting.GOLD.getColorValue();
         if (!entities.isEmpty()) {
-            ActionBarTitleAction action = getBoundAction(Identifier.of(ModContext.MOD_ID, "passive/hud/action_bar_title"));
-            if (isActionEffectivelyEnabled(action))
-                action.updateTitle(client, world, entities.size(), entities.getFirst(), color);
+            tryExecuteAction(ACTION_BAR_TITLE_ID, action ->
+                    ((ActionBarTitleAction) action).updateTitle(client, world, entities.size(), entities.getFirst(), color));
         }
         for (LivingEntity entity : entities) {
-            OutlineAction action = getBoundAction(Identifier.of(ModContext.MOD_ID, "passive/other/outline"));
-            if (isActionEffectivelyEnabled(action)) action.outline(entity, 60, color);
+            tryExecuteAction(OUTLINE_ID, action ->
+                    ((OutlineAction) action).outline(entity, 60, color));
         }
     }
 

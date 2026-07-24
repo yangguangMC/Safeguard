@@ -36,16 +36,14 @@ import java.util.Comparator;
 import java.util.List;
 
 public class AntiFallDetection extends Detection {
+    private static final Identifier ACTION_BAR_TITLE_ID = Identifier.of(ModContext.MOD_ID, "passive/hud/action_bar_title");
+    private static final Identifier PAUSE_ID = Identifier.of(ModContext.MOD_ID, "active/afk/pause");
+    private static final Identifier QUIT_ID = Identifier.of(ModContext.MOD_ID, "active/afk/quit");
+    private static final Identifier MLG_ID = Identifier.of(ModContext.MOD_ID, "active/other/mlg");
+
     public AntiFallDetection() {
         super("environment/anti_fall", new ActionBarTitleAction(), new QuitAction(), new PauseAction(), new MLGAction());
-    }
-
-    @Override
-    public void init(ModContext ctx) {
-        super.init(ctx);
-        ClientPlayerTickEvents.START_TICK.register((client, world, player) -> {
-            if (getStateNode().isEffectivelyEnabled()) onStartTick(client, world, player);
-        });
+        listen(ClientPlayerTickEvents.GATED_START_TICK, this::onStartTick);
     }
 
     private void onStartTick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
@@ -60,21 +58,19 @@ public class AntiFallDetection extends Detection {
                     List<SafeResult> result = checkSafety(8, pos, world, player);
                     result.removeIf(r -> r.unsafety() <= 0);
                     if (!result.isEmpty()) {
-                        ActionBarTitleAction action = getBoundAction(Identifier.of(ModContext.MOD_ID, "passive/hud/action_bar_title"));
-                        if (isActionEffectivelyEnabled(action)) action.updateTitle(client, result);
+                        tryExecuteAction(ACTION_BAR_TITLE_ID, action ->
+                                ((ActionBarTitleAction) action).updateTitle(client, result));
                     }
                 }
             }
         }
         // 已坠落保护
         if (!player.isOnGround() && player.fallDistance > 1.5 && checkSafety(5, player.getBlockPos(), world, player).stream().allMatch(result -> result.unsafety() > 0)) {
-            PauseAction action1 = getBoundAction(Identifier.of(ModContext.MOD_ID, "active/afk/pause"));
-            if (isActionEffectivelyEnabled(action1)) action1.pause(client, getName());
-            QuitAction action2 = getBoundAction(Identifier.of(ModContext.MOD_ID, "active/afk/quit"));
-            if (isActionEffectivelyEnabled(action2)) action2.quit(client, world, getName());
+            tryExecuteAction(PAUSE_ID, action -> ((PauseAction) action).pause(client, getName()));
+            tryExecuteAction(QUIT_ID, action -> ((QuitAction) action).quit(client, world, getName()));
         }
-        MLGAction action3 = getBoundAction(Identifier.of(ModContext.MOD_ID, "active/other/mlg"));
-        if (isActionEffectivelyEnabled(action3)) action3.tick(client, world, player);
+        // MLG
+        tryExecuteAction(MLG_ID, action -> ((MLGAction) action).tick(client, world, player));
     }
 
     private List<SafeResult> checkSafety(int checkHeight, BlockPos pos, ClientWorld world, ClientPlayerEntity player) {

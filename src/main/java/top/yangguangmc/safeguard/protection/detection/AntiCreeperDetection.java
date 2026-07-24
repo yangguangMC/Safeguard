@@ -22,6 +22,11 @@ import top.yangguangmc.safeguard.util.Utils;
 import java.util.function.UnaryOperator;
 
 public class AntiCreeperDetection extends Detection {
+    private static final Identifier ACTION_BAR_TITLE_ID = Identifier.of(ModContext.MOD_ID, "passive/hud/action_bar_title");
+    private static final Identifier PLAY_SOUND_ID = Identifier.of(ModContext.MOD_ID, "passive/other/play_sound");
+    private static final Identifier QUIT_ID = Identifier.of(ModContext.MOD_ID, "active/afk/quit");
+    private static final Identifier PAUSE_ID = Identifier.of(ModContext.MOD_ID, "active/afk/pause");
+
     private final double distance = 8;
 
     public AntiCreeperDetection() {
@@ -30,14 +35,7 @@ public class AntiCreeperDetection extends Detection {
                 new PlaySoundAction(SoundEvents.BLOCK_NOTE_BLOCK_HARP, 1.414214F, 3),
                 new PauseAction(),
                 new QuitAction());
-    }
-
-    @Override
-    public void init(ModContext ctx) {
-        super.init(ctx);
-        ClientPlayerTickEvents.START_TICK.register((client, world, player) -> {
-            if (getStateNode().isEffectivelyEnabled()) onStartTick(client, world, player);
-        });
+        listen(ClientPlayerTickEvents.GATED_START_TICK, this::onStartTick);
     }
 
     private void onStartTick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
@@ -52,27 +50,26 @@ public class AntiCreeperDetection extends Detection {
                 }
             }
         }
-        if (e != null) {
-            if (minD <= distance * distance) {
-                double d2 = Math.sqrt(minD);
-                float fuseTime = e.getLerpedFuseTime(client.getRenderTickCounter().getTickProgress(world.getTickManager().shouldSkipTick(e)));
-                ActionBarTitleAction action = getBoundAction(Identifier.of(ModContext.MOD_ID, "passive/hud/action_bar_title"));
-                if (isActionEffectivelyEnabled(action)) action.updateTitle(client, world, e, d2, fuseTime, style -> {
-                    if (d2 <= 1 / 2.0 * distance) return style.withColor(Formatting.RED).withBold(true);
-                    else if (d2 <= 3 / 4.0 * distance) return style.withColor(Formatting.GOLD);
-                    else return style.withColor(Formatting.YELLOW);
-                });
-                PlaySoundAction action2 = getBoundAction(Identifier.of(ModContext.MOD_ID, "passive/other/play_sound"));
-                if (isActionEffectivelyEnabled(action2)) {
-                    action2.tick(client);
-                    action2.setPlaying(fuseTime > 0);
-                }
-                if (d2 <= 2 / 3.0 * distance) {
-                    QuitAction action3 = getBoundAction(Identifier.of(ModContext.MOD_ID, "active/afk/quit"));
-                    if (isActionEffectivelyEnabled(action3)) action3.quit(client, world, getName());
-                    PauseAction action4 = getBoundAction(Identifier.of(ModContext.MOD_ID, "active/afk/pause"));
-                    if (isActionEffectivelyEnabled(action4)) action4.pause(client, getName());
-                }
+        if (e != null && minD <= distance * distance) {
+            CreeperEntity creeper = e;
+            double d2 = Math.sqrt(minD);
+            float fuseTime = creeper.getLerpedFuseTime(client.getRenderTickCounter().getTickProgress(world.getTickManager().shouldSkipTick(e)));
+            tryExecuteAction(ACTION_BAR_TITLE_ID, action ->
+                    ((ActionBarTitleAction) action).updateTitle(client, world, creeper, d2, fuseTime, style -> {
+                        if (d2 <= 1 / 2.0 * distance) return style.withColor(Formatting.RED).withBold(true);
+                        else if (d2 <= 3 / 4.0 * distance) return style.withColor(Formatting.GOLD);
+                        else return style.withColor(Formatting.YELLOW);
+                    }));
+            tryExecuteAction(PLAY_SOUND_ID, action -> {
+                PlaySoundAction ps = (PlaySoundAction) action;
+                ps.tick(client);
+                ps.setPlaying(fuseTime > 0);
+            });
+            if (d2 <= 2 / 3.0 * distance) {
+                tryExecuteAction(QUIT_ID, action ->
+                        ((QuitAction) action).quit(client, world, getName()));
+                tryExecuteAction(PAUSE_ID, action ->
+                        ((PauseAction) action).pause(client, getName()));
             }
         }
     }

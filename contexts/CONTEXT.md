@@ -1,6 +1,6 @@
 # SafeGuard 项目上下文文档
 
-> **最后编辑于**: 2026-07-23
+> **最后编辑于**: 2026-07-24
 > **目标读者**: 不了解此项目的开发者 / AI 助手
 > **目的**: 快速了解项目结构、模块职责、依赖关系和数据流转
 
@@ -61,6 +61,7 @@ Safe Guard/
 │   │   │   └── KeyBindingAccessor.java        # Accessor Mixin
 │   │   ├── protection/
 │   │   │   ├── ProtectionManager.java     # 保护功能总管理器
+│   │   │   ├── CategoryDefinition.java    # 分类默认状态定义
 │   │   │   ├── SwitchTreeItem.java        # 树节点接口
 │   │   │   ├── SwitchTreeNode.java        # 树状开关容器
 │   │   │   ├── detection/
@@ -76,7 +77,8 @@ Safe Guard/
 │   │   │   │   ├── OutlineAction.java      # 轮廓高亮
 │   │   │   │   └── PlaySoundAction.java    # 播放音效
 │   │   │   └── event/
-│   │   │       └── ClientPlayerTickEvents.java # Tick事件
+│   │   │       ├── ClientPlayerTickEvents.java # Tick事件
+│   │   │       └── GatedEvent.java             # 门控事件包装器
 │   │   └── util/
 │   │       └── Utils.java                  # 工具类
 │   └── resources/
@@ -122,22 +124,24 @@ Safe Guard/
 
 ### 3.4 保护系统核心
 
-| 文件                     | 职责                                                                                                                                                                                                    |
-|--------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ProtectionManager.java` | **总管理器**。持有 `protections`(Map<Detection,Collection<Action>>)、`detectionRoot`/`actionRoot` 两棵 SwitchTreeNode 树。init() 注册全部 4 个检测项。                                                  |
-| `SwitchTreeItem.java`    | **树节点接口**。定义 `getId()` 和 `isEnabledByDefault()`。Detection 和 Action 都实现此接口。                                                                                                            |
-| `SwitchTreeNode.java`    | **树状开关容器**。Identifier ID(/分隔层级)、enabled 状态、父子引用。`isEffectivelyEnabled()`(级联检查)、`addOrGetNode()`(动态添加)、`unmodifiableView()`(只读视图)。根节点持有 nodeMap 实现 O(1) 查找。 |
+| 文件                      | 职责                                                                                                                                                                                                                                                                                                    |
+|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ProtectionManager.java`  | **总管理器**。持有 `protections`(Map<Detection,Collection<Action>>)、`detectionRoot`/`actionRoot` 两棵 SwitchTreeNode 树。构造函数中预定义 `active/afk` 分类为默认关闭。提供 `predefineActionCategory()`/`predefineDetectionCategory()` API 供第三方扩展。init() 注册全部 4 个检测项。                  |
+| `CategoryDefinition.java` | **分类默认状态定义** (record)。声明树中枝干节点的默认启用状态（Identifier + defaultEnabled）。供 `ProtectionManager.predefineXxxCategory()` 使用，第三方扩展通过创建此类实例声明自定义分类。                                                                                                            |
+| `SwitchTreeItem.java`     | **树节点接口**。定义 `getId()` 和 `isEnabledByDefault()`。Detection 和 Action 都实现此接口。`isEnabledByDefault()` 现仅作为约定保留，默认状态由树的 `defaultEnabled` 管理。                                                                                                                             |
+| `SwitchTreeNode.java`     | **树状开关容器**。Identifier ID(/分隔层级)、enabled 状态、defaultEnabled 默认状态、父子引用。`isEffectivelyEnabled()`(级联检查)、`addOrGetNode()`(动态添加)、`predefineCategory()`(预定义分类默认值)、`setEnabled()` 触发 `notifyLeafDescendants()` 通知所有叶节点。根节点持有 nodeMap 实现 O(1) 查找。 |
+| `GatedEvent.java`         | **门控事件包装器**。在 Fabric Event 上叠加"按所有者挂起/恢复"能力。内部维护 `Map<Object,List<T>>` + `Set<Object>`，`listen(owner,listener)` 注册、`suspend/resume(owner)` 控制。纯 lambda + Supplier 实现，零反射。                                                                                     |
 
 ### 3.5 检测项 (Detection)
 
-所有检测项继承 `Detection`，构造时声明绑定的 Action 列表，通过 `ClientPlayerTickEvents.START_TICK` 每帧执行，也可以自己订阅
-Fabric API 的其他事件，但目前为止必须手动检查自身启用状态。 与保护动作不同，检测项是“事实单例”的，可以被使用一个
+所有检测项继承 `Detection`，构造时声明绑定的 Action 列表，并通过 `listen()` 声明事件监听。 基类通过 `GatedEvent` 自动管理
+suspend/resume，子类无需手动检查启用状态。触发动作使用 `tryExecuteAction()` 自动双重开关检查。 与保护动作不同，检测项是“事实单例”的，可以被使用一个
 `Identifier` 从 `ProtectionManager` 那里获取到唯一的实例， 一个保护项有且仅有一个 ID 与之一一对应。 由于种种原因，检测项和保护动作不带有
 `enabled` 字段。原因见下方 5.4 节。
 
 | 文件                              | ID                      | 职责                                                                                                                                                                                  | 绑定的 Action                                                  |
 |-----------------------------------|-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
-| `Detection.java`                  | —                       | 抽象基类。ID、`boundActions`(Map<Action,Boolean>)、绑定管理。`isActionEffectivelyEnabled()` 检查动作的双重开关。                                                                      | Action                                                         |
+| `Detection.java`                  | —                       | 抽象基类。ID、`boundActions`(Map<Action,Boolean>)、绑定管理。`listen()`(声明门控事件监听)、`tryExecuteAction()`(自动双重开关包装)、`applyActiveState()`(供 ProtectionManager 调用)。  | Action                                                         |
 | `AntiCreeperDetection.java`       | `combat/anti_creeper`   | **防苦力怕**。8格内检测最近苦力怕，显示距离/引信倒计时到 ActionBar；引信激活播放音效；2/3距离内触发暂停/退出。                                                                        | ActionBarTitleAction, PlaySoundAction, PauseAction, QuitAction |
 | `AntiFallDetection.java`          | `environment/anti_fall` | **防摔落**。三个子功能：(1)防挖掘坠落(准星对准脚下方块+挖掘时检查下方8格)；(2)已坠落保护(fallDistance>1.5+下方不安全→暂停/退出)；(3)**MLG自动落地水**(模拟下落轨迹→自动放水/黏液块)。 | ActionBarTitleAction, PauseAction, QuitAction, MLGAction       |
 | `AntiAmbushDetection.java`        | `combat/anti_ambush`    | **防偷袭**。每5帧检查16格内敌对生物/隐身玩家，ActionBar显示数量+名称+方向，OutlineAction 高亮不可见实体。                                                                             | ActionBarTitleAction, OutlineAction                            |
@@ -223,6 +227,9 @@ Minecraft 加载模组 → SafeGuard.onInitializeClient()
 
 ### 5.2 运行时检测 (每帧)
 
+检测项通过 `listen(GATED_START_TICK, this::onStartTick)` 声明事件监听。基类使用 `GatedEvent` 自动门控
+—— 当检测项被禁用时，其监听器自动挂起，不再接收事件，handler 中无需任何 `if (isEnabled())` 检查。
+
 ```
 ClientPlayerEntity.tick() [Minecraft原生]
   │
@@ -291,9 +298,11 @@ Root (null)
 ```
 Root (null)
 ├── safeguard:active                [枝干节点]
-│   └── safeguard:active/afk        [枝干节点]
-│       ├── safeguard:active/afk/pause  [叶]
-│       └── safeguard:active/afk/quit   [叶]
+│   ├── safeguard:active/afk        [枝干节点]
+│   │   ├── safeguard:active/afk/pause  [叶]
+│   │   └── safeguard:active/afk/quit   [叶]
+│   └── safeguard:active/other      [枝干节点]
+│       └── safeguard:active/other/mlg  [叶]
 └── safeguard:passive               [枝干节点]
     ├── safeguard:passive/hud       [枝干节点]
     │   └── safeguard:passive/hud/action_bar_title  [叶]
@@ -302,34 +311,17 @@ Root (null)
         └── passive/other/play_sound        [叶]
 ```
 
-但具体的某个检测项能否触发具体的某个保护动作，除 `isEffectivelyEnabled` 外还其取决于检测项保存的一个 Action -> boolean
-的映射表的内容， 其值代表对应的绑定关系是否开启。
-
-#### 5.4.2 双重开关控制
-
-一个 Action 被触发需同时满足:
-
-1. **树开关**: `actionRoot.getNode(actionId).isEffectivelyEnabled()` = true
-2. **绑定开关**: `detection.boundActions.get(action)` = true
-
-其实还有一个事实上的第三重开关，在这两重之前：如果绑定保护动作的检测项没被启用，那就算以上两个条件都满足也显然不会触发。
-PauseAction/QuitAction 执行后自关闭: `getStateNode().setEnabled(false)`
-
-> 这种检查机制有点过于麻烦且容易遗漏，要寻找办法改进。
-> 其实我们搞出这些分类就是希望可以让“active/afk”这样的分类能够默认关闭，在玩家有挂机需求时手动一次性打开所有“AFK适用”的保护动作等。
-> 所以现阶段让 `PauseAction` 和 `QuitAction` 重写 `isEnabledByDefault()` 返回 `false` 其实不是我想要的解决方案。
-> 相反，我们希望“默认启用状态”在树结构中。但当前的两棵树无法满足该需求。难道引入另外两棵树？这不方便且不优美。
-
 ---
 
 ## 6. 关键设计模式与约定
 
-### 架构模式
-
 - **Mixin 注入**: 在 Minecraft 原生代码中非侵入式注入钩子
-- **事件驱动**: Fabric Event API 实现自定义 `START_TICK` 事件，检测项注册监听
-- **树状开关**: 自定义 `SwitchTreeNode` 层级开关，父子级联有效状态检查
-- **不可变视图**: `unmodifiableView()` 返回内部类 `Unmodifiable`，对外隐藏写操作
+- **门控事件 (GatedEvent)**: 在 Fabric Event 之上叠加按所有者挂起/恢复能力，检测项声明 `listen(event, handler)`
+  后基类自动管理启用状态
+- **事件驱动**: Fabric Event API 实现自定义 `START_TICK` 事件，检测项注册监听`n- **树状开关**: 自定义 `SwitchTreeNode
+  ` 层级开关，支持 `defaultEnabled` 默认值 + `isEffectivelyEnabled ()` 级联检查
+- **分类定义 (CategoryDefinition)**: record 类型声明枝干节点默认状态，保护管理器公开 API 供第三方扩展`n- **不可变视图**: `
+  unmodifiableView ()` 返回内部类 `Unmodifiable`，对外隐藏写操作
 
 ### 命名约定
 
@@ -338,7 +330,7 @@ PauseAction/QuitAction 执行后自关闭: `getStateNode().setEnabled(false)`
     - 动作: `safeguard:active/afk/pause`、`safeguard:passive/other/outline`
     - 分类: `combat`(战斗)、`environment`(环境)、`active/afk`(主动)、`passive/hud`(HUD)、`passive/other`(其他)
 - **翻译键**: `detection.<ns>.<path>`、`action.<ns>.<path>` (`/`→`.`)
-- **默认启用**: 大多数 Action 默认 true, PauseAction/QuitAction 默认 false
+- **默认启用**: 由树节点的 `defaultEnabled` 决定，分类级别可通过 `CategoryDefinition` 控制（如 `active/afk` 默认 false）
 
 ---
 
@@ -370,7 +362,8 @@ PauseAction/QuitAction 执行后自关闭: `getStateNode().setEnabled(false)`
 
 1. **导入**: IntelliJ IDEA 打开 `build.gradle`，等待 Gradle 同步
 2. **运行**: 使用 `Minecraft_Client` run configuration
-3. **添加检测项**: 在 `protection/detection/` 下建类继承 `Detection`，构造传入 Identifier+Action 列表，`init()` 注册
-   `START_TICK`，在 `ProtectionManager.init()` 调用 `register()`
+3. **添加检测项**: 在 `protection/detection/` 下建类继承 `Detection`，构造器中 `super(path, actions...)` +
+   `listen(GATED_START_TICK, this::onHandler)`，触发动作使用 `tryExecuteAction(id, consumer)`。无需手动检查启用状态或重写
+   `init()`。最后在 `ProtectionManager.init()` 调用 `register()`
 4. **添加动作**: 在 `protection/action/` 下（或检测项的内部）建类继承 `Action`，实现具体逻辑
 5. **添加翻译**: 在 `zh_cn.json`/`en_us.json` 添加 `detection.*`/`action.*` 键

@@ -19,6 +19,13 @@ public class ProtectionManager {
     private final SwitchTreeNode actionRoot = SwitchTreeNode.buildTree();
     private ModContext ctx;
 
+    public ProtectionManager() {
+        // 预定义默认关闭的分类
+        // 递归创建路径上的所有 category 都会使用传入的 defaultEnabled？这不是我们通常想要的。只能预定义其前一节点。
+        predefineActionCategory(new CategoryDefinition("active", true));
+        predefineActionCategory(new CategoryDefinition("active/afk", false));
+    }
+
     public void init(ModContext ctx) {
         this.ctx = ctx;
         register(new AntiCreeperDetection());
@@ -30,17 +37,31 @@ public class ProtectionManager {
 
     public void register(Detection detection) {
         protections.put(detection, detection.getBoundActions());
-        detectionRoot.addOrGetNode(detection.getId()).setEnabled(detection.isEnabledByDefault());
-        detection.getBoundActions().forEach(action -> actionRoot.addOrGetNode(action.getId()).setEnabled(action.isEnabledByDefault()));
+        SwitchTreeNode detectionNode = detectionRoot.addOrGetNode(detection.getId());
+        detectionNode.addEffectiveStateListener(detection::applyActiveState);
+        for (Action action : detection.getBoundActions()) actionRoot.addOrGetNode(action.getId());
         detection.init(ctx);
+        detection.applyActiveState(detectionNode.isEffectivelyEnabled());
+    }
+
+    /**
+     * 预定义一个检测项分类。
+     * 通过预定义分类的方式，可以实现自定义默认启用状态。
+     */
+    public void predefineDetectionCategory(CategoryDefinition category) {
+        detectionRoot.predefineCategory(category.id(), category.defaultEnabled());
+    }
+
+    /**
+     * 预定义一个保护动作分类。
+     * 通过预定义分类的方式，可以实现自定义默认启用状态。
+     */
+    public void predefineActionCategory(CategoryDefinition category) {
+        actionRoot.predefineCategory(category.id(), category.defaultEnabled());
     }
 
     public Detection getDetection(Identifier id) {
         return protections.keySet().stream().filter(detection -> detection.getId().equals(id)).findAny().orElseThrow();
-    }
-
-    public boolean getDetectionDefaultState(Identifier id) {
-        return getDetection(id).isEnabledByDefault();
     }
 
     public SwitchTreeNode getDetectionStatesRoot() {
@@ -49,11 +70,6 @@ public class ProtectionManager {
 
     public Text getDetectionName(Identifier id) {
         return Text.translatable("detection.%s.%s".formatted(id.getNamespace(), id.getPath().replace("/", ".")));
-    }
-
-    public boolean getActionDefaultState(Identifier id) {
-        // 一般地，要求同一个ID对应的所有Action的isEnabledByDefault是一模一样的，所以使用findAny()
-        return protections.values().stream().flatMap(Collection::stream).filter(action -> action.getId().equals(id)).findAny().orElseThrow().isEnabledByDefault();
     }
 
     public SwitchTreeNode getActionStatesRoot() {

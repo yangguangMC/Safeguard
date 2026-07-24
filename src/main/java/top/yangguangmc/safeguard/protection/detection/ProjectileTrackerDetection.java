@@ -17,16 +17,11 @@ import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
 import top.yangguangmc.safeguard.util.Utils;
 
 public class ProjectileTrackerDetection extends Detection {
+    private static final Identifier ACTION_BAR_TITLE_ID = Identifier.of(ModContext.MOD_ID, "passive/hud/action_bar_title");
+
     public ProjectileTrackerDetection() {
         super("combat/projectile_tracker", new ActionBarTitleAction());
-    }
-
-    @Override
-    public void init(ModContext ctx) {
-        super.init(ctx);
-        ClientPlayerTickEvents.START_TICK.register((client, world, player) -> {
-            if (getStateNode().isEffectivelyEnabled()) onStartTick(client, world, player);
-        });
+        listen(ClientPlayerTickEvents.GATED_START_TICK, this::onStartTick);
     }
 
     private void onStartTick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
@@ -52,11 +47,11 @@ public class ProjectileTrackerDetection extends Detection {
             }
         }
         if (projectile != null && relativeAngle < 10) {
-            ActionBarTitleAction action = getBoundAction(Identifier.of(ModContext.MOD_ID, "passive/hud/action_bar_title"));
-            action.updateTitle(client, world, projectile, projectile.getOwner());
+            ProjectileEntity target = projectile;
+            tryExecuteAction(ACTION_BAR_TITLE_ID, action ->
+                    ((ActionBarTitleAction) action).updateTitle(client, world, target, target.getOwner()));
         }
     }
-
 
     private static class ActionBarTitleAction extends Action {
         public ActionBarTitleAction() {

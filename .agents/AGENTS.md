@@ -3,6 +3,9 @@
 > **目的**: 任何 AI 助手在为本项目添加/修改代码时， **必须**遵守本文档中的所有规范。
 > **优先级**: 本文档规定 > 个人偏好。如有冲突，以本文档为准。
 
+在阅读本规则之前，请注意你应该已经读过全局规则（本机 Document 文件夹\Cline\Rules\java-coding-standards.md）了。
+本文档仅补充其未涉及的部分。
+
 ---
 
 ## 1. 硬约束：禁止引入的依赖
@@ -35,45 +38,28 @@ Minecraft 依赖 Guava，所以我们可以使用 Guava)。 如果一定要引�
 
 ## 2. 命名规范
 
-基本按照现代的 Java 标准。
+基本按照现代的 Java 标准。 多数内容已经在全局规则中声明，此处仅补充它不包含的信息。
 
 ### 2.1 类/接口/记录
 
 | 类型           | 规范                                                        | 示例                                                           |
 |----------------|-------------------------------------------------------------|----------------------------------------------------------------|
-| 类名           | **PascalCase**，名词或名词短语                              | `ProtectionManager`, `AntiCreeperDetection`                    |
-| 抽象类         | 不刻意加 `Abstract` 前缀 (除非理由充分)，直接用名词         | `Detection`, `Action`                                          |
-| 接口           | 不加 `I` 前缀，直接用名词/形容词                            | `SwitchTreeItem`, `ModMenuApi`                                 |
-| 记录 (record)  | PascalCase 名词                                             | `ModContext`                                                   |
 | 入口类         | `final class`，实现生命周期接口                             | `public final class SafeGuard implements ClientModInitializer` |
-| 工具类         | `private` 构造器并抛 `AssertionError`                       | `Utils`                                                        |
 | Mixin 类       | `目标类名 + Mixin`，通常为抽象类，放在 `injection.mixin` 包 | `ClientPlayerEntityMixin`                                      |
 | Accessor Mixin | `接口名 + Accessor`，方法前缀 `safeguard$`                  | `KeyBindingAccessor`                                           |
 
 ### 2.2 方法
 
-| 类型        | 规范                          | 示例                                         |
-|-------------|-------------------------------|----------------------------------------------|
-| 方法名      | **camelCase**，动词或动词短语 | `onStartTick()`, `isEffectivelyEnabled()`    |
-| 布尔查询    | `is` / `has` / `can` 前缀     | `isLeaf()`, `isEnabled()`                    |
-| 获取器      | `get` 前缀（非 record）       | `getStateNode()`, `getDetectionName()`       |
-| Record 组件 | 自动生成无 `get` 前缀的方法   | `ctx.protectionManager()`                    |
-| 设置器      | `set` 前缀                    | `setEnabled()`, `setPlaying()`               |
-| 初始化      | `init(ModContext ctx)`        | 两阶段初始化模式                             |
-| 事件处理    | `on` + 事件名                 | `onStartTick()`, `onInitializeClient()`      |
-| 工厂/构建   | `build`, `create`, `of`       | `buildTree()`, `create()`, `Identifier.of()` |
-| Mixin 回调  | `private void`，不加 public   | `private void onStartTick(CallbackInfo ci)`  |
+| 类型       | 规范                        | 示例                                         |
+|------------|-----------------------------|----------------------------------------------|
+| 初始化     | `init(ModContext ctx)`      | 两阶段初始化模式                             |
+| 事件处理   | `on` + 事件名               | `onStartTick()`, `onInitializeClient()`      |
+| 工厂/构建  | `build`, `create`, `of`     | `buildTree()`, `create()`, `Identifier.of()` |
+| Mixin 回调 | `private void`，不加 public | `private void onStartTick(CallbackInfo ci)`  |
 
 ### 2.3 变量与常量
 
-| 类型         | 规范                                                            | 示例                           |
-|--------------|-----------------------------------------------------------------|--------------------------------|
-| 静态常量     | **UPPER_SNAKE_CASE**                                            | `MOD_ID`, `SAFEGUARD_PAUSE`    |
-| Logger       | `private static final Logger LOGGER`，记录器的名字必须是 MOD_ID | 每个类独立定义                 |
-| 实例字段     | **camelCase**，`private` 优先，`protected` 供子类               | `detectionRoot`, `modContext`  |
-| `final` 字段 | 能 `final` 就 `final`                                           | `private final Identifier id;` |
-| 局部变量     | camelCase，不损失可读性的前提下尽可能简介                       | `minD`, `entity`, `action`     |
-| 缩写         | 须权衡，尽量用全称，已有 `ctx` 可沿用                           | `context` not `cxt`            |
+均已包含在全局规则中。
 
 ### 2.4 Identifier 路径命名
 
@@ -96,14 +82,7 @@ Minecraft 依赖 Guava，所以我们可以使用 Guava)。 如果一定要引�
 
 ### 3.1 类内部成员顺序
 
-```
-1. static final 常量 + Logger
-2. 实例字段 (通常 final 优先于非 final)
-3. 构造函数
-4. init() / 生命周期方法
-5. 方法 (按含义排序优先于按访问权限递减排序)
-8. 内部类
-```
+均已包含在全局规则中。
 
 ### 3.2 两阶段初始化模式
 
@@ -136,7 +115,7 @@ top.yangguangmc.safeguard              # 入口、上下文、配置管理、命
   └── util                             # 工具类
 ```
 
-新类必须放在对应的包中，不得随意创建新包。
+新类须放在对应的包中，不得随意创建新包。
 
 ---
 
@@ -144,20 +123,11 @@ top.yangguangmc.safeguard              # 入口、上下文、配置管理、命
 
 ### 4.1 格式化
 
-- **缩进**: 4 空格，不用 Tab
-- **编码**: UTF-8
-- **大括号**: K&R 风格（开括号不换行）
-- **链式调用**: 在 `.` 前换行，每个方法调用一行
-- **空行**: 方法间一个空行，逻辑块间一个空行
+均已包含在全局规则中。
 
 ### 4.2 可见性
 
-尽量保证封装性。
-
-- 字段默认 `private`，子类访问用 `protected`
-- 方法: 仅对外暴露必要 API，内部逻辑用 `private`
-- 类: 入口类用 `final`，数据载体用 `record`
-- 工具类: `public class` + `private` 构造抛 `AssertionError`
+均已包含在全局规则中。
 
 ### 4.3 注释
 
@@ -171,21 +141,7 @@ top.yangguangmc.safeguard              # 入口、上下文、配置管理、命
 
 ## 5. 错误处理规范
 
-| 场景                                                                | 处理方式                                                | 示例                           |
-|---------------------------------------------------------------------|---------------------------------------------------------|--------------------------------|
-| 编程错误（不应发生）                                                | `throw new IllegalStateException("描述")`               | 重复 parent 初始化、根节点缺失 |
-| 参数校验失败                                                        | `throw new IllegalArgumentException("描述")`            | 重复 Action ID                 |
-| 绝不应执行到                                                        | `throw new AssertionError("描述")`                      | 工具类构造函数                 |
-| 引用为空（仅必须检查的场景，一般情况下默认非空而不用加 `@NotNull`） | `Objects.requireNonNull(ref)`                           | `getStateNode()`               |
-| Stream 查找在本不该无结果的时候无结果                               | `.orElseThrow()`                                        | `getDetection(id)`             |
-| 方法返回 null 表示"不存在"                                          | 返回 `null` + `@Nullable` 标注 （但不应该影响正常编程） | `getNode(Identifier)`          |
-
-**禁止事项**:
-
-- ❌ 绝对不要吞异常（空 catch 块）
-- ❌ 不要在非 CLI 代码中 `printStackTrace()`
-- ❌ 尽量不要 `catch (Exception e)` 宽泛捕获，除非你知道你在做什么
-- ❌ 不要返回 `null` 表示错误（区分"不存在"和"出错了"）
+均已包含在全局规则中。
 
 ---
 
@@ -275,31 +231,26 @@ public class XxxDetection extends Detection {   // 其实 Detection 的名字要
         super("category/path/to/xxx",           // Identifier 路径
                 new Action1(),                  // 绑定的 Action 实例
                 new Action2());
+        // 注册事件。Detection、SwitchTreeNode 和 GatedEvent 会自动管理当前保护动作的启用状态。
+        listen(ClientPlayerTickEvents.GATED_START_TICK, this::onStartTick);
     }
 
     @Override
     public void init(ModContext ctx) {
         super.init(ctx);                     // 必须先调用 super.init()
-        ClientPlayerTickEvents.START_TICK.register((client, world, player) -> {
-            if (getStateNode().isEffectivelyEnabled()) onStartTick(client, world, player);
-        });
+        // ...
     }
 
     private void onStartTick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
-        // 检测逻辑: 检查危险 → getBoundAction(id) → isActionEffectivelyEnabled → 触发
-        // 其实这种方式稍微有点麻烦。有什么替代方案吗？
+        // 检测逻辑: 检查危险 → tryExecuteAction() → 触发
     }
 }
 ```
 
 关键点:
 
-- 构造中调用 `super(path, actions...)`
-- `init()` 中先 `super.init(ctx)`，再注册 `START_TICK`
-- 每帧先检查 `getStateNode().isEffectivelyEnabled()`
-- 触发动作前检查 `isActionEffectivelyEnabled(action)`
-
-如前所述，这一连串启用检查十分繁琐且易遗漏。我们正在筹划改进它。详见 CONTEXT.md 的 5.4 部分。
+- 构造中调用 `super(path, actions...)`，注册各个事件
+- `init()` 中先 `super.init(ctx)`
 
 ### 7.2 保护动作添加规范
 
@@ -332,47 +283,36 @@ public class XxxAction extends Action {
 ### 7.3 注册新检测项
 
 在 `ProtectionManager.init()` 中添加: `register(new XxxDetection());`
+若有需要，在构造函数中调用其 `predefineDetectionCategory()` 等方法确定其默认启用状态。
 
 ---
 
 ## 8. 禁止事项汇总
 
+其余内容在全局规则中。补充内容：
+
 ### 绝对不该
 
-- ❌ 命名出现混乱，如使用 PascalCase 写静态常量
-- ❌ 引入第 1 节列出的黑名单第三方依赖
 - ❌ 硬编码用户可见文字，必须用 `Text.translatable()`
 - ❌ 改变已有的 Identifier 路径（除非被要求）
-- ❌ 版本控制相关：在不经过人工审查的情况下进行非只读操作（如提交、推送）
-- ❌ 其他：随便读取和修改项目根目录之外的文件
+
+**再次强调**： **无论是读还是写任何文件**，都务必 **显式指定 UTF-8 without BOM 编码**，否则出现严重的乱码问题！
 
 ### 应尽量避免
 
 - ⚠️ 在 Mixin 中修改 Minecraft 原生方法的行为逻辑 — 多数情况应仅注入钩子，除非避无可避
 - ⚠️ 在非工具类 public 方法返回 `null`  — 除非 `@Nullable` (在不引发明知不会导致问题的警告的前提下) 或在 Javadoc 中明确指出
-- ⚠️ 过度抽象 — 遵循 YAGNI
-- ⚠️ 长方法 — 拆分为有意义的私有方法
-- ⚠️ 重复代码 — 提取到基类或 `Utils`
-- ⚠️ 深层嵌套 — 用提前 return / 卫语句
-- ⚠️ Stream 中带副作用的操作 — `forEach` 仅在终端操作
 - ⚠️ 在完全不了解代码工作方式的情况下主观臆断地写代码 — 应勤翻阅项目和依赖的源码
 
 ---
 
 ## 9. 快速检查清单
 
-新增代码前自查:
+自查内容补充:
 
-- [ ] 类名 PascalCase、方法 camelCase、常量 UPPER_SNAKE_CASE ✓
-- [ ] 遵循两阶段 `init(ctx)` 初始化模式 ✓
 - [ ] Identifier 路径符合现有分类体系 ✓
 - [ ] 用户可见文字使用 `Text.translatable()` ✓
-- [ ] Logger 声明为 `private static final Logger LOGGER` ✓
-- [ ] 没有引入新依赖 ✓
 - [ ] 在 `ProtectionManager.init()` 中注册新检测项 ✓
-- [ ] 事件相关的代码是否检查了 effective enabled ✓
-- [ ] 异常使用合适的类型 (`IllegalStateException` / `IllegalArgumentException`) ✓
-- [ ] 新增类放在正确包下 ✓
 - [ ] FIXME/TODO 标注未完成功能 ✓
 
 ---
