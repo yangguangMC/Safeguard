@@ -12,8 +12,6 @@ import net.minecraft.entity.mob.SlimeEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-import top.yangguangmc.safeguard.ModContext;
 import top.yangguangmc.safeguard.protection.action.Action;
 import top.yangguangmc.safeguard.protection.action.OutlineAction;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
@@ -23,9 +21,6 @@ import java.util.Comparator;
 import java.util.List;
 
 public class AntiAmbushDetection extends Detection {
-    private static final Identifier ACTION_BAR_TITLE_ID = Identifier.of(ModContext.MOD_ID, "passive/hud/action_bar_title");
-    private static final Identifier OUTLINE_ID = Identifier.of(ModContext.MOD_ID, "passive/other/outline");
-
     public AntiAmbushDetection() {
         super("combat/anti_ambush", new ActionBarTitleAction(), new OutlineAction());
         listen(ClientPlayerTickEvents.GATED_START_TICK, this::onStartTick);
@@ -53,12 +48,11 @@ public class AntiAmbushDetection extends Detection {
                 .toList();
         @SuppressWarnings("DataFlowIssue") final int color = Formatting.GOLD.getColorValue();
         if (!entities.isEmpty()) {
-            tryExecuteAction(ACTION_BAR_TITLE_ID, action ->
-                    ((ActionBarTitleAction) action).updateTitle(client, world, entities.size(), entities.getFirst(), color));
+            tryExecuteAction(ActionBarTitleAction.class, action ->
+                    action.updateTitle(client, world, entities.size(), entities.getFirst(), color));
         }
         for (LivingEntity entity : entities) {
-            tryExecuteAction(OUTLINE_ID, action ->
-                    ((OutlineAction) action).outline(entity, 60, color));
+            tryExecuteAction(OutlineAction.class, action -> action.outline(entity, 60, color));
         }
     }
 

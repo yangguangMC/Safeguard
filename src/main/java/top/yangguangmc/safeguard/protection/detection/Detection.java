@@ -64,8 +64,12 @@ public abstract class Detection implements SwitchTreeItem {
 
     @SuppressWarnings("unchecked")
     protected <T extends Action> T getBoundAction(Identifier id) {
-        // 因为ID在单个检测项内唯一，所以无需考虑重复情况，findAny足矣
         return (T) boundActions.keySet().stream().filter(action -> action.getId().equals(id)).findAny().orElseThrow();
+    }
+
+    @SuppressWarnings("unchecked")
+    protected <T extends Action> T getBoundAction(Class<T> actionClass) {
+        return (T) boundActions.keySet().stream().filter(actionClass::isInstance).findAny().orElseThrow();
     }
 
     protected boolean isActionEffectivelyEnabled(Action action) {
@@ -81,6 +85,7 @@ public abstract class Detection implements SwitchTreeItem {
      * @param listener 监听器实例（通常为方法引用，如 {@code this::onStartTick}）
      * @param <T>      监听器类型
      */
+    @SuppressWarnings("SameParameterValue")
     protected <T> void listen(GatedEvent<T> event, T listener) {
         gatedEvents.add(event);
         event.listen(this, listener);
@@ -92,12 +97,12 @@ public abstract class Detection implements SwitchTreeItem {
      * 尝试执行一个保护动作。
      * 自动检查双重开关（树开关 + 绑定开关），仅当两者均通过时才执行。
      *
-     * @param actionId 动作的 Identifier
-     * @param executor 要执行的逻辑（接受 Action 实例作为参数）
-     * @param <T>      动作的具体类型
+     * @param actionClass 动作的类型
+     * @param executor    要执行的逻辑（接受 Action 实例作为参数）
+     * @param <T>         动作的具体类型
      */
-    protected <T extends Action> void tryExecuteAction(Identifier actionId, Consumer<T> executor) {
-        T action = getBoundAction(actionId);
+    protected <T extends Action> void tryExecuteAction(Class<T> actionClass, Consumer<T> executor) {
+        T action = getBoundAction(actionClass);
         if (isActionEffectivelyEnabled(action)) executor.accept(action);
     }
 

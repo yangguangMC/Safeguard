@@ -16,7 +16,6 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -36,11 +35,6 @@ import java.util.Comparator;
 import java.util.List;
 
 public class AntiFallDetection extends Detection {
-    private static final Identifier ACTION_BAR_TITLE_ID = Identifier.of(ModContext.MOD_ID, "passive/hud/action_bar_title");
-    private static final Identifier PAUSE_ID = Identifier.of(ModContext.MOD_ID, "active/afk/pause");
-    private static final Identifier QUIT_ID = Identifier.of(ModContext.MOD_ID, "active/afk/quit");
-    private static final Identifier MLG_ID = Identifier.of(ModContext.MOD_ID, "active/other/mlg");
-
     public AntiFallDetection() {
         super("environment/anti_fall", new ActionBarTitleAction(), new QuitAction(), new PauseAction(), new MLGAction());
         listen(ClientPlayerTickEvents.GATED_START_TICK, this::onStartTick);
@@ -57,20 +51,18 @@ public class AntiFallDetection extends Detection {
                 if (!client.options.useKey.isPressed() && (client.options.attackKey.isPressed() || (player.getPitch() > 0 && canDestroy))) {
                     List<SafeResult> result = checkSafety(8, pos, world, player);
                     result.removeIf(r -> r.unsafety() <= 0);
-                    if (!result.isEmpty()) {
-                        tryExecuteAction(ACTION_BAR_TITLE_ID, action ->
-                                ((ActionBarTitleAction) action).updateTitle(client, result));
-                    }
+                    if (!result.isEmpty())
+                        tryExecuteAction(ActionBarTitleAction.class, action -> action.updateTitle(client, result));
                 }
             }
         }
         // 已坠落保护
         if (!player.isOnGround() && player.fallDistance > 1.5 && checkSafety(5, player.getBlockPos(), world, player).stream().allMatch(result -> result.unsafety() > 0)) {
-            tryExecuteAction(PAUSE_ID, action -> ((PauseAction) action).pause(client, getName()));
-            tryExecuteAction(QUIT_ID, action -> ((QuitAction) action).quit(client, world, getName()));
+            tryExecuteAction(PauseAction.class, action -> action.pause(client, getName()));
+            tryExecuteAction(QuitAction.class, action -> action.quit(client, world, getName()));
         }
         // MLG
-        tryExecuteAction(MLG_ID, action -> ((MLGAction) action).tick(client, world, player));
+        tryExecuteAction(MLGAction.class, action -> action.tick(client, world, player));
     }
 
     private List<SafeResult> checkSafety(int checkHeight, BlockPos pos, ClientWorld world, ClientPlayerEntity player) {

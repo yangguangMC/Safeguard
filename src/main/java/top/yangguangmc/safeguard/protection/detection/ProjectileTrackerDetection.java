@@ -7,18 +7,14 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.jetbrains.annotations.Nullable;
-import top.yangguangmc.safeguard.ModContext;
 import top.yangguangmc.safeguard.protection.action.Action;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
 import top.yangguangmc.safeguard.util.Utils;
 
 public class ProjectileTrackerDetection extends Detection {
-    private static final Identifier ACTION_BAR_TITLE_ID = Identifier.of(ModContext.MOD_ID, "passive/hud/action_bar_title");
-
     public ProjectileTrackerDetection() {
         super("combat/projectile_tracker", new ActionBarTitleAction());
         listen(ClientPlayerTickEvents.GATED_START_TICK, this::onStartTick);
@@ -48,8 +44,8 @@ public class ProjectileTrackerDetection extends Detection {
         }
         if (projectile != null && relativeAngle < 10) {
             ProjectileEntity target = projectile;
-            tryExecuteAction(ACTION_BAR_TITLE_ID, action ->
-                    ((ActionBarTitleAction) action).updateTitle(client, world, target, target.getOwner()));
+            tryExecuteAction(ActionBarTitleAction.class, action ->
+                    action.updateTitle(client, world, target, target.getOwner()));
         }
     }
 
