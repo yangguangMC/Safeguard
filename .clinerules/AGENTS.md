@@ -293,7 +293,7 @@ public class XxxAction extends Action {
 
 ### 绝对不该
 
-- ❌ 硬编码用户可见文字，必须用 `Text.translatable()`
+- ❌ 硬编码用户可见文字，必须用 `Text.translatable()`（除非仅停留于测试阶段）
 - ❌ 改变已有的 Identifier 路径（除非被要求）
 
 **再次强调**： **无论是读还是写任何文件**，都务必 **显式指定 UTF-8 without BOM 编码**，否则出现严重的乱码问题！
