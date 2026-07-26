@@ -6,8 +6,6 @@ import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.ToolComponent;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -17,7 +15,6 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import org.slf4j.Logger;
@@ -29,10 +26,7 @@ import top.yangguangmc.safeguard.protection.action.QuitAction;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
 import top.yangguangmc.safeguard.util.Utils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 public class AntiFallDetection extends Detection {
     public AntiFallDetection() {
@@ -42,19 +36,11 @@ public class AntiFallDetection extends Detection {
 
     private void onStartTick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
         // 防挖掘坠落
-        if (client.crosshairTarget != null && client.crosshairTarget.getType() == HitResult.Type.BLOCK) {
-            BlockPos pos = ((BlockHitResult) client.crosshairTarget).getBlockPos();
-            if (pos.equals(player.supportingBlockPos.orElse(null))) {
-                ItemStack item = player.getActiveOrMainHandStack();
-                ToolComponent toolComponent = item.get(DataComponentTypes.TOOL);
-                boolean canDestroy = toolComponent != null && toolComponent.isCorrectForDrops(world.getBlockState(pos));
-                if (!client.options.useKey.isPressed() && (client.options.attackKey.isPressed() || (player.getPitch() > 0 && canDestroy))) {
-                    List<SafeResult> result = checkSafety(8, pos, world, player);
-                    result.removeIf(r -> r.unsafety() <= 0);
-                    if (!result.isEmpty())
-                        tryExecuteAction(ActionBarTitleAction.class, action -> action.updateTitle(client, result));
-                }
-            }
+        if (player.getPitch() > 0 && Utils.hasDestroyIntention(client, world, player, pos -> pos.equals(player.supportingBlockPos.orElse(null)))) {
+            List<SafeResult> result = checkSafety(8, ((BlockHitResult) Objects.requireNonNull(client.crosshairTarget)).getBlockPos(), world, player);
+            result.removeIf(r -> r.unsafety() <= 0);
+            if (!result.isEmpty())
+                tryExecuteAction(ActionBarTitleAction.class, action -> action.updateTitle(client, result));
         }
         // 已坠落保护
         if (!player.isOnGround() && player.fallDistance > 1.5 && checkSafety(5, player.getBlockPos(), world, player).stream().allMatch(result -> result.unsafety() > 0)) {
