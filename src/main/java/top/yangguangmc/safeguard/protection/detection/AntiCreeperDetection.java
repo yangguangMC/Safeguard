@@ -58,8 +58,8 @@ public class AntiCreeperDetection extends Detection {
                 action.setPlaying(fuseTime > 0);
             });
             if (d2 <= 2 / 3.0 * distance) {
-                tryExecuteAction(QuitAction.class, action -> action.quit(client, world, getName()));
-                tryExecuteAction(PauseAction.class, action -> action.pause(client, getName()));
+                tryExecuteAction(QuitAction.class, action -> action.quit(client));
+                tryExecuteAction(PauseAction.class, action -> action.pause(client));
             }
         }
     }

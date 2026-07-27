@@ -44,8 +44,8 @@ public class AntiFallDetection extends Detection {
         }
         // 已坠落保护
         if (!player.isOnGround() && player.fallDistance > 1.5 && checkSafety(5, player.getBlockPos(), world, player).stream().allMatch(result -> result.unsafety() > 0)) {
-            tryExecuteAction(PauseAction.class, action -> action.pause(client, getName()));
-            tryExecuteAction(QuitAction.class, action -> action.quit(client, world, getName()));
+            tryExecuteAction(PauseAction.class, action -> action.pause(client));
+            tryExecuteAction(QuitAction.class, action -> action.quit(client));
         }
         // MLG
         tryExecuteAction(MLGAction.class, action -> action.tick(client, world, player));

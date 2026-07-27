@@ -11,7 +11,7 @@
 ## 1. 项目概述
 
 **SafeGuard** 是一个面向 Minecraft 1.21.11 的 **Fabric 客户端模组**，专注于原版生存及其衍生场景。核心使命是：
-**通过主动接管或被动提醒的方式，保护玩家免受游戏内各种危险情境的伤害**——包括但不限于摔落、岩浆、窒息、怪物偷袭、玩家偷袭（PVP）等。
+**通过主动接管或被动提醒的方式，保护玩家免受游戏内各种危险情境的伤害**——包括但不限于摔落、岩浆、窒息、怪物偷袭、玩家偷袭（PVP）、受到伤害等。
 
 所有检测与保护动作均在 **客户端本地完成**，不依赖服务端支持。不做玩法层面的改动，不引入新物品/新机制/新维度。
 
@@ -58,7 +58,8 @@ Safe Guard/
 │   │   │   ├── ClientPlayerEntityMixin.java   # 注入 tick()
 │   │   │   ├── EntityRendererMixin.java       # 注入渲染状态
 │   │   │   ├── GameRendererMixin.java         # 注入 close() 事件
-│   │   │   └── KeyBindingAccessor.java        # Accessor Mixin
+│   │   │   ├── KeyBindingAccessor.java        # Accessor Mixin
+│   │   │   └── LivingEntityMixin.java         # 注入 onDamaged()
 │   │   ├── protection/
 │   │   │   ├── ProtectionManager.java     # 保护功能总管理器
 │   │   │   ├── CategoryDefinition.java    # 分类默认状态定义
@@ -71,6 +72,7 @@ Safe Guard/
 │   │   │   │   ├── AntiAmbushDetection.java    # 防偷袭
 │   │   │   │   ├── ProjectileTrackerDetection.java # 弹射物追踪
 │   │   │   │   ├── AntiSuffocationDetection.java   # 防窒息
+│   │   │   │   ├── DamageDetection.java           # 伤害检测
 │   │   │   │   └── LavaDetection.java             # 岩浆检测
 │   │   │   ├── action/
 │   │   │   │   ├── Action.java             # 保护动作基类
@@ -81,6 +83,7 @@ Safe Guard/
 │   │   │   │   └── PlaySoundAction.java    # 播放音效
 │   │   │   └── event/
 │   │   │       ├── ClientPlayerTickEvents.java  # Tick事件
+│   │   │       ├── EntityDamagedEvents.java     # 实体受伤事件
 │   │   │       ├── GameRendererCloseEvent.java  # GameRenderer 关闭事件
 │   │   │       └── GatedEvent.java              # 门控事件包装器
 │   │   └── util/
@@ -127,12 +130,13 @@ Safe Guard/
 | `EntityRendererMixin.java`     | 在 `updateRenderState()` 设置 `outlineColor` 后注入，用 `OutlineAction` 覆盖轮廓颜色，实现高亮。                      | `updateRenderState()` outlineColor 后 |
 | `GameRendererMixin.java`       | 在 `close()` 方法 RETURN 处注入回调，触发 `GameRendererCloseEvent`——供 `FilledThroughWallsRenderer` 等清理 GPU 资源。 | `GameRenderer.close()` RETURN         |
 | `KeyBindingAccessor.java`      | **Accessor Mixin**，暴露 `KeyBinding.boundKey` 私有字段，供 `Utils.simulatePress()` 用。                              | `KeyBinding.boundKey`                 |
+| `LivingEntityMixin.java`       | 在 `onDamaged()` 头部注入回调，触发 `EntityDamagedEvents.PRE` 事件——供 `DamageDetection` 等检测伤害。                 | `LivingEntity.onDamaged()` HEAD       |
 
 ### 3.4 保护系统核心
 
 | 文件                          | 职责                                                                                                                                                                                                                                                                                                                       |
 |-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ProtectionManager.java`      | **总管理器**。持有 `protections`(Map<Detection,Collection<Action>>)、`detectionRoot`/`actionRoot` 两棵 SwitchTreeNode 树。构造函数中预定义 `active/afk` 分类为默认关闭。提供 `predefineActionCategory()`/`predefineDetectionCategory()` API 供第三方扩展。`init()` 注册全部 6 个检测项，注册时调用 `detection.init(ctx)`。 |
+| `ProtectionManager.java`      | **总管理器**。持有 `protections`(Map<Detection,Collection<Action>>)、`detectionRoot`/`actionRoot` 两棵 SwitchTreeNode 树。构造函数中预定义 `active/afk` 分类为默认关闭。提供 `predefineActionCategory()`/`predefineDetectionCategory()` API 供第三方扩展。`init()` 注册全部 7 个检测项，注册时调用 `detection.init(ctx)`。 |
 | `CategoryDefinition.java`     | **分类默认状态定义** (record)。声明树中枝干节点的默认启用状态（Identifier + defaultEnabled）。供 `ProtectionManager.predefineXxxCategory()` 使用，第三方扩展通过创建此类实例声明自定义分类。                                                                                                                               |
 | `SwitchTreeItem.java`         | **树节点接口**。定义 `getId()` 和 `isEnabledByDefault()`。Detection 和 Action 都实现此接口。`isEnabledByDefault()` 现仅作为约定保留，默认状态由树的 `defaultEnabled` 管理。                                                                                                                                                |
 | `SwitchTreeNode.java`         | **树状开关容器**。Identifier ID(/分隔层级)、enabled 状态、defaultEnabled 默认状态、父子引用。`isEffectivelyEnabled()`(级联检查)、`addOrGetNode()`(动态添加)、`predefineCategory()`(预定义分类默认值)、`setEnabled()` 触发 `notifyLeafDescendants()` 通知所有叶节点。根节点持有 nodeMap 实现 O(1) 查找。                    |
@@ -144,7 +148,7 @@ Safe Guard/
 所有检测项继承 `Detection`，构造时声明绑定的 Action 列表，并通过 `listen()` 声明事件监听。 基类通过 `GatedEvent` 自动管理
 suspend/resume，子类无需手动检查启用状态。触发动作使用 `tryExecuteAction()` 自动双重开关检查。
 与保护动作不同，检测项是"事实单例"的，可以被使用一个
-`Identifier` 从 `ProtectionManager` 那里获取到唯一的实例， 一个保护项有且仅有一个 ID 与之一一对应。 由于种种原因，检测项和保护动作不带有
+`Identifier` 从 `ProtectionManager` 那里获取到唯一的实例， 一个检测项有且仅有一个 ID 与之一一对应。 由于种种原因，检测项和保护动作不带有
 `enabled` 字段。原因见下方 5.4 节。
 
 | 文件                              | ID                             | 职责                                                                                                                                                                                                                                                                     | 绑定的 Action                                                  |
@@ -155,6 +159,7 @@ suspend/resume，子类无需手动检查启用状态。触发动作使用 `tryE
 | `AntiAmbushDetection.java`        | `combat/anti_ambush`           | **防偷袭**。每5帧检查16格内敌对生物/隐身玩家，ActionBar显示数量+名称+方向，OutlineAction 高亮不可见实体。                                                                                                                                                                | ActionBarTitleAction, OutlineAction                            |
 | `ProjectileTrackerDetection.java` | `combat/projectile_tracker`    | **弹射物追踪**。检测飞向玩家的弹射物(箭/火球等)，角度偏差<10°时 ActionBar 警告+发射者信息。                                                                                                                                                                              | ActionBarTitleAction                                           |
 | `AntiSuffocationDetection.java`   | `environment/anti_suffocation` | **防窒息**。三个子功能：(1)窒息检测(玩家 isInsideWall 时显示窒息方块名称)；(2)上方坠落方块检测(检查头顶方块是否可坠落)；(3)挖掘判断(通过 `Utils.hasDestroyIntention()` 检测挖掘头顶方块的意图)。                                                                         | ActionBarTitleAction                                           |
+| `DamageDetection.java`            | `status/damage`                | **伤害检测**。监听 `EntityDamagedEvents.GATED_PRE`，当玩家受到伤害时自动暂停/退出游戏。                                                                                                                                                                                  | PauseAction, QuitAction                                        |
 | `LavaDetection.java`              | `environment/lava`             | **岩浆检测**。每5帧检查一次，当玩家有挖掘意图时，以玩家为中心扫描岩浆方块（主世界5×5×5，下界通过 `EnvironmentAttributes.FAST_LAVA_GAMEPLAY` 判定后扩展为9×9×9）。ActionBar 显示最近岩浆的距离与方向，BlockOutlineAction 高亮所有发现的岩浆方块。禁用时自动清除方块高亮。 | ActionBarTitleAction, BlockOutlineAction                       |
 
 ### 3.6 保护动作 (Action)
@@ -163,14 +168,14 @@ suspend/resume，子类无需手动检查启用状态。触发动作使用 `tryE
 与检测项不同，保护动作 **不是**"事实单例"的，一个 `Identifier` 可能对应不止一个保护动作对象，多个保护动作实例可以对应同一个
 ID，并因此具有共享的配置和开关状态。但对于保护动作的 ID **对于单个检测项来说** 是唯一的、一一对应的。
 
-| 文件                      | ID                            | 职责                                                                                                                                                               | 默认启用 |
-|---------------------------|-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
-| `Action.java`             | —                             | 抽象基类。ID、`parent`(所属Detection)、`modContext`。`getStateNode()`获取树中开关节点。                                                                            | —        |
-| `PauseAction.java`        | `active/afk/pause`            | **自动暂停**。仅单人游戏可用；多人游戏Toast提示+自关闭。打开 GameMenuScreen，播放音效，执行后 `setEnabled(false)`。                                                | **否**   |
-| `QuitAction.java`         | `active/afk/quit`             | **自动退出**。disconnect()断开连接，播放音效，Toast提示，执行后 `setEnabled(false)`。                                                                              | **否**   |
-| `OutlineAction.java`      | `passive/other/outline`       | **实体轮廓高亮**。静态 ConcurrentHashMap 维护 UUID→剩余tick/颜色。世界tick递减，归零移除。EntityRendererMixin 渲染时读取覆盖 outlineColor。                        | 是       |
-| `BlockOutlineAction.java` | `passive/other/block_outline` | **方块轮廓高亮**。通过 `FilledThroughWallsRenderer` 的标签隔离机制渲染立方体。以所属检测项 ID 为 tag 调用 `addBox()`，添加前自动 `clearByTag()` 确保不残留旧数据。 | 是       |
-| `PlaySoundAction.java`    | `passive/other/play_sound`    | **间隔播放音效**。支持设置音效/音高/间隔(tick)。`setPlaying()` 控制状态，`tick()` 检查计时。                                                                       | 是       |
+| 文件                      | ID                            | 职责                                                                                                                                                                  | 默认启用 |
+|---------------------------|-------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
+| `Action.java`             | —                             | 抽象基类。ID、`parent`(所属Detection)、`modContext`。`getStateNode()`获取树中开关节点。`createSoundInstance()` 工厂方法供子类使用。                                   | —        |
+| `PauseAction.java`        | `active/afk/pause`            | **自动暂停**。`pause(MinecraftClient client)` 接收 client 参数。仅单人游戏可用；多人游戏Toast提示+自关闭。打开 GameMenuScreen，播放音效，执行后 `setEnabled(false)`。 | **否**   |
+| `QuitAction.java`         | `active/afk/quit`             | **自动退出**。`quit(MinecraftClient client)` 接收 client 参数。disconnect()断开连接，播放音效，Toast提示，执行后 `setEnabled(false)`。                                | **否**   |
+| `OutlineAction.java`      | `passive/other/outline`       | **实体轮廓高亮**。静态 ConcurrentHashMap 维护 UUID→剩余tick/颜色。世界tick递减，归零移除。EntityRendererMixin 渲染时读取覆盖 outlineColor。                           | 是       |
+| `BlockOutlineAction.java` | `passive/other/block_outline` | **方块轮廓高亮**。通过 `FilledThroughWallsRenderer` 的标签隔离机制渲染立方体。以所属检测项 ID 为 tag 调用 `addBox()`，添加前自动 `clearByTag()` 确保不残留旧数据。    | 是       |
+| `PlaySoundAction.java`    | `passive/other/play_sound`    | **间隔播放音效**。支持设置音效/音高/间隔(tick)。`setPlaying()` 控制状态，`tick()` 检查计时。                                                                          | 是       |
 
 > **注**: `ActionBarTitleAction` 是各 Detection 的内部类 (ID统一为 `passive/hud/action_bar_title`)，通过
 > `client.inGameHud.setOverlayMessage()` 在 ActionBar 显示警告信息。`MLGAction` 是 `AntiFallDetection` 的内部类 (ID为
@@ -245,7 +250,8 @@ Minecraft 加载模组 → SafeGuard.onInitializeClient()
   │   ├─ register(ProjectileTrackerDetection) → 添加节点
   │   ├─ register(AntiAmbushDetection)        → 添加节点
   │   ├─ register(AntiSuffocationDetection)   → 添加节点
-  │   └─ register(LavaDetection)              → 添加节点
+  │   ├─ register(LavaDetection)              → 添加节点
+  │   └─ register(DamageDetection)            → 添加节点
   ├─ configManager.tryLoad() → 从 JSON 加载配置
   ├─ ClientLifecycleEvents.CLIENT_STOPPING → configManager.trySave()
   ├─ ConfigScreen.init(ctx) → 静态持有 ctx
@@ -253,10 +259,12 @@ Minecraft 加载模组 → SafeGuard.onInitializeClient()
   └─ filledThroughWallsRenderer.init() → 注册 WorldRenderEvents + GameRendererCloseEvent
 ```
 
-### 5.2 运行时检测 (每帧)
+### 5.2 运行时检测
 
-检测项通过 `listen(GATED_START_TICK, this::onStartTick)` 声明事件监听。基类使用 `GatedEvent` 自动门控 ——
-当检测项被禁用时，其监听器自动挂起，不再接收事件，handler 中无需任何 `if (isEnabled())` 检查。
+检测项通过 `listen()` 声明事件监听。基类使用 `GatedEvent` 自动门控 —— 当检测项被禁用时，其监听器自动挂起，不再接收事件，handler
+中无需任何 `if (isEnabled())` 检查。
+
+#### 5.2.1 每帧 Tick 检测
 
 ```
 ClientPlayerEntity.tick() [Minecraft原生]
@@ -267,11 +275,11 @@ ClientPlayerEntity.tick() [Minecraft原生]
             ├─ AntiCreeperDetection: 遍历 CreeperEntity
             │   ├─ 距离≤8格 → ActionBar警告(距离+倒计时)
             │   ├─ 引信激活 → PlaySoundAction
-            │   └─ 距离≤2/3×8格 → PauseAction / QuitAction
+            │   └─ 距离≤2/3×8格 → QuitAction.quit(client) / PauseAction.pause(client)
             │
             ├─ AntiFallDetection:
             │   ├─ 防挖掘坠落: 准星对脚下方块+挖掘? → checkSafety(8格) → ActionBar
-            │   ├─ 已坠落保护: fallDistance>1.5+下方不安全 → Pause/Quit
+            │   ├─ 已坠落保护: fallDistance>1.5+下方不安全 → PauseAction.pause(client) / QuitAction.quit(client)
             │   └─ MLG自动落地水: 模拟轨迹→自动放水/黏液块
             │
             ├─ ProjectileTrackerDetection: 弹射物速度指向玩家(角度<10°)? → ActionBar
@@ -288,7 +296,23 @@ ClientPlayerEntity.tick() [Minecraft原生]
                 │   ├─ 有岩浆 → ActionBar(最近距离+方向) + BlockOutlineAction(高亮)
                 │   └─ 无岩浆 → clearByTag(id) 清除高亮
                 └─ 无意图 → clearByTag(id) 清除高亮
+```
 
+#### 5.2.2 实体伤害检测
+
+```
+LivingEntity.onDamaged() [Minecraft原生]
+  │
+  └─ Mixin: LivingEntityMixin [HEAD注入]
+       └─ EntityDamagedEvents.PRE.fire(victim, source)
+            │
+            └─ DamageDetection: 受害者是玩家?
+                └─ 是 → PauseAction.pause(client) + QuitAction.quit(client)
+```
+
+#### 5.2.3 渲染相关
+
+```
 EntityRenderer.updateRenderState() [Minecraft原生]
   └─ Mixin: EntityRendererMixin [outlineColor设置后]
        └─ OutlineAction.getOutline(entityUUID)!=0 → 覆盖 outlineColor → 高亮
@@ -338,10 +362,12 @@ Root (null)
 │   ├── safeguard:combat/anti_creeper             [叶]
 │   ├── safeguard:combat/projectile_tracker       [叶]
 │   └── safeguard:combat/anti_ambush              [叶]
-└── safeguard:environment                 [枝干节点]
-    ├── safeguard:environment/anti_fall           [叶]
-    ├── safeguard:environment/anti_suffocation    [叶]
-    └── safeguard:environment/lava               [叶]
+├── safeguard:environment                 [枝干节点]
+│   ├── safeguard:environment/anti_fall           [叶]
+│   ├── safeguard:environment/anti_suffocation    [叶]
+│   └── safeguard:environment/lava               [叶]
+└── safeguard:status                      [枝干节点]
+    └── safeguard:status/damage                    [叶]
 ```
 
 保护动作树（使用 `ProtectionManager#getActionStatesRoot` 获取）：
@@ -381,9 +407,10 @@ Root (null)
 ### 命名约定
 
 - **Identifier 路径**: `namespace:category/subcategory/leaf`，`/` 表示层级
-    - 检测项: `safeguard:combat/anti_creeper`、`safeguard:environment/lava`
+    - 检测项: `safeguard:combat/anti_creeper`、`safeguard:environment/lava`、`safeguard:status/damage`
     - 动作: `safeguard:active/afk/pause`、`safeguard:passive/other/block_outline`
-    - 分类: `combat`(战斗)、`environment`(环境)、`active/afk`(主动)、`passive/hud`(HUD)、`passive/other`(其他)
+    - 分类: `combat`(战斗)、`environment`(环境)、`status`(状态)、`active/afk`(主动)、`passive/hud`(HUD)、`passive/other`
+      (其他)
 - **翻译键**: `detection.<ns>.<path>`、`action.<ns>.<path>` (`/`→`.`)
 - **默认启用**: 由树节点的 `defaultEnabled` 决定，分类级别可通过 `CategoryDefinition` 控制（如 `active/afk` 默认 false）
 
@@ -416,7 +443,8 @@ Root (null)
 1. **导入**: IntelliJ IDEA 打开 `build.gradle`，等待 Gradle 同步
 2. **运行**: 使用 `Minecraft_Client` run configuration
 3. **添加检测项**: 在 `protection/detection/` 下建类继承 `Detection`，构造器中 `super(path, actions...)` +
-   `listen(GATED_START_TICK, this::onHandler)`，触发动作使用 `tryExecuteAction(id, consumer)`。无需手动检查启用状态或重写
+   `listen(GATED_START_TICK, this::onHandler)`（或监听其他门控事件），触发动作使用
+   `tryExecuteAction(actionClass, consumer)`。无需手动检查启用状态或重写
    `init()`。最后在 `ProtectionManager.init()` 调用 `register()`
 4. **添加动作**: 在 `protection/action/` 下（或检测项的内部）建类继承 `Action`，实现具体逻辑。如果是方块高亮类动作，使用
    `modContext.filledThroughWallsRenderer().addBox(tag, ...)` 并按需在扫描前 `clearByTag(tag)`

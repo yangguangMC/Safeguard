@@ -1,6 +1,5 @@
 package top.yangguangmc.safeguard.protection.detection;
 
-import net.minecraft.text.MutableText;
 import net.minecraft.util.Identifier;
 import top.yangguangmc.safeguard.ModContext;
 import top.yangguangmc.safeguard.protection.SwitchTreeItem;
@@ -52,10 +51,6 @@ public abstract class Detection implements SwitchTreeItem {
 
     public void setBindingEnabled(Identifier actionId, boolean enabled) {
         boundActions.put(getBoundAction(actionId), enabled);
-    }
-
-    protected MutableText getName() {
-        return modContext.protectionManager().getDetectionName(getId()).copy();
     }
 
     protected SwitchTreeNode getStateNode() {

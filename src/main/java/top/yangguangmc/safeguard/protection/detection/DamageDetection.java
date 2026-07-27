@@ -17,7 +17,7 @@ public class DamageDetection extends Detection {
     private void onEntityDamaged(LivingEntity entity, DamageSource source) {
         if (!(entity instanceof ClientPlayerEntity)) return;
         MinecraftClient client = MinecraftClient.getInstance();
-        tryExecuteAction(PauseAction.class, action -> action.pause(client, getName()));
-        tryExecuteAction(QuitAction.class, action -> action.quit(client, client.world, getName()));
+        tryExecuteAction(PauseAction.class, action -> action.pause(client));
+        tryExecuteAction(QuitAction.class, action -> action.quit(client));
     }
 }
