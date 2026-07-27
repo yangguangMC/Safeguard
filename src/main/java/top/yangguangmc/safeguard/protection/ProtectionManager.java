@@ -33,6 +33,7 @@ public class ProtectionManager {
         register(new ProjectileTrackerDetection());
         register(new AntiAmbushDetection());
         register(new AntiSuffocationDetection());
+        register(new LavaDetection());
         LOGGER.info("Protections initialized with {} detections and {} actions.", protections.size(), protections.values().stream().mapToLong(Collection::size).sum());
     }
 

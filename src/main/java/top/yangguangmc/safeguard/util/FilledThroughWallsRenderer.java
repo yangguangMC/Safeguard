@@ -28,7 +28,12 @@ import org.lwjgl.system.MemoryUtil;
 import top.yangguangmc.safeguard.ModContext;
 import top.yangguangmc.safeguard.protection.event.GameRendererCloseEvent;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class FilledThroughWallsRenderer {
     public static final RenderPipeline FILLED_THROUGH_WALLS = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.POSITION_COLOR_SNIPPET)
@@ -38,22 +43,33 @@ public class FilledThroughWallsRenderer {
     );
     private static final BufferAllocator ALLOCATOR = new BufferAllocator(RenderLayer.field_64009);   // RenderType.SMALL_BUFFER_SIZE
     private BufferBuilder buffer;
-    private final List<BoxRenderState> states = new ArrayList<>();
+    private final Map<String, List<BoxRenderState>> taggedStates = new ConcurrentHashMap<>();
 
     public void init() {
         WorldRenderEvents.BEFORE_TRANSLUCENT.register(this::extractAndDraw);
         GameRendererCloseEvent.CALLBACK.register(this::close);
     }
 
-    public void addBox(int x, int y, int z, int argb) {
-        addBox(x, y, z, x + 1, y + 1, z + 1, argb);
+    public void addBox(String tag, int x, int y, int z, int argb) {
+        addBox(tag, x, y, z, x + 1, y + 1, z + 1, argb);
     }
 
-    public void addBox(float minX, float minY, float mixZ, float maxX, float maxY, float maxZ, int argb) {
-        states.add(new BoxRenderState(minX, minY, mixZ, maxX, maxY, maxZ, argb));
+    public void addBox(String tag, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int argb) {
+        taggedStates.computeIfAbsent(tag, k -> new CopyOnWriteArrayList<>())
+                .add(new BoxRenderState(minX, minY, minZ, maxX, maxY, maxZ, argb));
+    }
+
+    /**
+     * 清除指定标签下的所有方块。
+     *
+     * @param tag 标签（通常为检测项或动作的 Identifier 路径）
+     */
+    public void clearByTag(String tag) {
+        taggedStates.remove(tag);
     }
 
     private void extractAndDraw(WorldRenderContext context) {
+        if (taggedStates.isEmpty() || taggedStates.values().stream().allMatch(List::isEmpty)) return;
         // 提取
         renderBox(context);
         // 绘制
@@ -73,17 +89,17 @@ public class FilledThroughWallsRenderer {
             buffer = new BufferBuilder(ALLOCATOR, FILLED_THROUGH_WALLS.getVertexFormatMode(), FILLED_THROUGH_WALLS.getVertexFormat());
         }
 
-        for (Iterator<BoxRenderState> iterator = states.iterator(); iterator.hasNext(); ) {
-            BoxRenderState state = iterator.next();
-            renderFilledBox(matrices.peek().getPositionMatrix(),
-                    buffer,
-                    state.minX(), state.minY(), state.mixZ(),
-                    state.maxX(), state.maxY(), state.maxZ(),
-                    ((state.argb() >>> 16) & 0xFF) / 255F,
-                    ((state.argb() >>> 8) & 0xFF) / 255F,
-                    (state.argb() & 0xFF) / 255F,
-                    ((state.argb() >>> 24) & 0xFF) / 255F);
-            iterator.remove();
+        for (List<BoxRenderState> list : taggedStates.values()) {
+            for (BoxRenderState state : list) {
+                renderFilledBox(matrices.peek().getPositionMatrix(),
+                        buffer,
+                        state.minX(), state.minY(), state.minZ(),
+                        state.maxX(), state.maxY(), state.maxZ(),
+                        ((state.argb() >>> 16) & 0xFF) / 255F,
+                        ((state.argb() >>> 8) & 0xFF) / 255F,
+                        (state.argb() & 0xFF) / 255F,
+                        ((state.argb() >>> 24) & 0xFF) / 255F);
+            }
         }
 
         matrices.pop();
@@ -225,6 +241,6 @@ public class FilledThroughWallsRenderer {
         }
     }
 
-    public record BoxRenderState(float minX, float minY, float mixZ, float maxX, float maxY, float maxZ, int argb) {
+    public record BoxRenderState(float minX, float minY, float minZ, float maxX, float maxY, float maxZ, int argb) {
     }
 }
