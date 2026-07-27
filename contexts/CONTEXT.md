@@ -1,6 +1,6 @@
 # SafeGuard 项目上下文文档
 
-> **最后编辑于**: 2026-07-24
+> **最后编辑于**: 2026-07-27
 > **目标读者**: 不了解此项目的开发者 / AI 助手
 > **目的**: 快速了解项目结构、模块职责、依赖关系和数据流转
 
@@ -53,11 +53,11 @@ Safe Guard/
 │   │   ├── SafeGuardCommand.java         # 客户端命令
 │   │   ├── SafeGuardModMenuApiImpl.java  # ModMenu API 实现
 │   │   ├── gui/screen/
-│   │   │   ├── SafeGuardScreen.java      # 抽象基础 Screen
 │   │   │   └── ConfigScreen.java         # YACL 配置界面
 │   │   ├── injection/mixin/
 │   │   │   ├── ClientPlayerEntityMixin.java   # 注入 tick()
 │   │   │   ├── EntityRendererMixin.java       # 注入渲染状态
+│   │   │   ├── GameRendererMixin.java         # 注入 close() 事件
 │   │   │   └── KeyBindingAccessor.java        # Accessor Mixin
 │   │   ├── protection/
 │   │   │   ├── ProtectionManager.java     # 保护功能总管理器
@@ -69,7 +69,8 @@ Safe Guard/
 │   │   │   │   ├── AntiCreeperDetection.java   # 防苦力怕
 │   │   │   │   ├── AntiFallDetection.java      # 防摔落+MLG
 │   │   │   │   ├── AntiAmbushDetection.java    # 防偷袭
-│   │   │   │   └── ProjectileTrackerDetection.java # 弹射物追踪
+│   │   │   │   ├── ProjectileTrackerDetection.java # 弹射物追踪
+│   │   │   │   └── AntiSuffocationDetection.java   # 防窒息
 │   │   │   ├── action/
 │   │   │   │   ├── Action.java             # 保护动作基类
 │   │   │   │   ├── PauseAction.java        # 自动暂停
@@ -77,9 +78,11 @@ Safe Guard/
 │   │   │   │   ├── OutlineAction.java      # 轮廓高亮
 │   │   │   │   └── PlaySoundAction.java    # 播放音效
 │   │   │   └── event/
-│   │   │       ├── ClientPlayerTickEvents.java # Tick事件
-│   │   │       └── GatedEvent.java             # 门控事件包装器
+│   │   │       ├── ClientPlayerTickEvents.java  # Tick事件
+│   │   │       ├── GameRendererCloseEvent.java  # GameRenderer 关闭事件
+│   │   │       └── GatedEvent.java              # 门控事件包装器
 │   │   └── util/
+│   │       ├── FilledThroughWallsRenderer.java  # 方块填充渲染器
 │   │       └── Utils.java                  # 工具类
 │   └── resources/
 │       ├── fabric.mod.json                # 模组元数据
@@ -90,7 +93,8 @@ Safe Guard/
 ├── backup/         # 备份文件
 └── contexts/       # 对项目的描述、约定等，以及项目常见依赖的反编译、反混淆后的源码
     ├── AGENTS.md       # AI 助手必读的开发规范等
-    └── CONTEXT.md      # 用于快速了解项目结构的介绍文档
+    ├── CONTEXT.md      # 用于快速了解项目结构的介绍文档
+    └── ROADMAP.md      # 项目路线图与发展规划
 ```
 
 ---
@@ -99,54 +103,56 @@ Safe Guard/
 
 ### 3.1 入口 & 生命周期
 
-| 文件                           | 职责                                                                                                                                       | 关键依赖                                           |
-|--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------|
-| `SafeGuard.java`               | **模组主入口**，实现 `ClientModInitializer`。创建 `ProtectionManager` 和 `ConfigManager`，组装 `ModContext`，注册命令和配置界面。          | `ProtectionManager`, `ConfigManager`, `ModContext` |
-| `ModContext.java`              | **全局上下文记录 (record)**，持有 `SafeGuard` 实例、`ProtectionManager`、`ConfigManager` 引用。定义常量 `MOD_ID`=`safeguard`、Toast 类型。 | 被几乎所有模块引用                                 |
-| `ConfigManager.java`           | **配置管理器**。负责将检测项/动作的树状开关状态及绑定关系保存为 JSON。`save()` 有已知 Bug (FIXME)，`load()` 未实现。                       | `ProtectionManager`, `SwitchTreeNode`, YACL        |
-| `SafeGuardModMenuApiImpl.java` | **Mod Menu 集成**。实现 `ModMenuApi`，提供配置界面工厂方法 → `ConfigScreen::create`。                                                      | `ConfigScreen`, ModMenu API                        |
+| 文件                           | 职责                                                                                                                                                                                             | 关键依赖                                                                         |
+|--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| `SafeGuard.java`               | **模组主入口**，实现 `ClientModInitializer`。创建 `ProtectionManager`、`ConfigManager`、`FilledThroughWallsRenderer`，组装 `ModContext`，注册命令和配置界面，处理配置加载/保存生命周期。         | `ProtectionManager`, `ConfigManager`, `ModContext`, `FilledThroughWallsRenderer` |
+| `ModContext.java`              | **全局上下文记录 (record)**，持有 `SafeGuard` 实例、`ProtectionManager`、`ConfigManager`、`FilledThroughWallsRenderer` 引用。定义常量 `MOD_NAME`=`SafeGuard`、`MOD_ID`=`safeguard`、Toast 类型。 | 被几乎所有模块引用                                                               |
+| `ConfigManager.java`           | **配置管理器**。负责将检测项/动作的树状开关状态及绑定关系保存为 JSON 并加载。`trySave()` 支持备份恢复：写入失败时先备份原文件再重试。                                                            | `ProtectionManager`, `SwitchTreeNode`, YACL, Gson                                |
+| `SafeGuardModMenuApiImpl.java` | **Mod Menu 集成**。实现 `ModMenuApi`，提供配置界面工厂方法 → `ConfigScreen::create`。                                                                                                            | `ConfigScreen`, ModMenu API                                                      |
 
 ### 3.2 命令系统 & GUI
 
-| 文件                    | 职责                                                                                                                                                         | 关键依赖                                                  |
-|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------|
-| `SafeGuardCommand.java` | **客户端命令** `/safeguard`。子命令: `screen`(打开配置)、`detection <id> [state]`(查看/设置检测项)、`action <id> [state]`(查看/设置动作)。提供 ID 自动补全。 | `ModContext`, `ProtectionManager`, Brigadier              |
-| `SafeGuardScreen.java`  | **抽象基础 Screen**。title 居中显示、关闭返回 parent screen。                                                                                                | Minecraft Screen API                                      |
-| `ConfigScreen.java`     | **YACL 配置界面**。三个配置分类：检测项开关(从 detectionRoot 树)、动作开关(从 actionRoot 树)、链接配置(检测项↔动作绑定)。                                    | `ModContext`, `ProtectionManager`, `SwitchTreeNode`, YACL |
+| 文件                    | 职责                                                                                                                                                                                        | 关键依赖                                                  |
+|-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------|
+| `SafeGuardCommand.java` | **客户端命令** `/safeguard`。子命令: `screen`(打开配置)、`detection <id> [state]`(查看/设置检测项)、`action <id> [state]`(查看/设置动作)。提供 ID 自动补全。注册采用静态 `init(ctx)` 模式。 | `ModContext`, `ProtectionManager`, Brigadier              |
+| `ConfigScreen.java`     | **YACL 配置界面**。三个配置分类：检测项开关(从 detectionRoot 树)、动作开关(从 actionRoot 树)、链接配置(检测项↔动作绑定)。静态 `init(ctx)` 持有上下文。                                      | `ModContext`, `ProtectionManager`, `SwitchTreeNode`, YACL |
 
 ### 3.3 Mixin 注入层
 
-| 文件                           | 职责                                                                                             | 注入目标                              |
-|--------------------------------|--------------------------------------------------------------------------------------------------|---------------------------------------|
-| `ClientPlayerEntityMixin.java` | 在 `tick()` 头部注入回调，触发 `START_TICK` 事件——**所有检测项的帧循环入口**。                   | `ClientPlayerEntity.tick()` HEAD      |
-| `EntityRendererMixin.java`     | 在 `updateRenderState()` 设置 `outlineColor` 后注入，用 `OutlineAction` 覆盖轮廓颜色，实现高亮。 | `updateRenderState()` outlineColor 后 |
-| `KeyBindingAccessor.java`      | **Accessor Mixin**，暴露 `KeyBinding.boundKey` 私有字段，供 `Utils.simulatePress()` 用。         | `KeyBinding.boundKey`                 |
+| 文件                           | 职责                                                                                                                  | 注入目标                              |
+|--------------------------------|-----------------------------------------------------------------------------------------------------------------------|---------------------------------------|
+| `ClientPlayerEntityMixin.java` | 在 `tick()` 头部注入回调，触发 `START_TICK` 事件——**所有检测项的帧循环入口**。                                        | `ClientPlayerEntity.tick()` HEAD      |
+| `EntityRendererMixin.java`     | 在 `updateRenderState()` 设置 `outlineColor` 后注入，用 `OutlineAction` 覆盖轮廓颜色，实现高亮。                      | `updateRenderState()` outlineColor 后 |
+| `GameRendererMixin.java`       | 在 `close()` 方法 RETURN 处注入回调，触发 `GameRendererCloseEvent`——供 `FilledThroughWallsRenderer` 等清理 GPU 资源。 | `GameRenderer.close()` RETURN         |
+| `KeyBindingAccessor.java`      | **Accessor Mixin**，暴露 `KeyBinding.boundKey` 私有字段，供 `Utils.simulatePress()` 用。                              | `KeyBinding.boundKey`                 |
 
 ### 3.4 保护系统核心
 
-| 文件                      | 职责                                                                                                                                                                                                                                                                                                    |
-|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ProtectionManager.java`  | **总管理器**。持有 `protections`(Map<Detection,Collection<Action>>)、`detectionRoot`/`actionRoot` 两棵 SwitchTreeNode 树。构造函数中预定义 `active/afk` 分类为默认关闭。提供 `predefineActionCategory()`/`predefineDetectionCategory()` API 供第三方扩展。init() 注册全部 4 个检测项。                  |
-| `CategoryDefinition.java` | **分类默认状态定义** (record)。声明树中枝干节点的默认启用状态（Identifier + defaultEnabled）。供 `ProtectionManager.predefineXxxCategory()` 使用，第三方扩展通过创建此类实例声明自定义分类。                                                                                                            |
-| `SwitchTreeItem.java`     | **树节点接口**。定义 `getId()` 和 `isEnabledByDefault()`。Detection 和 Action 都实现此接口。`isEnabledByDefault()` 现仅作为约定保留，默认状态由树的 `defaultEnabled` 管理。                                                                                                                             |
-| `SwitchTreeNode.java`     | **树状开关容器**。Identifier ID(/分隔层级)、enabled 状态、defaultEnabled 默认状态、父子引用。`isEffectivelyEnabled()`(级联检查)、`addOrGetNode()`(动态添加)、`predefineCategory()`(预定义分类默认值)、`setEnabled()` 触发 `notifyLeafDescendants()` 通知所有叶节点。根节点持有 nodeMap 实现 O(1) 查找。 |
-| `GatedEvent.java`         | **门控事件包装器**。在 Fabric Event 上叠加"按所有者挂起/恢复"能力。内部维护 `Map<Object,List<T>>` + `Set<Object>`，`listen(owner,listener)` 注册、`suspend/resume(owner)` 控制。纯 lambda + Supplier 实现，零反射。                                                                                     |
+| 文件                          | 职责                                                                                                                                                                                                                                                                                                                       |
+|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ProtectionManager.java`      | **总管理器**。持有 `protections`(Map<Detection,Collection<Action>>)、`detectionRoot`/`actionRoot` 两棵 SwitchTreeNode 树。构造函数中预定义 `active/afk` 分类为默认关闭。提供 `predefineActionCategory()`/`predefineDetectionCategory()` API 供第三方扩展。`init()` 注册全部 5 个检测项，注册时调用 `detection.init(ctx)`。 |
+| `CategoryDefinition.java`     | **分类默认状态定义** (record)。声明树中枝干节点的默认启用状态（Identifier + defaultEnabled）。供 `ProtectionManager.predefineXxxCategory()` 使用，第三方扩展通过创建此类实例声明自定义分类。                                                                                                                               |
+| `SwitchTreeItem.java`         | **树节点接口**。定义 `getId()` 和 `isEnabledByDefault()`。Detection 和 Action 都实现此接口。`isEnabledByDefault()` 现仅作为约定保留，默认状态由树的 `defaultEnabled` 管理。                                                                                                                                                |
+| `SwitchTreeNode.java`         | **树状开关容器**。Identifier ID(/分隔层级)、enabled 状态、defaultEnabled 默认状态、父子引用。`isEffectivelyEnabled()`(级联检查)、`addOrGetNode()`(动态添加)、`predefineCategory()`(预定义分类默认值)、`setEnabled()` 触发 `notifyLeafDescendants()` 通知所有叶节点。根节点持有 nodeMap 实现 O(1) 查找。                    |
+| `GameRendererCloseEvent.java` | **GameRenderer 关闭事件**。供 `FilledThroughWallsRenderer` 等组件在 GameRenderer 关闭时清理 GPU 资源。`GameRendererMixin` 在 `GameRenderer.close()` RETURN 处触发此事件。                                                                                                                                                  |
+| `GatedEvent.java`             | **门控事件包装器**。在 Fabric Event 上叠加"按所有者挂起/恢复"能力。内部维护 `Map<Object,List<T>>` + `Set<Object>`，`listen(owner,listener)` 注册、`suspend/resume(owner)` 控制。纯 lambda + Supplier 实现，零反射。                                                                                                        |
 
 ### 3.5 检测项 (Detection)
 
 所有检测项继承 `Detection`，构造时声明绑定的 Action 列表，并通过 `listen()` 声明事件监听。 基类通过 `GatedEvent` 自动管理
-suspend/resume，子类无需手动检查启用状态。触发动作使用 `tryExecuteAction()` 自动双重开关检查。 与保护动作不同，检测项是“事实单例”的，可以被使用一个
+suspend/resume，子类无需手动检查启用状态。触发动作使用 `tryExecuteAction()` 自动双重开关检查。
+与保护动作不同，检测项是"事实单例"的，可以被使用一个
 `Identifier` 从 `ProtectionManager` 那里获取到唯一的实例， 一个保护项有且仅有一个 ID 与之一一对应。 由于种种原因，检测项和保护动作不带有
 `enabled` 字段。原因见下方 5.4 节。
 
-| 文件                              | ID                             | 职责                                                                                                                                                                                  | 绑定的 Action                                                  |
-|-----------------------------------|--------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
-| `Detection.java`                  | —                              | 抽象基类。ID、`boundActions`(Map<Action,Boolean>)、绑定管理。`listen()`(声明门控事件监听)、`tryExecuteAction()`(自动双重开关包装)、`applyActiveState()`(供 ProtectionManager 调用)。  | -                                                              |
-| `AntiCreeperDetection.java`       | `combat/anti_creeper`          | **防苦力怕**。8格内检测最近苦力怕，显示距离/引信倒计时到 ActionBar；引信激活播放音效；2/3距离内触发暂停/退出。                                                                        | ActionBarTitleAction, PlaySoundAction, PauseAction, QuitAction |
-| `AntiFallDetection.java`          | `environment/anti_fall`        | **防摔落**。三个子功能：(1)防挖掘坠落(准星对准脚下方块+挖掘时检查下方8格)；(2)已坠落保护(fallDistance>1.5+下方不安全→暂停/退出)；(3)**MLG自动落地水**(模拟下落轨迹→自动放水/黏液块)。 | ActionBarTitleAction, PauseAction, QuitAction, MLGAction       |
-| `AntiAmbushDetection.java`        | `combat/anti_ambush`           | **防偷袭**。每5帧检查16格内敌对生物/隐身玩家，ActionBar显示数量+名称+方向，OutlineAction 高亮不可见实体。                                                                             | ActionBarTitleAction, OutlineAction                            |
-| `ProjectileTrackerDetection.java` | `combat/arrow_tracker`         | **弹射物追踪**。检测飞向玩家的弹射物(箭/火球等)，角度偏差<10°时 ActionBar 警告+发射者信息。                                                                                           | ActionBarTitleAction                                           |
-| `AntiSuffocationDetection.java`   | `environment/anti_suffocation` | **防窒息**。检测玩家是否处于窒息状态、头顶是否有可坠落方块、待挖掘的方块上方是否有重力影响方块。                                                                                      | ActionBarTitleAction                                           |
+| 文件                              | ID                             | 职责                                                                                                                                                                                             | 绑定的 Action                                                  |
+|-----------------------------------|--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
+| `Detection.java`                  | —                              | 抽象基类。ID、`boundActions`(Map<Action,Boolean>)、绑定管理。`listen()`(声明门控事件监听)、`tryExecuteAction()`(自动双重开关包装)、`applyActiveState()`(供 ProtectionManager 调用)。             | -                                                              |
+| `AntiCreeperDetection.java`       | `combat/anti_creeper`          | **防苦力怕**。8格内检测最近苦力怕，显示距离/引信倒计时到 ActionBar；引信激活播放音效；2/3距离内触发暂停/退出。                                                                                   | ActionBarTitleAction, PlaySoundAction, PauseAction, QuitAction |
+| `AntiFallDetection.java`          | `environment/anti_fall`        | **防摔落**。三个子功能：(1)防挖掘坠落(准星对准脚下方块+挖掘时检查下方8格)；(2)已坠落保护(fallDistance>1.5+下方不安全→暂停/退出)；(3)**MLG自动落地水**(模拟下落轨迹→自动放水/黏液块)。            | ActionBarTitleAction, PauseAction, QuitAction, MLGAction       |
+| `AntiAmbushDetection.java`        | `combat/anti_ambush`           | **防偷袭**。每5帧检查16格内敌对生物/隐身玩家，ActionBar显示数量+名称+方向，OutlineAction 高亮不可见实体。                                                                                        | ActionBarTitleAction, OutlineAction                            |
+| `ProjectileTrackerDetection.java` | `combat/projectile_tracker`    | **弹射物追踪**。检测飞向玩家的弹射物(箭/火球等)，角度偏差<10°时 ActionBar 警告+发射者信息。                                                                                                      | ActionBarTitleAction                                           |
+| `AntiSuffocationDetection.java`   | `environment/anti_suffocation` | **防窒息**。三个子功能：(1)窒息检测(玩家 isInsideWall 时显示窒息方块名称)；(2)上方坠落方块检测(检查头顶方块是否可坠落)；(3)挖掘判断(通过 `Utils.hasDestroyIntention()` 检测挖掘头顶方块的意图)。 | ActionBarTitleAction                                           |
 
 ### 3.6 保护动作 (Action)
 
@@ -163,7 +169,15 @@ ID，并因此具有共享的配置和开关状态。但对于保护动作的 ID
 | `PlaySoundAction.java` | `passive/other/play_sound` | **间隔播放音效**。支持设置音效/音高/间隔(tick)。`setPlaying()` 控制状态，`tick()` 检查计时。                                                | 是       |
 
 > **注**: `ActionBarTitleAction` 是各 Detection 的内部类 (ID统一为 `passive/hud/action_bar_title`)，通过
-> `client.inGameHud.setOverlayMessage()` 在 ActionBar 显示警告信息。
+> `client.inGameHud.setOverlayMessage()` 在 ActionBar 显示警告信息。`MLGAction` 是 `AntiFallDetection` 的内部类 (ID为
+> `active/other/mlg`)。
+
+### 3.7 工具类
+
+| 文件                              | 职责                                                                                                                                                                                                                                        |
+|-----------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `FilledThroughWallsRenderer.java` | **方块填充渲染器**。通过 Fabric `WorldRenderEvents.BEFORE_TRANSLUCENT` 注册渲染，在指定位置绘制填充立方体。支持深度穿透（`DepthTestFunction.NO_DEPTH_TEST`），提供 `addBox()` API 供外部调用。监听 `GameRendererCloseEvent` 释放 GPU 资源。 |
+| `Utils.java`                      | **工具类**。提供 `simulatePress()`(模拟按键)、`directionIndicator()`(方向指示器)、`hasDestroyIntention()`(判断玩家是否有挖掘意图) 等静态方法。                                                                                              |
 
 ---
 
@@ -173,35 +187,37 @@ ID，并因此具有共享的配置和开关状态。但对于保护动作的 ID
                          SafeGuard (ClientModInitializer)
                            │ 创建并注入
                            ▼
-┌──────────────────────────────────────────────────┐
-│                   ModContext                      │
-│  record: (instance, protectionManager, configMgr) │
-│  常量: MOD_ID=safeguard, Toast类型                │
-└──────┬──────────────────────┬────────────────────┘
-       │                      │
-       ▼                      ▼
-┌──────────────┐    ┌──────────────────┐
-│ConfigManager │    │ProtectionManager │◄──────────────────────┐
-│ save()/load()│    │ protections:     │                       │
-│  ↕ JSON文件  │    │  Map<Det,Act[]>  │                       │
-│              │    │ detectionRoot:   │                       │
-│ 依赖: Gson,  │    │  SwitchTreeNode  │                       │
-│  YACL,       │    │ actionRoot:      │                       │
-│  SwitchTree  │    │  SwitchTreeNode  │                       │
-└──────────────┘    └──────┬───────────┘                       │
-                           │ 注册 Detection                    │
-                           ▼                                   │
-            ┌──────────────────────────────┐                   │
-            │    Detection    (检测项)      │                   │
-            │  boundActions: Map<Act,Bool> │                   │
-            └──────────┬───────────────────┘                   │
-                       │ 触发                                   │
-                       ▼                                        │
-            ┌──────────────────────────────┐                   │
-            │     Action  多个 (保护动作)    │──────────────────┘
-            │  PauseAction, QuitAction,    │   通过 ctx 引用回
-            │  OutlineAction, PlaySound,   │   ProtectionManager
-            │  ActionBarTitleAction        │   获取状态节点
+┌──────────────────────────────────────────────────────────────────┐
+│                   ModContext                                      │
+│  record: (instance, protectionManager, configMgr,                │
+│           filledThroughWallsRenderer)                             │
+│  常量: MOD_NAME=SafeGuard, MOD_ID=safeguard, Toast类型            │
+└──────┬──────────────────────┬────────────────────┬───────────────┘
+       │                      │                    │
+       ▼                      ▼                    ▼
+┌──────────────┐    ┌──────────────────┐   ┌────────────────────────┐
+│ConfigManager │    │ProtectionManager │   │FilledThroughWallsRenderer│
+│ save()/load()│    │ protections:     │   │  addBox() / 深度穿透渲染 │
+│  ↕ JSON文件  │    │  Map<Det,Act[]>  │   │  监听 GameRendererClose  │
+│              │    │ detectionRoot:   │   └────────────────────────┘
+│ 依赖: Gson,  │    │  SwitchTreeNode  │
+│  YACL,       │    │ actionRoot:      │
+│  SwitchTree  │    │  SwitchTreeNode  │
+└──────────────┘    └──────┬───────────┘
+                           │ 注册 Detection
+                           ▼
+            ┌──────────────────────────────┐
+            │    Detection    (检测项)      │
+            │  boundActions: Map<Act,Bool> │
+            └──────────┬───────────────────┘
+                       │ 触发
+                       ▼
+            ┌──────────────────────────────┐
+            │     Action  多个 (保护动作)    │
+            │  PauseAction, QuitAction,    │
+            │  OutlineAction, PlaySound,   │
+            │  ActionBarTitleAction,       │
+            │  MLGAction                   │
             └──────────────────────────────┘
 ```
 
@@ -215,15 +231,20 @@ ID，并因此具有共享的配置和开关状态。但对于保护动作的 ID
 Minecraft 加载模组 → SafeGuard.onInitializeClient()
   ├─ new ProtectionManager() → 空 Map + 两棵空树
   ├─ new ConfigManager()
-  ├─ new ModContext(this, pm, cm) → 封装为 record
+  ├─ new FilledThroughWallsRenderer()
+  ├─ new ModContext(this, pm, cm, ftr) → 封装为 record
   ├─ configManager.init(ctx) → 持有 ctx
   ├─ protectionManager.init(ctx)
   │   ├─ register(AntiCreeperDetection)   → 添加 detection/action 节点到树
   │   ├─ register(AntiFallDetection)      → 添加 detection/action 节点到树
   │   ├─ register(ProjectileTrackerDetection) → 添加节点
-  │   └─ register(AntiAmbushDetection)    → 添加节点
-  ├─ ClientCommandRegistrationCallback → 注册 /safeguard 命令
-  └─ ConfigScreen.init(ctx) → 静态持有 ctx
+  │   ├─ register(AntiAmbushDetection)    → 添加节点
+  │   └─ register(AntiSuffocationDetection)   → 添加节点
+  ├─ configManager.tryLoad() → 从 JSON 加载配置
+  ├─ ClientLifecycleEvents.CLIENT_STOPPING → configManager.trySave()
+  ├─ ConfigScreen.init(ctx) → 静态持有 ctx
+  ├─ SafeGuardCommand.init(ctx) → 注册 /safeguard 命令
+  └─ filledThroughWallsRenderer.init() → 注册 WorldRenderEvents + GameRendererCloseEvent
 ```
 
 ### 5.2 运行时检测 (每帧)
@@ -249,11 +270,25 @@ ClientPlayerEntity.tick() [Minecraft原生]
             │
             ├─ ProjectileTrackerDetection: 弹射物速度指向玩家(角度<10°)? → ActionBar
             │
-            └─ AntiAmbushDetection: 每5帧, 16格内敌人/隐身玩家 → ActionBar+Outline
+            ├─ AntiAmbushDetection: 每5帧, 16格内敌人/隐身玩家 → ActionBar+Outline
+            │
+            └─ AntiSuffocationDetection:
+                ├─ 窒息检测: player.isInsideWall() → 显示窒息方块 → ActionBar
+                ├─ 上方坠落方块: 检查头顶 Falling 方块 → ActionBar
+                └─ 挖掘判断: Utils.hasDestroyIntention() → ActionBar
 
 EntityRenderer.updateRenderState() [Minecraft原生]
   └─ Mixin: EntityRendererMixin [outlineColor设置后]
        └─ OutlineAction.getOutline(entityUUID)!=0 → 覆盖 outlineColor → 高亮
+
+WorldRenderEvents.BEFORE_TRANSLUCENT [Fabric事件]
+  └─ FilledThroughWallsRenderer.extractAndDraw()
+       ├─ 提取阶段: 遍历 states → 构建顶点缓冲
+       └─ 绘制阶段: upload + draw (深度穿透渲染)
+
+GameRenderer.close() [Minecraft原生]
+  └─ Mixin: GameRendererMixin [RETURN注入]
+       └─ GameRendererCloseEvent.CALLBACK → FilledThroughWallsRenderer.close() 释放GPU资源
 ```
 
 ### 5.3 配置界面
@@ -286,12 +321,13 @@ unmodifiableView() → 只读视图 (禁止 addOrGetNode, 允许 setEnabled)
 
 ```
 Root (null)
-├── safeguard:combat                [枝干节点]
-│   ├── safeguard:combat/anti_creeper       [叶]
-│   ├── safeguard:combat/projectile_tracker [叶]
-│   └── safeguard:combat/anti_ambush        [叶]
-└── safeguard:environment           [枝干节点]
-    └── safeguard:environment/anti_fall     [叶]
+├── safeguard:combat                      [枝干节点]
+│   ├── safeguard:combat/anti_creeper             [叶]
+│   ├── safeguard:combat/projectile_tracker       [叶]
+│   └── safeguard:combat/anti_ambush              [叶]
+└── safeguard:environment                 [枝干节点]
+    ├── safeguard:environment/anti_fall           [叶]
+    └── safeguard:environment/anti_suffocation    [叶]
 ```
 
 保护动作树（使用 `ProtectionManager#getActionStatesRoot` 获取）：
@@ -309,7 +345,7 @@ Root (null)
     │   └── safeguard:passive/hud/action_bar_title  [叶]
     └── safeguard:passive/other     [枝干节点]
         ├── safeguard:passive/other/outline [叶]
-        └── passive/other/play_sound        [叶]
+        └── safeguard:passive/other/play_sound [叶]
 ```
 
 ---
@@ -319,10 +355,11 @@ Root (null)
 - **Mixin 注入**: 在 Minecraft 原生代码中非侵入式注入钩子
 - **门控事件 (GatedEvent)**: 在 Fabric Event 之上叠加按所有者挂起/恢复能力，检测项声明 `listen(event, handler)`
   后基类自动管理启用状态
-- **事件驱动**: Fabric Event API 实现自定义 `START_TICK` 事件，检测项注册监听`n- **树状开关**: 自定义 `SwitchTreeNode
-  ` 层级开关，支持 `defaultEnabled` 默认值 + `isEffectivelyEnabled ()` 级联检查
-- **分类定义 (CategoryDefinition)**: record 类型声明枝干节点默认状态，保护管理器公开 API 供第三方扩展`n- **不可变视图**: `
-  unmodifiableView ()` 返回内部类 `Unmodifiable`，对外隐藏写操作
+- **事件驱动**: Fabric Event API 实现自定义事件，检测项注册监听
+- **树状开关**: 自定义 `SwitchTreeNode` 层级开关，支持 `defaultEnabled` 默认值 + `isEffectivelyEnabled()` 级联检查
+- **分类定义 (CategoryDefinition)**: record 类型声明枝干节点默认状态，保护管理器公开 API 供第三方扩展
+- **不可变视图**: `unmodifiableView()` 返回内部类 `Unmodifiable`，对外隐藏写操作
+- **自定义渲染管线**: `FilledThroughWallsRenderer` 使用自定义 `RenderPipeline` 实现深度穿透的方块填充渲染
 
 ### 命名约定
 
@@ -353,9 +390,7 @@ Root (null)
 
 ## 8. 已知问题
 
-1. **ConfigManager.save () 有 Bug**: 代码中有 FIXME 注释，保存逻辑不正常
-2. **ConfigManager.load () 未实现**: 方法体为空
-3. **README.md 内容不全**: "它能做什么"等章节标注 TODO
+1. **README.md 内容不全**: "它能做什么"等章节标注 TODO
 
 ---
 

@@ -6,6 +6,7 @@
   "client": [
     "ClientPlayerEntityMixin",
     "EntityRendererMixin",
+    "GameRendererMixin",
     "KeyBindingAccessor"
   ],
   "injectors": {

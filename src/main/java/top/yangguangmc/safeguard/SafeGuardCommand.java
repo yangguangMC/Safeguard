@@ -4,8 +4,10 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.CommandSource;
 import net.minecraft.command.argument.IdentifierArgumentType;
 import net.minecraft.text.MutableText;
@@ -16,7 +18,14 @@ import top.yangguangmc.safeguard.gui.screen.ConfigScreen;
 import top.yangguangmc.safeguard.protection.SwitchTreeNode;
 
 public class SafeGuardCommand {
-    public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher, ModContext ctx) {
+    private static ModContext ctx;
+
+    public static void init(ModContext ctx) {
+        SafeGuardCommand.ctx = ctx;
+        ClientCommandRegistrationCallback.EVENT.register(SafeGuardCommand::register);
+    }
+
+    public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher, CommandRegistryAccess registryAccess) {
         dispatcher.register(
                 ClientCommandManager.literal(ModContext.MOD_ID)
                         .then(
