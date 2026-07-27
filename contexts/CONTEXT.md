@@ -147,15 +147,15 @@ suspend/resume，子类无需手动检查启用状态。触发动作使用 `tryE
 `Identifier` 从 `ProtectionManager` 那里获取到唯一的实例， 一个保护项有且仅有一个 ID 与之一一对应。 由于种种原因，检测项和保护动作不带有
 `enabled` 字段。原因见下方 5.4 节。
 
-| 文件                              | ID                             | 职责                                                                                                                                                                                  | 绑定的 Action                                                     |
-|-----------------------------------|--------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------|
-| `Detection.java`                  | —                              | 抽象基类。ID、`boundActions`(Map<Action,Boolean>)、绑定管理。`listen()`(声明门控事件监听)、`tryExecuteAction()`(自动双重开关包装)、`applyActiveState()`(供 ProtectionManager 调用)。  | -                                                                 |
-| `AntiCreeperDetection.java`       | `combat/anti_creeper`          | **防苦力怕**。8格内检测最近苦力怕，显示距离/引信倒计时到 ActionBar；引信激活播放音效；2/3距离内触发暂停/退出。                                                                        | ActionBarTitleAction, PlaySoundAction, PauseAction, QuitAction    |
-| `AntiFallDetection.java`          | `environment/anti_fall`        | **防摔落**。三个子功能：(1)防挖掘坠落(准星对准脚下方块+挖掘时检查下方8格)；(2)已坠落保护(fallDistance>1.5+下方不安全→暂停/退出)；(3)**MLG自动落地水**(模拟下落轨迹→自动放水/黏液块)。 | ActionBarTitleAction, PauseAction, QuitAction, MLGAction          |
-| `AntiAmbushDetection.java`        | `combat/anti_ambush`           | **防偷袭**。每5帧检查16格内敌对生物/隐身玩家，ActionBar显示数量+名称+方向，OutlineAction 高亮不可见实体。                                                                             | ActionBarTitleAction, OutlineAction                               |
-| `ProjectileTrackerDetection.java` | `combat/projectile_tracker`    | **弹射物追踪**。检测飞向玩家的弹射物(箭/火球等)，角度偏差<10°时 ActionBar 警告+发射者信息。                                                                                           | ActionBarTitleAction                                              |
-| `AntiSuffocationDetection.java`   | `environment/anti_suffocation` | **防窒息**。三个子功能：(1)窒息检测(玩家 isInsideWall 时显示窒息方块名称)；(2)上方坠落方块检测(检查头顶方块是否可坠落)；(3)挖掘判断(通过 `Utils.hasDestroyIntention()` 检测挖掘头顶方块的意图)。      | ActionBarTitleAction                                              |
-| `LavaDetection.java`              | `environment/lava`             | **岩浆检测**。每5帧检查一次，当玩家有挖掘意图时，以玩家为中心扫描岩浆方块（主世界5×5×5，下界通过 `EnvironmentAttributes.FAST_LAVA_GAMEPLAY` 判定后扩展为9×9×9）。ActionBar 显示最近岩浆的距离与方向，BlockOutlineAction 高亮所有发现的岩浆方块。禁用时自动清除方块高亮。 | ActionBarTitleAction, BlockOutlineAction                          |
+| 文件                              | ID                             | 职责                                                                                                                                                                                                                                                                     | 绑定的 Action                                                  |
+|-----------------------------------|--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
+| `Detection.java`                  | —                              | 抽象基类。ID、`boundActions`(Map<Action,Boolean>)、绑定管理。`listen()`(声明门控事件监听)、`tryExecuteAction()`(自动双重开关包装)、`applyActiveState()`(供 ProtectionManager 调用)。                                                                                     | -                                                              |
+| `AntiCreeperDetection.java`       | `combat/anti_creeper`          | **防苦力怕**。8格内检测最近苦力怕，显示距离/引信倒计时到 ActionBar；引信激活播放音效；2/3距离内触发暂停/退出。                                                                                                                                                           | ActionBarTitleAction, PlaySoundAction, PauseAction, QuitAction |
+| `AntiFallDetection.java`          | `environment/anti_fall`        | **防摔落**。三个子功能：(1)防挖掘坠落(准星对准脚下方块+挖掘时检查下方8格)；(2)已坠落保护(fallDistance>1.5+下方不安全→暂停/退出)；(3)**MLG自动落地水**(模拟下落轨迹→自动放水/黏液块)。                                                                                    | ActionBarTitleAction, PauseAction, QuitAction, MLGAction       |
+| `AntiAmbushDetection.java`        | `combat/anti_ambush`           | **防偷袭**。每5帧检查16格内敌对生物/隐身玩家，ActionBar显示数量+名称+方向，OutlineAction 高亮不可见实体。                                                                                                                                                                | ActionBarTitleAction, OutlineAction                            |
+| `ProjectileTrackerDetection.java` | `combat/projectile_tracker`    | **弹射物追踪**。检测飞向玩家的弹射物(箭/火球等)，角度偏差<10°时 ActionBar 警告+发射者信息。                                                                                                                                                                              | ActionBarTitleAction                                           |
+| `AntiSuffocationDetection.java`   | `environment/anti_suffocation` | **防窒息**。三个子功能：(1)窒息检测(玩家 isInsideWall 时显示窒息方块名称)；(2)上方坠落方块检测(检查头顶方块是否可坠落)；(3)挖掘判断(通过 `Utils.hasDestroyIntention()` 检测挖掘头顶方块的意图)。                                                                         | ActionBarTitleAction                                           |
+| `LavaDetection.java`              | `environment/lava`             | **岩浆检测**。每5帧检查一次，当玩家有挖掘意图时，以玩家为中心扫描岩浆方块（主世界5×5×5，下界通过 `EnvironmentAttributes.FAST_LAVA_GAMEPLAY` 判定后扩展为9×9×9）。ActionBar 显示最近岩浆的距离与方向，BlockOutlineAction 高亮所有发现的岩浆方块。禁用时自动清除方块高亮。 | ActionBarTitleAction, BlockOutlineAction                       |
 
 ### 3.6 保护动作 (Action)
 
@@ -163,14 +163,14 @@ suspend/resume，子类无需手动检查启用状态。触发动作使用 `tryE
 与检测项不同，保护动作 **不是**"事实单例"的，一个 `Identifier` 可能对应不止一个保护动作对象，多个保护动作实例可以对应同一个
 ID，并因此具有共享的配置和开关状态。但对于保护动作的 ID **对于单个检测项来说** 是唯一的、一一对应的。
 
-| 文件                      | ID                                | 职责                                                                                                                                                     | 默认启用 |
-|---------------------------|-----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
-| `Action.java`             | —                                 | 抽象基类。ID、`parent`(所属Detection)、`modContext`。`getStateNode()`获取树中开关节点。                                                                  | —        |
-| `PauseAction.java`        | `active/afk/pause`                | **自动暂停**。仅单人游戏可用；多人游戏Toast提示+自关闭。打开 GameMenuScreen，播放音效，执行后 `setEnabled(false)`。                                      | **否**   |
-| `QuitAction.java`         | `active/afk/quit`                 | **自动退出**。disconnect()断开连接，播放音效，Toast提示，执行后 `setEnabled(false)`。                                                                    | **否**   |
-| `OutlineAction.java`      | `passive/other/outline`           | **实体轮廓高亮**。静态 ConcurrentHashMap 维护 UUID→剩余tick/颜色。世界tick递减，归零移除。EntityRendererMixin 渲染时读取覆盖 outlineColor。              | 是       |
-| `BlockOutlineAction.java` | `passive/other/block_outline`     | **方块轮廓高亮**。通过 `FilledThroughWallsRenderer` 的标签隔离机制渲染立方体。以所属检测项 ID 为 tag 调用 `addBox()`，添加前自动 `clearByTag()` 确保不残留旧数据。 | 是       |
-| `PlaySoundAction.java`    | `passive/other/play_sound`        | **间隔播放音效**。支持设置音效/音高/间隔(tick)。`setPlaying()` 控制状态，`tick()` 检查计时。                                                             | 是       |
+| 文件                      | ID                            | 职责                                                                                                                                                               | 默认启用 |
+|---------------------------|-------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
+| `Action.java`             | —                             | 抽象基类。ID、`parent`(所属Detection)、`modContext`。`getStateNode()`获取树中开关节点。                                                                            | —        |
+| `PauseAction.java`        | `active/afk/pause`            | **自动暂停**。仅单人游戏可用；多人游戏Toast提示+自关闭。打开 GameMenuScreen，播放音效，执行后 `setEnabled(false)`。                                                | **否**   |
+| `QuitAction.java`         | `active/afk/quit`             | **自动退出**。disconnect()断开连接，播放音效，Toast提示，执行后 `setEnabled(false)`。                                                                              | **否**   |
+| `OutlineAction.java`      | `passive/other/outline`       | **实体轮廓高亮**。静态 ConcurrentHashMap 维护 UUID→剩余tick/颜色。世界tick递减，归零移除。EntityRendererMixin 渲染时读取覆盖 outlineColor。                        | 是       |
+| `BlockOutlineAction.java` | `passive/other/block_outline` | **方块轮廓高亮**。通过 `FilledThroughWallsRenderer` 的标签隔离机制渲染立方体。以所属检测项 ID 为 tag 调用 `addBox()`，添加前自动 `clearByTag()` 确保不残留旧数据。 | 是       |
+| `PlaySoundAction.java`    | `passive/other/play_sound`    | **间隔播放音效**。支持设置音效/音高/间隔(tick)。`setPlaying()` 控制状态，`tick()` 检查计时。                                                                       | 是       |
 
 > **注**: `ActionBarTitleAction` 是各 Detection 的内部类 (ID统一为 `passive/hud/action_bar_title`)，通过
 > `client.inGameHud.setOverlayMessage()` 在 ActionBar 显示警告信息。`MLGAction` 是 `AntiFallDetection` 的内部类 (ID为
@@ -178,10 +178,10 @@ ID，并因此具有共享的配置和开关状态。但对于保护动作的 ID
 
 ### 3.7 工具类
 
-| 文件                              | 职责                                                                                                                                                                                                                                                                                                       |
-|-----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 文件                              | 职责                                                                                                                                                                                                                                                                                                                                                                 |
+|-----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `FilledThroughWallsRenderer.java` | **方块填充渲染器**。通过 Fabric `WorldRenderEvents.BEFORE_TRANSLUCENT` 注册渲染，在指定位置绘制填充立方体。支持深度穿透（`DepthTestFunction.NO_DEPTH_TEST`）。使用 **标签隔离** 机制（`Map<String, List<BoxRenderState>>`），各调用方通过 `addBox(tag, ...)` 添加、`clearByTag(tag)` 清除，方块持久化渲染直到显式清除。监听 `GameRendererCloseEvent` 释放 GPU 资源。 |
-| `Utils.java`                      | **工具类**。提供 `simulatePress()`(模拟按键)、`directionIndicator()`(方向指示器)、`hasDestroyIntention()`(判断玩家是否有挖掘意图) 等静态方法。                                                                                                                          |
+| `Utils.java`                      | **工具类**。提供 `simulatePress()`(模拟按键)、`directionIndicator()`(方向指示器)、`hasDestroyIntention()`(判断玩家是否有挖掘意图) 等静态方法。                                                                                                                                                                                                                       |
 
 ---
 
@@ -321,7 +321,9 @@ ConfigScreen.create(parent)
 
 #### 5.4.1 SwitchTreeNode 树结构
 
-由于需要实现的需求是 "一个检测项或保护动作的分类路径上的任何一个节点都有独立的开关状态，仅当这所有祖先节点节点均为'开'时该节点才'有效启用'"，所以使用树结构来储存所有检测项、保护动作的开关状态。 这样一来，树的枝干节点即为分类，叶节点即为检测项或保护动作本身。
+由于需要实现的需求是
+"一个检测项或保护动作的分类路径上的任何一个节点都有独立的开关状态，仅当这所有祖先节点节点均为'开'时该节点才'有效启用'
+"，所以使用树结构来储存所有检测项、保护动作的开关状态。 这样一来，树的枝干节点即为分类，叶节点即为检测项或保护动作本身。
 
 ```
 isEffectivelyEnabled() = 自身.enabled AND 所有祖先.enabled (递归到根)
@@ -366,13 +368,15 @@ Root (null)
 ## 6. 关键设计模式与约定
 
 - **Mixin 注入**: 在 Minecraft 原生代码中非侵入式注入钩子
-- **门控事件 (GatedEvent)**: 在 Fabric Event 之上叠加按所有者挂起/恢复能力，检测项声明 `listen(event, handler)` 后基类自动管理启用状态
+- **门控事件 (GatedEvent)**: 在 Fabric Event 之上叠加按所有者挂起/恢复能力，检测项声明 `listen(event, handler)`
+  后基类自动管理启用状态
 - **事件驱动**: Fabric Event API 实现自定义事件，检测项注册监听
 - **树状开关**: 自定义 `SwitchTreeNode` 层级开关，支持 `defaultEnabled` 默认值 + `isEffectivelyEnabled()` 级联检查
 - **分类定义 (CategoryDefinition)**: record 类型声明枝干节点默认状态，保护管理器公开 API 供第三方扩展
 - **不可变视图**: `unmodifiableView()` 返回内部类 `Unmodifiable`，对外隐藏写操作
 - **自定义渲染管线**: `FilledThroughWallsRenderer` 使用自定义 `RenderPipeline` 实现深度穿透的方块填充渲染
-- **标签隔离渲染**: `FilledThroughWallsRenderer` 使用 `Map<String, List<BoxRenderState>>` 按标签隔离存储方块。各调用方通过 `addBox(tag, ...)` 添加、`clearByTag(tag)` 清除，不同来源的方块互不干扰。方块持久化渲染（不再每帧丢弃），由调用方在扫描前显式清除旧数据或在禁用时清理
+- **标签隔离渲染**: `FilledThroughWallsRenderer` 使用 `Map<String, List<BoxRenderState>>` 按标签隔离存储方块。各调用方通过
+  `addBox(tag, ...)` 添加、`clearByTag(tag)` 清除，不同来源的方块互不干扰。方块持久化渲染（不再每帧丢弃），由调用方在扫描前显式清除旧数据或在禁用时清理
 
 ### 命名约定
 
@@ -411,6 +415,9 @@ Root (null)
 
 1. **导入**: IntelliJ IDEA 打开 `build.gradle`，等待 Gradle 同步
 2. **运行**: 使用 `Minecraft_Client` run configuration
-3. **添加检测项**: 在 `protection/detection/` 下建类继承 `Detection`，构造器中 `super(path, actions...)` + `listen(GATED_START_TICK, this::onHandler)`，触发动作使用 `tryExecuteAction(id, consumer)`。无需手动检查启用状态或重写 `init()`。最后在 `ProtectionManager.init()` 调用 `register()`
-4. **添加动作**: 在 `protection/action/` 下（或检测项的内部）建类继承 `Action`，实现具体逻辑。如果是方块高亮类动作，使用 `modContext.filledThroughWallsRenderer().addBox(tag, ...)` 并按需在扫描前 `clearByTag(tag)`
+3. **添加检测项**: 在 `protection/detection/` 下建类继承 `Detection`，构造器中 `super(path, actions...)` +
+   `listen(GATED_START_TICK, this::onHandler)`，触发动作使用 `tryExecuteAction(id, consumer)`。无需手动检查启用状态或重写
+   `init()`。最后在 `ProtectionManager.init()` 调用 `register()`
+4. **添加动作**: 在 `protection/action/` 下（或检测项的内部）建类继承 `Action`，实现具体逻辑。如果是方块高亮类动作，使用
+   `modContext.filledThroughWallsRenderer().addBox(tag, ...)` 并按需在扫描前 `clearByTag(tag)`
 5. **添加翻译**: 在 `zh_cn.json`/`en_us.json` 添加 `detection.*`/`action.*` 键

@@ -7,7 +7,8 @@
     "ClientPlayerEntityMixin",
     "EntityRendererMixin",
     "GameRendererMixin",
-    "KeyBindingAccessor"
+    "KeyBindingAccessor",
+    "LivingEntityMixin"
   ],
   "injectors": {
     "defaultRequire": 1
