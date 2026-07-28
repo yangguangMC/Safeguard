@@ -75,7 +75,8 @@ Safe Guard/
 │   │   │   │   ├── AntiSuffocationDetection.java   # 防窒息
 │   │   │   │   ├── DamageDetection.java           # 伤害检测
 │   │   │   │   ├── LavaDetection.java             # 岩浆检测
-│   │   │   │   └── LowHealthDetection.java        # 低血量检测
+│   │   │   │   ├── LowHealthDetection.java        # 低血量检测
+│   │   │   │   └── OnFireDetection.java           # 着火检测
 │   │   │   ├── action/
 │   │   │   │   ├── Action.java             # 保护动作基类
 │   │   │   │   ├── PauseAction.java        # 自动暂停
@@ -100,7 +101,7 @@ Safe Guard/
 │           └── zh_cn.json                 # 中文翻译
 ├── backup/         # 备份文件
 └── contexts/       # 对项目的描述、约定等，以及项目常见依赖的反编译、反混淆后的源码
-    ├── AGENTS.md       # AI 助手必读的开发规范等
+    ├── minecraft-merged-496669bc46-1.21.11-yarn-build.6-v2-sources/    # 项目依赖的 Minecraft 反编译、反混淆后的源码，可多阅读
     ├── CONTEXT.md      # 用于快速了解项目结构的介绍文档
     └── ROADMAP.md      # 项目路线图与发展规划
 ```
@@ -140,7 +141,7 @@ Safe Guard/
 
 | 文件                          | 职责                                                                                                                                                                                                                                                                                                                       |
 |-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ProtectionManager.java`      | **总管理器**。持有 `protections`(Map<Detection,Collection<Action>>)、`detectionRoot`/`actionRoot` 两棵 SwitchTreeNode 树。构造函数中预定义 `active/afk` 分类为默认关闭。提供 `predefineActionCategory()`/`predefineDetectionCategory()` API 供第三方扩展。`init()` 注册全部 8 个检测项，注册时调用 `detection.init(ctx)`。 |
+| `ProtectionManager.java`      | **总管理器**。持有 `protections`(Map<Detection,Collection<Action>>)、`detectionRoot`/`actionRoot` 两棵 SwitchTreeNode 树。构造函数中预定义 `active/afk` 分类为默认关闭。提供 `predefineActionCategory()`/`predefineDetectionCategory()` API 供第三方扩展。`init()` 中注册所有检测项，注册时调用 `detection.init(ctx)`。 |
 | `CategoryDefinition.java`     | **分类默认状态定义** (record)。声明树中枝干节点的默认启用状态（Identifier + defaultEnabled）。供 `ProtectionManager.predefineXxxCategory()` 使用，第三方扩展通过创建此类实例声明自定义分类。                                                                                                                               |
 | `SwitchTreeItem.java`         | **树节点接口**。定义 `getId()` 和 `isEnabledByDefault()`。Detection 和 Action 都实现此接口。`isEnabledByDefault()` 现仅作为约定保留，默认状态由树的 `defaultEnabled` 管理。                                                                                                                                                |
 | `SwitchTreeNode.java`         | **树状开关容器**。Identifier ID(/分隔层级)、enabled 状态、defaultEnabled 默认状态、父子引用。`isEffectivelyEnabled()`(级联检查)、`addOrGetNode()`(动态添加)、`predefineCategory()`(预定义分类默认值)、`setEnabled()` 触发 `notifyLeafDescendants()` 通知所有叶节点。根节点持有 nodeMap 实现 O(1) 查找。                    |
@@ -166,6 +167,7 @@ suspend/resume，子类无需手动检查启用状态。触发动作使用 `tryE
 | `DamageDetection.java`            | `status/damage`                | **伤害检测**。监听 `EntityDamagedEvents.GATED_PRE`，当玩家受到伤害时自动暂停/退出游戏。                                                                                                                                                                                  | PauseAction, QuitAction                                        |
 | `LavaDetection.java`              | `environment/lava`             | **岩浆检测**。每5帧检查一次，当玩家有挖掘意图时，以玩家为中心扫描岩浆方块（主世界5×5×5，下界通过 `EnvironmentAttributes.FAST_LAVA_GAMEPLAY` 判定后扩展为9×9×9）。ActionBar 显示最近岩浆的距离与方向，BlockOutlineAction 高亮所有发现的岩浆方块。禁用时自动清除方块高亮。 | ActionBarTitleAction, BlockOutlineAction                       |
 | `LowHealthDetection.java`         | `status/low_health`            | **低血量检测**。每帧根据玩家当前生命值计算 0~1 的混合进度 delta：低于 minRateThreshold(默认10%最大生命值，下限4) 时为 1，高于 maxRateThreshold(默认30%最大生命值，上限20) 时为 0，之间线性插值。delta 传给 RedVignetteAction 控制红色晕影强度；低于 maxHealthThreshold 时触发暂停/退出。 | RedVignetteAction, PauseAction, QuitAction                     |
+| `OnFireDetection.java`            | `environment/on_fire`          | **着火检测**。每帧当玩家着火且未免疫火焰/抗火时，按优先级搜索背包中可用的灭火/防火物品（喷溅/滞留抗火药水、普通抗火药水、喷溅/滞留水瓶、水桶、细雪桶、炼药锅+水源、附魔金苹果、不死图腾），在 ActionBar 显示剩余着火 Ticks 及建议使用的物品与所在槽位。                   | ActionBarTitleAction                                           |
 
 ### 3.6 保护动作 (Action)
 
@@ -259,7 +261,8 @@ Minecraft 加载模组 → SafeGuard.onInitializeClient()
   │   ├─ register(AntiSuffocationDetection)   → 添加节点
   │   ├─ register(LavaDetection)              → 添加节点
   │   ├─ register(DamageDetection)            → 添加节点
-  │   └─ register(LowHealthDetection)         → 添加节点
+  │   ├─ register(LowHealthDetection)         → 添加节点
+  │   └─ register(OnFireDetection)            → 添加节点
   ├─ configManager.tryLoad() → 从 JSON 加载配置
   ├─ ClientLifecycleEvents.CLIENT_STOPPING → configManager.trySave()
   ├─ ConfigScreen.init(ctx) → 静态持有 ctx
@@ -305,11 +308,18 @@ ClientPlayerEntity.tick() [Minecraft原生]
             │   │   └─ 无岩浆 → clearByTag(id) 清除高亮
             │   └─ 无意图 → clearByTag(id) 清除高亮
             │
-            └─ LowHealthDetection: 每帧
-                ├─ 血量 < minRateThreshold → delta=1 (红色晕影满)
-                ├─ 血量 > maxRateThreshold → delta=0 (无效果)
-                ├─ 之间 → 线性插值 delta → RedVignetteAction.setProgress(delta)
-                └─ 血量 < maxHealthThreshold → PauseAction + QuitAction
+            ├─ LowHealthDetection: 每帧
+            │   ├─ 血量 < minRateThreshold → delta=1 (红色晕影满)
+            │   ├─ 血量 > maxRateThreshold → delta=0 (无效果)
+            │   ├─ 之间 → 线性插值 delta → RedVignetteAction.setProgress(delta)
+            │   └─ 血量 < maxHealthThreshold → PauseAction + QuitAction
+            │
+            └─ OnFireDetection: 每帧
+                ├─ player.isOnFire() && !player.isFireImmune() && !hasFireResistance → 继续检测
+                │   └─ 按优先级遍历灭火策略(抗火药水→水瓶→水桶→细雪桶→炼药锅→附魔金苹果→不死图腾)
+                │       ├─ 维度检查 + 背包搜索 → 找到 → ActionBarTitleAction(剩余Ticks + 建议物品 + 槽位)
+                │       └─ 未找到 → ActionBarTitleAction(仅显示剩余Ticks，红色警告)
+                └─ 不满足条件 → 无动作
 ```
 
 #### 5.2.2 实体伤害检测
@@ -383,7 +393,8 @@ Root (null)
 ├── safeguard:environment                 [枝干节点]
 │   ├── safeguard:environment/anti_fall           [叶]
 │   ├── safeguard:environment/anti_suffocation    [叶]
-│   └── safeguard:environment/lava               [叶]
+│   ├── safeguard:environment/lava               [叶]
+│   └── safeguard:environment/on_fire            [叶]
 └── safeguard:status                      [枝干节点]
     ├── safeguard:status/damage                    [叶]
     └── safeguard:status/low_health               [叶]
@@ -427,7 +438,7 @@ Root (null)
 ### 命名约定
 
 - **Identifier 路径**: `namespace:category/subcategory/leaf`，`/` 表示层级
-    - 检测项: `safeguard:combat/anti_creeper`、`safeguard:environment/lava`、`safeguard:status/damage`、`safeguard:status/low_health`
+    - 检测项: `safeguard:combat/anti_creeper`、`safeguard:environment/lava`、`safeguard:environment/on_fire`、`safeguard:status/damage`、`safeguard:status/low_health`
     - 动作: `safeguard:active/afk/pause`、`safeguard:passive/other/block_outline`、`safeguard:passive/other/red_vignette`
     - 分类: `combat`(战斗)、`environment`(环境)、`status`(状态)、`active/afk`(主动)、`passive/hud`(HUD)、`passive/other`
       (其他)
