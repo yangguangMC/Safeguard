@@ -71,12 +71,9 @@ public class OnFireDetection extends Detection {
     private void onStartTick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
         if (!player.isOnFire() || player.isFireImmune() || player.hasStatusEffect(StatusEffects.FIRE_RESISTANCE))
             return;
-
-        int fireTicks = player.getFireTicks();
         StrategyResult result = findBestStrategy(world, player);
-
         tryExecuteAction(ActionBarTitleAction.class,
-                action -> action.updateTitle(client, fireTicks, result));
+                action -> action.updateTitle(client, result));
     }
 
     private StrategyResult findBestStrategy(ClientWorld world, ClientPlayerEntity player) {
@@ -206,12 +203,10 @@ public class OnFireDetection extends Detection {
             super("passive/hud/action_bar_title");
         }
 
-        public void updateTitle(MinecraftClient client, int fireTicks, StrategyResult result) {
-            MutableText text = Text.literal("警告：着火剩余 ")
-                    .append(String.valueOf(fireTicks))
-                    .append(" Ticks");
+        public void updateTitle(MinecraftClient client, StrategyResult result) {
+            MutableText text = Text.literal("警告：正在着火");
             if (result.isFound()) {
-                text = text.append(" | 建议：").append(result.displayName());
+                text = text.append(" 建议：").append(result.displayName());
                 if (result.slot() < PlayerInventory.HOTBAR_SIZE)
                     text = text.append(" (快捷栏 ").append(String.valueOf(result.slot() + 1)).append(")");
                 else if (result.slot() < PlayerInventory.MAIN_SIZE) text = text.append(" (背包)");
