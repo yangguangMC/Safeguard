@@ -90,10 +90,7 @@ public class LavaDetection extends Detection {
             double distance = Math.sqrt(Vec3d.ofCenter(nearestLava).squaredDistanceTo(player.getEyePos()));
             String direction = getDirectionIndicator(player, nearestLava);
 
-            MutableText text = Text.literal("警告：最近岩浆距离 ")
-                    .append(String.format("%.1f", distance))
-                    .append("，方向 ")
-                    .append(direction);
+            MutableText text = Text.translatable("detection.safeguard.environment.lava.warning", String.format("%.1f", distance), direction);
             client.inGameHud.setOverlayMessage(text.styled(style -> style.withColor(Formatting.GOLD)), false);
         }
 
@@ -107,18 +104,18 @@ public class LavaDetection extends Detection {
             double relativeYaw = MathHelper.wrapDegrees(angle);
 
             String horizontal;
-            if (relativeYaw >= -157.5 && relativeYaw < -112.5) horizontal = "↙";
-            else if (relativeYaw >= -112.5 && relativeYaw < -67.5) horizontal = "←";
-            else if (relativeYaw >= -67.5 && relativeYaw < -22.5) horizontal = "↖";
-            else if (relativeYaw >= -22.5 && relativeYaw < 22.5) horizontal = "↑";
-            else if (relativeYaw >= 22.5 && relativeYaw < 67.5) horizontal = "↗";
-            else if (relativeYaw >= 67.5 && relativeYaw < 112.5) horizontal = "→";
-            else if (relativeYaw >= 112.5 && relativeYaw < 157.5) horizontal = "↘";
-            else horizontal = "↓";
+            if (relativeYaw >= -157.5 && relativeYaw < -112.5) horizontal = Text.translatable("gui.safeguard.direction.sw").getString();
+            else if (relativeYaw >= -112.5 && relativeYaw < -67.5) horizontal = Text.translatable("gui.safeguard.direction.w").getString();
+            else if (relativeYaw >= -67.5 && relativeYaw < -22.5) horizontal = Text.translatable("gui.safeguard.direction.nw").getString();
+            else if (relativeYaw >= -22.5 && relativeYaw < 22.5) horizontal = Text.translatable("gui.safeguard.direction.n").getString();
+            else if (relativeYaw >= 22.5 && relativeYaw < 67.5) horizontal = Text.translatable("gui.safeguard.direction.ne").getString();
+            else if (relativeYaw >= 67.5 && relativeYaw < 112.5) horizontal = Text.translatable("gui.safeguard.direction.e").getString();
+            else if (relativeYaw >= 112.5 && relativeYaw < 157.5) horizontal = Text.translatable("gui.safeguard.direction.se").getString();
+            else horizontal = Text.translatable("gui.safeguard.direction.s").getString();
 
             double dy = targetPos.getY() + 0.5 - player.getEyeY();
-            if (dy > 3) return "上方" + horizontal;
-            if (dy < -3) return "下方" + horizontal;
+            if (dy > 3) return Text.translatable("gui.safeguard.direction.above").getString() + horizontal;
+            if (dy < -3) return Text.translatable("gui.safeguard.direction.below").getString() + horizontal;
             return horizontal;
         }
     }

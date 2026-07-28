@@ -44,10 +44,10 @@ public class SafeGuardCommand {
                                                             Identifier id = context.getArgument("id", Identifier.class);
                                                             SwitchTreeNode detection = ctx.protectionManager().getDetectionStatesRoot().getNode(id);
                                                             if (detection != null) {
-                                                                context.getSource().sendFeedback(newText(Text.literal("检测项")).append(ctx.protectionManager().getDetectionName(id)).append("当前为").append(String.valueOf(detection.isEnabled())).append("，有效值为").append(String.valueOf(detection.isEffectivelyEnabled())));
+                                                                context.getSource().sendFeedback(newText(Text.translatable("command.safeguard.detection.status", ctx.protectionManager().getDetectionName(id), detection.isEnabled(), detection.isEffectivelyEnabled())));
                                                                 return Command.SINGLE_SUCCESS;
                                                             } else {
-                                                                context.getSource().sendError(newText(Text.literal("找不到ID为 %s 的检测项！".formatted(id))));
+                                                                context.getSource().sendError(newText(Text.translatable("command.safeguard.detection.not_found", id.toString())));
                                                                 return 0;
                                                             }
                                                         }).then(
@@ -58,10 +58,10 @@ public class SafeGuardCommand {
                                                                             SwitchTreeNode detection = ctx.protectionManager().getDetectionStatesRoot().getNode(id);
                                                                             if (detection != null) {
                                                                                 detection.setEnabled(state);
-                                                                                context.getSource().sendFeedback(newText(Text.literal("已将检测项")).append(ctx.protectionManager().getDetectionName(id)).append("设为").append(String.valueOf(state)));
+                                                                                context.getSource().sendFeedback(newText(Text.translatable("command.safeguard.detection.set", ctx.protectionManager().getDetectionName(id), state)));
                                                                                 return Command.SINGLE_SUCCESS;
                                                                             } else {
-                                                                                context.getSource().sendError(newText(Text.literal("找不到ID为 %s 的检测项！".formatted(id))));
+                                                                context.getSource().sendError(newText(Text.translatable("command.safeguard.detection.not_found", id.toString())));
                                                                                 return 0;
                                                                             }
                                                                         })
@@ -76,10 +76,10 @@ public class SafeGuardCommand {
                                                             Identifier id = context.getArgument("id", Identifier.class);
                                                             SwitchTreeNode action = ctx.protectionManager().getActionStatesRoot().getNode(id);
                                                             if (action != null) {
-                                                                context.getSource().sendFeedback(newText(Text.literal("保护动作")).append(ctx.protectionManager().getActonName(id)).append("当前为").append(String.valueOf(action.isEnabled())).append("，有效值为").append(String.valueOf(action.isEffectivelyEnabled())));
+                                                                context.getSource().sendFeedback(newText(Text.translatable("command.safeguard.action.status", ctx.protectionManager().getActonName(id), action.isEnabled(), action.isEffectivelyEnabled())));
                                                                 return Command.SINGLE_SUCCESS;
                                                             } else {
-                                                                context.getSource().sendError(newText(Text.literal("找不到ID为 %s 的保护动作！".formatted(id))));
+                                                                context.getSource().sendError(newText(Text.translatable("command.safeguard.action.not_found", id.toString())));
                                                                 return 0;
                                                             }
                                                         }).then(
@@ -90,10 +90,10 @@ public class SafeGuardCommand {
                                                                             SwitchTreeNode action = ctx.protectionManager().getActionStatesRoot().getNode(id);
                                                                             if (action != null) {
                                                                                 action.setEnabled(state);
-                                                                                context.getSource().sendFeedback(newText(Text.literal("已将保护动作")).append(ctx.protectionManager().getActonName(id)).append("设为").append(String.valueOf(state)));
+                                                                                context.getSource().sendFeedback(newText(Text.translatable("command.safeguard.action.set", ctx.protectionManager().getActonName(id), state)));
                                                                                 return Command.SINGLE_SUCCESS;
                                                                             } else {
-                                                                                context.getSource().sendError(newText(Text.literal("找不到ID为 %s 的保护动作！".formatted(id))));
+                                                                                context.getSource().sendError(newText(Text.translatable("command.safeguard.action.not_found", id.toString())));
                                                                                 return 0;
                                                                             }
                                                                         })

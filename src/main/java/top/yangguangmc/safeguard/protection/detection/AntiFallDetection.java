@@ -57,7 +57,7 @@ public class AntiFallDetection extends Detection {
             BlockState state = world.getBlockState(pos.down(i));
             if (!state.hasSolidTopSurface(world, pos, player)) {
                 if (state.isAir()) {
-                    results.add(new SafeResult(Text.literal("Cliff"), i, 2));
+                    results.add(new SafeResult(Text.translatable("detection.safeguard.environment.anti_fall.cliff"), i, 2));
                     continue;
                 } else if (state.isOf(Blocks.WATER)) {
                     results.add(new SafeResult(Blocks.WATER.getName(), i, 1));
@@ -67,7 +67,7 @@ public class AntiFallDetection extends Detection {
                     continue;
                 }
             }
-            results.add(new SafeResult(Text.literal("Solid"), i, 0));
+            results.add(new SafeResult(Text.translatable("detection.safeguard.environment.anti_fall.solid"), i, 0));
         }
         return results;
     }
@@ -180,15 +180,20 @@ public class AntiFallDetection extends Detection {
         public void updateTitle(MinecraftClient client, List<SafeResult> results) {
             MutableText message = Text.empty();
             results.stream().max(Comparator.comparing(SafeResult::unsafety)).ifPresent(result -> {
-                message.append("警告：下方 %d 格处存在 %s".formatted(result.posBelow(), result.name().getString())).styled(style -> {
+                message.append(Text.translatable("detection.safeguard.environment.anti_fall.warning",
+                        result.posBelow(), result.name()).styled(style -> {
                     if (result.unsafety() > 2) return style.withColor(Formatting.RED).withBold(true);
                     return style.withColor(Formatting.RED);
-                });
-                results.stream().min(Comparator.comparing(SafeResult::posBelow)).filter(o -> !result.equals(o)).ifPresent(result2 ->
-                        message.append(" | 警告：下方 %d 格处存在 %s".formatted(result2.posBelow(), result2.name().getString())).styled(style -> {
-                            if (result2.unsafety() > 2) return style.withColor(Formatting.RED).withBold(true);
-                            return style.withColor(Formatting.RED);
-                        }));
+                }));
+                results.stream()
+                        .min(Comparator.comparing(SafeResult::posBelow))
+                        .filter(o -> !result.equals(o)).ifPresent(result2 ->
+                                message.append(Text.translatable("detection.safeguard.environment.anti_fall.warning_secondary",
+                                        result2.posBelow(), result2.name()).styled(style -> {
+                                    if (result2.unsafety() > 2) return style.withColor(Formatting.RED).withBold(true);
+                                    return style.withColor(Formatting.RED);
+                                }))
+                        );
             });
             client.inGameHud.setOverlayMessage(message, false);
         }

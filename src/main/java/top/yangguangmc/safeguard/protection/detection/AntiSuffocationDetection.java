@@ -97,9 +97,13 @@ public class AntiSuffocationDetection extends Detection {
         }
 
         public void updateTitle(MinecraftClient client, boolean suffocating, Text block, int count, int maxCount) {
-            MutableText text = Text.literal("警告：").append(suffocating ? "当前窒息于 " : (block == null ? "" : "当前上方为 ")).append(block == null ? Text.empty() : block);
+            MutableText text = Text.translatable("detection.safeguard.environment.anti_suffocation.warning_prefix")
+                    .append(suffocating
+                            ? Text.translatable("detection.safeguard.environment.anti_suffocation.suffocating")
+                            : (block == null ? Text.empty() : Text.translatable("detection.safeguard.environment.anti_suffocation.above")))
+                    .append(block == null ? Text.empty() : block);
             if (count > 0)
-                text.append("，共有 ").append(count > maxCount ? maxCount + "+" : String.valueOf(count)).append(" 个");
+                text.append(Text.translatable("detection.safeguard.environment.anti_suffocation.count", count > maxCount ? maxCount + "+" : String.valueOf(count)));
             client.inGameHud.setOverlayMessage(text.styled(style -> style.withColor(Formatting.RED)), false);
         }
     }

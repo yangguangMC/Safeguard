@@ -456,7 +456,8 @@ Root (null)
     - 动作: `safeguard:active/afk/pause`、`safeguard:passive/other/block_outline`、`safeguard:passive/other/red_vignette`
     - 分类: `combat`(战斗)、`environment`(环境)、`status`(状态)、`active/afk`(主动)、`passive/hud`(HUD)、`passive/other`
       (其他)
-- **翻译键**: `detection.<ns>.<path>`、`action.<ns>.<path>` (`/`→`.`)
+- **翻译键**: `detection.<ns>.<path>`、`action.<ns>.<path>`、`command.safeguard.*`、`screen.safeguard.*`、
+  `category.safeguard.*`、`gui.safeguard.*`、`item.safeguard.*`、`messages.safeguard.*` (`/`→`.`)
 - **默认启用**: 由树节点的 `defaultEnabled` 决定，分类级别可通过 `CategoryDefinition` 控制（如 `active/afk` 默认 false）
 
 ---
@@ -493,4 +494,12 @@ Root (null)
    `init()`。最后在 `ProtectionManager.init()` 调用 `register()`
 4. **添加动作**: 在 `protection/action/` 下（或检测项的内部）建类继承 `Action`，实现具体逻辑。如果是方块高亮类动作，使用
    `modContext.filledThroughWallsRenderer().addBox(tag, ...)` 并按需在扫描前 `clearByTag(tag)`
-5. **添加翻译**: 在 `zh_cn.json`/`en_us.json` 添加 `detection.*`/`action.*` 键
+5. **添加翻译**: 在 `zh_cn.json`/`en_us.json` 添加对应翻译键。所有用户可见文本必须使用 `Text.translatable()`，
+   不得使用 `Text.literal()` 硬编码中英文。翻译键分类：
+   - `detection.safeguard.<category>.<name>` — 检测项名称及警告文本
+   - `action.safeguard.<category>.<name>` — 保护动作名称
+   - `command.safeguard.*` — `/safeguard` 命令输出
+   - `screen.safeguard.*` / `category.safeguard.*` — 配置界面
+   - `gui.safeguard.*` — 方向指示符、UI 槽位名称等
+   - `item.safeguard.*` — 物品策略展示名（如着火检测中的灭火物品）
+   - `messages.safeguard.*` — 全局消息前缀等

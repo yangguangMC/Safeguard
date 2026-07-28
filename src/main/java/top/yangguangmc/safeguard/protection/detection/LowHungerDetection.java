@@ -168,15 +168,19 @@ public class LowHungerDetection extends Detection {
         }
 
         public void updateTitle(MinecraftClient client, boolean low, FoodScorer.FoodResult result) {
-            MutableText text = low ? Text.literal("饥饿值低") : Text.literal("补充饥饿值");
+            MutableText text = low
+                    ? Text.translatable("detection.safeguard.status.low_hunger.low")
+                    : Text.translatable("detection.safeguard.status.low_hunger.replenish");
             if (result.isFound()) {
-                text = text.append(" 建议：").append(result.name());
+                text.append(Text.translatable("detection.safeguard.status.low_hunger.suggestion")).append(result.name());
                 if (result.slot() < PlayerInventory.HOTBAR_SIZE)
-                    text = text.append(" (快捷栏 ").append(String.valueOf(result.slot() + 1)).append(")");
-                else if (result.slot() < PlayerInventory.MAIN_SIZE) text = text.append(" (背包)");
-                else if (result.slot() == PlayerInventory.OFF_HAND_SLOT) text = text.append(" (副手)");
+                    text.append(Text.translatable("gui.safeguard.slot.hotbar", result.slot() + 1));
+                else if (result.slot() < PlayerInventory.MAIN_SIZE)
+                    text.append(Text.translatable("gui.safeguard.slot.inventory"));
+                else if (result.slot() == PlayerInventory.OFF_HAND_SLOT)
+                    text.append(Text.translatable("gui.safeguard.slot.offhand"));
             }
-            text = text.styled(style -> style.withColor(low ? Formatting.RED : Formatting.GOLD));
+            text.styled(style -> style.withColor(low ? Formatting.RED : Formatting.GOLD));
             client.inGameHud.setOverlayMessage(text, false);
         }
     }

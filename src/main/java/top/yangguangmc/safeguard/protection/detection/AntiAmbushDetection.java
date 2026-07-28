@@ -63,12 +63,10 @@ public class AntiAmbushDetection extends Detection {
 
         public void updateTitle(MinecraftClient client, ClientWorld world, int amount, Entity nearest, int color) {
             client.inGameHud.setOverlayMessage(
-                    Text.literal("警告：发现潜在偷袭者，数量：")
-                            .append(String.valueOf(amount))
-                            .append(" 最近者：")
-                            .append(nearest.getDisplayName())
-                            .append(" ")
-                            .append(Utils.getDirectionIndicator(client, world, nearest, client.gameRenderer.getCamera()))
+                    Text.translatable("detection.safeguard.combat.anti_ambush.warning",
+                            String.valueOf(amount),
+                            nearest.getDisplayName(),
+                            Utils.getDirectionIndicator(client, world, nearest, client.gameRenderer.getCamera()))
                             .withColor(color),
                     false
             );

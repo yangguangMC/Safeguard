@@ -16,7 +16,7 @@ public class QuitAction extends Action {
         client.send(() -> client.getAbuseReportContext().tryShowDraftScreen(client, null, () -> client.disconnect(ClientWorld.QUITTING_MULTIPLAYER_TEXT), true));
         client.getSoundManager().play(createSoundInstance(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F));
         client.getToastManager().add(new SystemToast(ModContext.SAFEGUARD_QUIT, Text.translatable("messages.safeguard.name"),
-                modContext.protectionManager().getDetectionName(getParent().getId()).copy().append(Text.literal(" 检测到危险，已自动退出游戏！"))));
+                modContext.protectionManager().getDetectionName(getParent().getId()).copy().append(Text.translatable("action.safeguard.active.afk.quit.title"))));
         getStateNode().setEnabled(false);
     }
 }

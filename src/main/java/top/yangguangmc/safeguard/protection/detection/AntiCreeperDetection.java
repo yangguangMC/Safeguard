@@ -72,7 +72,7 @@ public class AntiCreeperDetection extends Detection {
         public void updateTitle(MinecraftClient client, ClientWorld world, CreeperEntity creeper, double distance, float fuseTime, UnaryOperator<Style> styleProvider) {
             Camera camera = client.gameRenderer.getCamera();
             String directionIndicator = Utils.getDirectionIndicator(client, world, creeper, camera);
-            client.inGameHud.setOverlayMessage(Text.literal("警告：苦力怕距离你 %.1f 方块 倒计时：%.0f%% %s".formatted(distance, fuseTime * 100, directionIndicator)).styled(styleProvider), false);
+            client.inGameHud.setOverlayMessage(Text.translatable("detection.safeguard.combat.anti_creeper.warning", String.format("%.1f", distance), String.format("%.0f%%", fuseTime * 100), directionIndicator).styled(styleProvider), false);
         }
     }
 }

@@ -11,6 +11,7 @@ import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ToolComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.text.Text;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
@@ -47,14 +48,14 @@ public class Utils {
         double relativeYaw = getRelativeYaw(camera.getCameraPos(), camera.getCameraYaw(), target, e -> client.getRenderTickCounter().getTickProgress(!world.getTickManager().shouldSkipTick(e)));
         String directionIndicator;
         if (relativeYaw < -180 || relativeYaw > 180) throw new AssertionError();
-        if (relativeYaw >= -157.5 && relativeYaw < -112.5) directionIndicator = "↙";
-        else if (relativeYaw >= -112.5 && relativeYaw < -67.5) directionIndicator = "←";
-        else if (relativeYaw >= -67.5 && relativeYaw < -22.5) directionIndicator = "↖";
-        else if (relativeYaw >= -22.5 && relativeYaw < 22.5) directionIndicator = "↑";
-        else if (relativeYaw >= 22.5 && relativeYaw < 67.5) directionIndicator = "↗";
-        else if (relativeYaw >= 67.5 && relativeYaw < 112.5) directionIndicator = "→";
-        else if (relativeYaw >= 112.5 && relativeYaw < 157.5) directionIndicator = "↘";
-        else directionIndicator = "↓";  // relativeYaw <= -157.5 || relativeYaw >= 157.5
+        if (relativeYaw >= -157.5 && relativeYaw < -112.5) directionIndicator = Text.translatable("gui.safeguard.direction.sw").getString();
+        else if (relativeYaw >= -112.5 && relativeYaw < -67.5) directionIndicator = Text.translatable("gui.safeguard.direction.w").getString();
+        else if (relativeYaw >= -67.5 && relativeYaw < -22.5) directionIndicator = Text.translatable("gui.safeguard.direction.nw").getString();
+        else if (relativeYaw >= -22.5 && relativeYaw < 22.5) directionIndicator = Text.translatable("gui.safeguard.direction.n").getString();
+        else if (relativeYaw >= 22.5 && relativeYaw < 67.5) directionIndicator = Text.translatable("gui.safeguard.direction.ne").getString();
+        else if (relativeYaw >= 67.5 && relativeYaw < 112.5) directionIndicator = Text.translatable("gui.safeguard.direction.e").getString();
+        else if (relativeYaw >= 112.5 && relativeYaw < 157.5) directionIndicator = Text.translatable("gui.safeguard.direction.se").getString();
+        else directionIndicator = Text.translatable("gui.safeguard.direction.s").getString();  // relativeYaw <= -157.5 || relativeYaw >= 157.5
         return directionIndicator;
     }
 

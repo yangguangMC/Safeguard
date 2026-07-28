@@ -24,42 +24,42 @@ import java.util.function.Predicate;
 public class OnFireDetection extends Detection {
     private static final List<Strategy> STRATEGIES = List.of(
             // 1. 喷溅型抗火药水
-            Strategy.potion("喷溅型抗火药水", Items.SPLASH_POTION,
+            Strategy.potion(Text.translatable("item.safeguard.fire_strategy.splash_fire_resistance"), Items.SPLASH_POTION,
                     contents -> contents.matches(Potions.FIRE_RESISTANCE)
                             || contents.matches(Potions.LONG_FIRE_RESISTANCE),
                     (world, player) -> true),
             // 2. 滞留型抗火药水
-            Strategy.potion("滞留型抗火药水", Items.LINGERING_POTION,
+            Strategy.potion(Text.translatable("item.safeguard.fire_strategy.lingering_fire_resistance"), Items.LINGERING_POTION,
                     contents -> contents.matches(Potions.FIRE_RESISTANCE)
                             || contents.matches(Potions.LONG_FIRE_RESISTANCE),
                     (world, player) -> true),
             // 3. 普通抗火药水
-            Strategy.potion("抗火药水", Items.POTION,
+            Strategy.potion(Text.translatable("item.safeguard.fire_strategy.fire_resistance"), Items.POTION,
                     contents -> contents.matches(Potions.FIRE_RESISTANCE)
                             || contents.matches(Potions.LONG_FIRE_RESISTANCE),
                     (world, player) -> true),
             // 4. 喷溅型水瓶
-            Strategy.potion("喷溅型水瓶", Items.SPLASH_POTION,
+            Strategy.potion(Text.translatable("item.safeguard.fire_strategy.splash_water"), Items.SPLASH_POTION,
                     contents -> contents.matches(Potions.WATER),
                     (world, player) -> true),
             // 5. 滞留型水瓶
-            Strategy.potion("滞留型水瓶", Items.LINGERING_POTION,
+            Strategy.potion(Text.translatable("item.safeguard.fire_strategy.lingering_water"), Items.LINGERING_POTION,
                     contents -> contents.matches(Potions.WATER),
                     (world, player) -> true),
             // 6. 水桶
-            Strategy.direct("水桶", Items.WATER_BUCKET,
+            Strategy.direct(Text.translatable("item.safeguard.fire_strategy.water_bucket"), Items.WATER_BUCKET,
                     (world, player) ->
                             !world.getEnvironmentAttributes().getAttributeValue(EnvironmentAttributes.WATER_EVAPORATES_GAMEPLAY)),
             // 7. 细雪桶
-            Strategy.direct("细雪桶", Items.POWDER_SNOW_BUCKET,
+            Strategy.direct(Text.translatable("item.safeguard.fire_strategy.powder_snow_bucket"), Items.POWDER_SNOW_BUCKET,
                     (world, player) -> true),
             // 8. 炼药锅
-            Strategy.cauldron("炼药锅"),
+            Strategy.cauldron(Text.translatable("item.safeguard.fire_strategy.cauldron")),
             // 9. 附魔金苹果
-            Strategy.direct("附魔金苹果", Items.ENCHANTED_GOLDEN_APPLE,
+            Strategy.direct(Text.translatable("item.safeguard.fire_strategy.enchanted_golden_apple"), Items.ENCHANTED_GOLDEN_APPLE,
                     (world, player) -> true),
             // 10. 不死图腾
-            Strategy.direct("不死图腾", Items.TOTEM_OF_UNDYING,
+            Strategy.direct(Text.translatable("item.safeguard.fire_strategy.totem_of_undying"), Items.TOTEM_OF_UNDYING,
                     (world, player) -> true)
     );
 
@@ -89,29 +89,29 @@ public class OnFireDetection extends Detection {
     /**
      * 灭火/防火策略定义。
      *
-     * @param displayName     策略展示名（硬编码中文，待统一重构为 i18n）
+     * @param displayName     策略展示名（现已使用 Text.translatable() 国际化）
      * @param inventorySearch 背包搜索函数，返回找到的物品所在槽位索引，-1 表示未找到
      * @param dimensionCheck  维度有效性检查
      */
     private record Strategy(
-            String displayName,
+            Text displayName,
             InventorySearch inventorySearch,
             DimensionCheck dimensionCheck
     ) {
-        static Strategy direct(String name, Item item, DimensionCheck dimCheck) {
+        static Strategy direct(Text name, Item item, DimensionCheck dimCheck) {
             return new Strategy(name,
                     player -> searchItem(player.getInventory(), item),
                     dimCheck);
         }
 
-        static Strategy potion(String name, Item container, Predicate<PotionContentsComponent> potionMatcher,
+        static Strategy potion(Text name, Item container, Predicate<PotionContentsComponent> potionMatcher,
                                DimensionCheck dimCheck) {
             return new Strategy(name,
                     player -> searchPotion(player.getInventory(), container, potionMatcher),
                     dimCheck);
         }
 
-        static Strategy cauldron(@SuppressWarnings("SameParameterValue") String name) {
+        static Strategy cauldron(Text name) {
             return new Strategy(name,
                     player -> searchCauldron(player.getInventory()),
                     (world, player) -> true);
@@ -135,7 +135,7 @@ public class OnFireDetection extends Detection {
     /**
      * 策略搜索结果。NOT_FOUND 表示无可用策略。
      */
-    private record StrategyResult(String displayName, int slot) {
+    private record StrategyResult(Text displayName, int slot) {
         static final StrategyResult NOT_FOUND = new StrategyResult(null, -1);
 
         boolean isFound() {
@@ -204,15 +204,17 @@ public class OnFireDetection extends Detection {
         }
 
         public void updateTitle(MinecraftClient client, StrategyResult result) {
-            MutableText text = Text.literal("警告：正在着火");
+            MutableText text = Text.translatable("detection.safeguard.environment.on_fire.warning");
             if (result.isFound()) {
-                text = text.append(" 建议：").append(result.displayName());
+                text.append(Text.translatable("detection.safeguard.environment.on_fire.suggestion")).append(result.displayName());
                 if (result.slot() < PlayerInventory.HOTBAR_SIZE)
-                    text = text.append(" (快捷栏 ").append(String.valueOf(result.slot() + 1)).append(")");
-                else if (result.slot() < PlayerInventory.MAIN_SIZE) text = text.append(" (背包)");
-                else if (result.slot() == PlayerInventory.OFF_HAND_SLOT) text = text.append(" (副手)");
-                text = text.styled(style -> style.withColor(Formatting.GOLD));
-            } else text = text.styled(style -> style.withColor(Formatting.RED));
+                    text.append(Text.translatable("gui.safeguard.slot.hotbar", result.slot() + 1));
+                else if (result.slot() < PlayerInventory.MAIN_SIZE)
+                    text.append(Text.translatable("gui.safeguard.slot.inventory"));
+                else if (result.slot() == PlayerInventory.OFF_HAND_SLOT)
+                    text.append(Text.translatable("gui.safeguard.slot.offhand"));
+                text.styled(style -> style.withColor(Formatting.GOLD));
+            } else text.styled(style -> style.withColor(Formatting.RED));
             client.inGameHud.setOverlayMessage(text, false);
         }
     }
