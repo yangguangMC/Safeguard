@@ -1,29 +1,106 @@
 # SafeGuard
 
-一个面向高版本 Minecraft **保护玩家免受游戏内各种危险情境伤害** 的模组。
+![SafeGuard Icon](src/main/resources/assets/safeguard/icon.png)
 
-## 简介
+![Minecraft 1.21.11](https://img.shields.io/badge/Minecraft-1.21.11-brightgreen)
+![Fabric](https://img.shields.io/badge/Loader-Fabric-blue)
+![MIT License](https://img.shields.io/badge/License-MIT-green)
 
-**SafeGuard** 是一个面向高版本 Minecraft Java Edition 的 Fabric 客户端模组，专为原版生存玩法设计。 其核心使命是：
-**通过主动接管或被动提醒的方式，保护玩家免受游戏内各种危险情境的伤害**
-——包括但不限于摔落、岩浆、窒息、怪物偷袭、玩家偷袭（PVP）等。
+**A client-side helper that watches your back in Minecraft survival.**
 
-与市面上其他安全/辅助类模组不同，SafeGuard 聚焦于 **原版生存及其衍生场景**（原版生存、轻度 PVP、轻度模组），
-不做玩法层面的改动，不引入新物品、新机制或新维度，而是纯粹作为 **客户端侧的安全辅助工具**存在。
-所有检测与保护动作均在客户端本地完成，不依赖服务端支持，适用于单机、局域网和各类服务器环境。
+---
 
-## 它能做什么
+## Overview
 
-%% TODO %%
+SafeGuard is a **client-side Fabric mod** that detects in-game dangers and helps you avoid them — through visual/audio
+warnings, or optional automatic actions like pausing and disconnecting.
 
-## 快速上手
+It does **not** introduce new items, mechanics, or dimensions. It does **not** make you invincible. Everything runs
+locally on the client — no server-side support needed.
 
-%% TODO %%
+---
 
-## 问题反馈
+## Features
 
-%% TODO %%
+### Detections
 
-## 贡献
+All detections are **enabled by default** unless otherwise noted.
 
-%% TODO %%
+| Category       | Detection              | What it warns about                                                      |
+|----------------|------------------------|--------------------------------------------------------------------------|
+| 💥 Combat      | **Anti Creeper**       | Nearby creepers, showing distance and fuse countdown                     |
+| 💥 Combat      | **Anti Ambush**        | Hostile mobs and invisible players around you                            |
+| 💥 Combat      | **Projectile Tracker** | Projectiles heading your way (arrows, fireballs, etc.)                   |
+| 🌍 Environment | **Anti Fall**          | Mining above caves/cliffs, dangerous falls, plus optional auto MLG       |
+| 🌍 Environment | **Anti Suffocation**   | Being inside a wall or under falling blocks                              |
+| 🌍 Environment | **Lava Detection**     | Lava near your mining path                                               |
+| 🌍 Environment | **On Fire**            | When burning — also suggests items that can extinguish in your inventory |
+| 💊 Status      | **Damage Detection**   | Taking damage (can trigger auto-pause / quit — off by default)           |
+| 💊 Status      | **Low Health**         | Health dropping below thresholds (red vignette + optional auto actions)  |
+| 💊 Status      | **Low Hunger**         | Hunger running low, with smart food recommendations                      |
+
+### Protection Actions
+
+Actions are triggered by detections. Each can be toggled on/off independently.
+
+| Type       | Action                                      | Default |
+|------------|---------------------------------------------|---------|
+| 🛡️ Active  | **Auto Pause** (singleplayer only)          | ❌ off  |
+| 🛡️ Active  | **Auto Quit**                               | ❌ off  |
+| 🛡️ Active  | **Auto MLG** (water / slime placement)      | ✅ on   |
+| 💬 Passive | **Action Bar Title** warning text           | ✅ on   |
+| 💬 Passive | **Entity Outline** glowing highlight        | ✅ on   |
+| 💬 Passive | **Block Highlight** through walls           | ✅ on   |
+| 💬 Passive | **Sound Alert**                             | ✅ on   |
+| 💬 Passive | **Red Vignette** (low-health screen effect) | ✅ on   |
+
+---
+
+## Configuration
+
+Open the config screen via **Mod Menu** or `/safeguard screen`.
+
+![Config Screen](images/en_us/config_screen.png)
+
+Toggle detections and actions in a tree structure — disabling a category (e.g. "Combat")
+disables everything under it. Config is saved to `.minecraft/config/safeguard.json`.
+
+---
+
+## Commands
+
+```
+/safeguard screen                        Open config screen
+/safeguard detection <id> [state]        View or toggle a detection
+/safeguard action <id> [state]           View or toggle an action
+```
+
+The command is purely client-side. It will not be sent to servers once parsed successfully. IDs use the format
+`namespace:category/.../name`. The command provides **tab completion**.
+
+---
+
+## Dependencies
+
+| Type        | Name                                              | Version   |
+|-------------|---------------------------------------------------|-----------|
+| Required    | [Fabric API](https://modrinth.com/mod/fabric-api) | ≥ 0.141.4 |
+| Required    | [YACL](https://modrinth.com/mod/yacl)             | ≥ 3.8.2   |
+| Recommended | [Mod Menu](https://modrinth.com/mod/modmenu)      | ≥ 17.0.0  |
+
+---
+
+## Feedback & Contributing
+
+Bug reports and feature ideas are welcome on [GitHub Issues](https://github.com/yangguangMC/SafeGuard/issues).
+
+Pull requests are appreciated! For the current project structure, please read the context documentation,
+[`contexts/CONTEXT.md`](contexts/CONTEXT.md). To work with AI agents, add that documentation to your context, and add [
+`.clinerules/AGENTS.md`](.clinerules/AGENTS.md) as one of the agent's rule files. After making modifications, please
+update `CONTEXT.md`.
+
+---
+
+## License
+
+MIT — see [LICENSE.txt](LICENSE.txt).
