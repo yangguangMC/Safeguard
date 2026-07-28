@@ -62,7 +62,8 @@
 ### 1.2 待新增（MVP 核心交付）
 
 - [x] **岩浆检测** (`environment/anti_lava`)：当玩家有挖掘意向时，检测周围 3×3 范围内是否有岩浆方块 → ActionBar 警告位置。
-- [ ] **低血量检测** (`status/low_health`)：当 `player.getHealth() / player.getMaxHealth() < 阈值`（默认 20%）时触发 → HUD 边缘红闪 + ActionBar 警告 + 可选暂停/退出。
+- [x] **低血量检测** (`status/low_health`)：当 `player.getHealth() / player.getMaxHealth() < 阈值`（默认 20%）时触发 → HUD 边缘红闪 + ActionBar 警告 + 可选暂停/退出。
+  - [ ] 补充：计算斩杀线（延后至阶段 3）
 - [ ] **火焰检测** (`environment/anti_fire`)：监听 `player.isOnFire()` 状态 → ActionBar 提示 + 搜索背包中水桶/寻找最近水源位置。
 - [x] **窒息检测** (`environment/anti_suffocation`)：检测玩家是否处于窒息状态、头顶是否有可坠落方块（沙砾/沙子等）→ ActionBar 显示方块名称和距离。
 - [ ] **饥饿检测** (`status/low_hunger`)：当饥饿值低于阈值时触发 → ActionBar 提示 + 显示最佳食物建议图标。

@@ -1,6 +1,6 @@
 # SafeGuard 项目上下文文档
 
-> **最后编辑于**: 2026-07-27
+> **最后编辑于**: 2026-07-28
 > **目标读者**: 不了解此项目的开发者 / AI 助手
 > **目的**: 快速了解项目结构、模块职责、依赖关系和数据流转
 
@@ -58,6 +58,7 @@ Safe Guard/
 │   │   │   ├── ClientPlayerEntityMixin.java   # 注入 tick()
 │   │   │   ├── EntityRendererMixin.java       # 注入渲染状态
 │   │   │   ├── GameRendererMixin.java         # 注入 close() 事件
+│   │   │   ├── InGameHudMixin.java            # 注入晕影颜色
 │   │   │   ├── KeyBindingAccessor.java        # Accessor Mixin
 │   │   │   └── LivingEntityMixin.java         # 注入 onDamaged()
 │   │   ├── protection/
@@ -73,14 +74,16 @@ Safe Guard/
 │   │   │   │   ├── ProjectileTrackerDetection.java # 弹射物追踪
 │   │   │   │   ├── AntiSuffocationDetection.java   # 防窒息
 │   │   │   │   ├── DamageDetection.java           # 伤害检测
-│   │   │   │   └── LavaDetection.java             # 岩浆检测
+│   │   │   │   ├── LavaDetection.java             # 岩浆检测
+│   │   │   │   └── LowHealthDetection.java        # 低血量检测
 │   │   │   ├── action/
 │   │   │   │   ├── Action.java             # 保护动作基类
 │   │   │   │   ├── PauseAction.java        # 自动暂停
 │   │   │   │   ├── QuitAction.java         # 自动退出
 │   │   │   │   ├── OutlineAction.java      # 实体轮廓高亮
 │   │   │   │   ├── BlockOutlineAction.java # 方块轮廓高亮
-│   │   │   │   └── PlaySoundAction.java    # 播放音效
+│   │   │   │   ├── PlaySoundAction.java    # 播放音效
+│   │   │   │   └── RedVignetteAction.java  # 红色晕影
 │   │   │   └── event/
 │   │   │       ├── ClientPlayerTickEvents.java  # Tick事件
 │   │   │       ├── EntityDamagedEvents.java     # 实体受伤事件
@@ -130,13 +133,14 @@ Safe Guard/
 | `EntityRendererMixin.java`     | 在 `updateRenderState()` 设置 `outlineColor` 后注入，用 `OutlineAction` 覆盖轮廓颜色，实现高亮。                      | `updateRenderState()` outlineColor 后 |
 | `GameRendererMixin.java`       | 在 `close()` 方法 RETURN 处注入回调，触发 `GameRendererCloseEvent`——供 `FilledThroughWallsRenderer` 等清理 GPU 资源。 | `GameRenderer.close()` RETURN         |
 | `KeyBindingAccessor.java`      | **Accessor Mixin**，暴露 `KeyBinding.boundKey` 私有字段，供 `Utils.simulatePress()` 用。                              | `KeyBinding.boundKey`                 |
+| `InGameHudMixin.java`          | 在 `renderVignetteOverlay()` 中注入，通过 `@ModifyVariable` 修改晕影颜色，将原色与红色按 `RedVignetteAction.progress` 混合，实现血量越低晕影越红的效果。 | `InGameHud.renderVignetteOverlay()` INVOKE 前 |
 | `LivingEntityMixin.java`       | 在 `onDamaged()` 头部注入回调，触发 `EntityDamagedEvents.PRE` 事件——供 `DamageDetection` 等检测伤害。                 | `LivingEntity.onDamaged()` HEAD       |
 
 ### 3.4 保护系统核心
 
 | 文件                          | 职责                                                                                                                                                                                                                                                                                                                       |
 |-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ProtectionManager.java`      | **总管理器**。持有 `protections`(Map<Detection,Collection<Action>>)、`detectionRoot`/`actionRoot` 两棵 SwitchTreeNode 树。构造函数中预定义 `active/afk` 分类为默认关闭。提供 `predefineActionCategory()`/`predefineDetectionCategory()` API 供第三方扩展。`init()` 注册全部 7 个检测项，注册时调用 `detection.init(ctx)`。 |
+| `ProtectionManager.java`      | **总管理器**。持有 `protections`(Map<Detection,Collection<Action>>)、`detectionRoot`/`actionRoot` 两棵 SwitchTreeNode 树。构造函数中预定义 `active/afk` 分类为默认关闭。提供 `predefineActionCategory()`/`predefineDetectionCategory()` API 供第三方扩展。`init()` 注册全部 8 个检测项，注册时调用 `detection.init(ctx)`。 |
 | `CategoryDefinition.java`     | **分类默认状态定义** (record)。声明树中枝干节点的默认启用状态（Identifier + defaultEnabled）。供 `ProtectionManager.predefineXxxCategory()` 使用，第三方扩展通过创建此类实例声明自定义分类。                                                                                                                               |
 | `SwitchTreeItem.java`         | **树节点接口**。定义 `getId()` 和 `isEnabledByDefault()`。Detection 和 Action 都实现此接口。`isEnabledByDefault()` 现仅作为约定保留，默认状态由树的 `defaultEnabled` 管理。                                                                                                                                                |
 | `SwitchTreeNode.java`         | **树状开关容器**。Identifier ID(/分隔层级)、enabled 状态、defaultEnabled 默认状态、父子引用。`isEffectivelyEnabled()`(级联检查)、`addOrGetNode()`(动态添加)、`predefineCategory()`(预定义分类默认值)、`setEnabled()` 触发 `notifyLeafDescendants()` 通知所有叶节点。根节点持有 nodeMap 实现 O(1) 查找。                    |
@@ -161,6 +165,7 @@ suspend/resume，子类无需手动检查启用状态。触发动作使用 `tryE
 | `AntiSuffocationDetection.java`   | `environment/anti_suffocation` | **防窒息**。三个子功能：(1)窒息检测(玩家 isInsideWall 时显示窒息方块名称)；(2)上方坠落方块检测(检查头顶方块是否可坠落)；(3)挖掘判断(通过 `Utils.hasDestroyIntention()` 检测挖掘头顶方块的意图)。                                                                         | ActionBarTitleAction                                           |
 | `DamageDetection.java`            | `status/damage`                | **伤害检测**。监听 `EntityDamagedEvents.GATED_PRE`，当玩家受到伤害时自动暂停/退出游戏。                                                                                                                                                                                  | PauseAction, QuitAction                                        |
 | `LavaDetection.java`              | `environment/lava`             | **岩浆检测**。每5帧检查一次，当玩家有挖掘意图时，以玩家为中心扫描岩浆方块（主世界5×5×5，下界通过 `EnvironmentAttributes.FAST_LAVA_GAMEPLAY` 判定后扩展为9×9×9）。ActionBar 显示最近岩浆的距离与方向，BlockOutlineAction 高亮所有发现的岩浆方块。禁用时自动清除方块高亮。 | ActionBarTitleAction, BlockOutlineAction                       |
+| `LowHealthDetection.java`         | `status/low_health`            | **低血量检测**。每帧根据玩家当前生命值计算 0~1 的混合进度 delta：低于 minRateThreshold(默认10%最大生命值，下限4) 时为 1，高于 maxRateThreshold(默认30%最大生命值，上限20) 时为 0，之间线性插值。delta 传给 RedVignetteAction 控制红色晕影强度；低于 maxHealthThreshold 时触发暂停/退出。 | RedVignetteAction, PauseAction, QuitAction                     |
 
 ### 3.6 保护动作 (Action)
 
@@ -176,6 +181,7 @@ ID，并因此具有共享的配置和开关状态。但对于保护动作的 ID
 | `OutlineAction.java`      | `passive/other/outline`       | **实体轮廓高亮**。静态 ConcurrentHashMap 维护 UUID→剩余tick/颜色。世界tick递减，归零移除。EntityRendererMixin 渲染时读取覆盖 outlineColor。                           | 是       |
 | `BlockOutlineAction.java` | `passive/other/block_outline` | **方块轮廓高亮**。通过 `FilledThroughWallsRenderer` 的标签隔离机制渲染立方体。以所属检测项 ID 为 tag 调用 `addBox()`，添加前自动 `clearByTag()` 确保不残留旧数据。    | 是       |
 | `PlaySoundAction.java`    | `passive/other/play_sound`    | **间隔播放音效**。支持设置音效/音高/间隔(tick)。`setPlaying()` 控制状态，`tick()` 检查计时。                                                                          | 是       |
+| `RedVignetteAction.java`  | `passive/other/red_vignette`  | **红色晕影**。持有静态 `progress` 字段 (0~1)。`LowHealthDetection` 每帧调用 `setProgress(delta)` 更新混合进度，`InGameHudMixin` 读取 `getProgress()` 将原晕影颜色与红色插值，血量越低晕影越红。 | 是       |
 
 > **注**: `ActionBarTitleAction` 是各 Detection 的内部类 (ID统一为 `passive/hud/action_bar_title`)，通过
 > `client.inGameHud.setOverlayMessage()` 在 ActionBar 显示警告信息。`MLGAction` 是 `AntiFallDetection` 的内部类 (ID为
@@ -226,6 +232,7 @@ ID，并因此具有共享的配置和开关状态。但对于保护动作的 ID
             │  PauseAction, QuitAction,    │
             │  OutlineAction, PlaySound,   │
             │  BlockOutlineAction,         │
+            │  RedVignetteAction,          │
             │  ActionBarTitleAction,       │
             │  MLGAction                   │
             └──────────────────────────────┘
@@ -251,7 +258,8 @@ Minecraft 加载模组 → SafeGuard.onInitializeClient()
   │   ├─ register(AntiAmbushDetection)        → 添加节点
   │   ├─ register(AntiSuffocationDetection)   → 添加节点
   │   ├─ register(LavaDetection)              → 添加节点
-  │   └─ register(DamageDetection)            → 添加节点
+  │   ├─ register(DamageDetection)            → 添加节点
+  │   └─ register(LowHealthDetection)         → 添加节点
   ├─ configManager.tryLoad() → 从 JSON 加载配置
   ├─ ClientLifecycleEvents.CLIENT_STOPPING → configManager.trySave()
   ├─ ConfigScreen.init(ctx) → 静态持有 ctx
@@ -291,11 +299,17 @@ ClientPlayerEntity.tick() [Minecraft原生]
             │   ├─ 上方坠落方块: 检查头顶 Falling 方块 → ActionBar
             │   └─ 挖掘判断: Utils.hasDestroyIntention() → ActionBar
             │
-            └─ LavaDetection: 每5帧, Utils.hasDestroyIntention()?
-                ├─ 有意图 → 扫描岩浆 (主世界5×5×5/下界9×9×9)
-                │   ├─ 有岩浆 → ActionBar(最近距离+方向) + BlockOutlineAction(高亮)
-                │   └─ 无岩浆 → clearByTag(id) 清除高亮
-                └─ 无意图 → clearByTag(id) 清除高亮
+            ├─ LavaDetection: 每5帧, Utils.hasDestroyIntention()?
+            │   ├─ 有意图 → 扫描岩浆 (主世界5×5×5/下界9×9×9)
+            │   │   ├─ 有岩浆 → ActionBar(最近距离+方向) + BlockOutlineAction(高亮)
+            │   │   └─ 无岩浆 → clearByTag(id) 清除高亮
+            │   └─ 无意图 → clearByTag(id) 清除高亮
+            │
+            └─ LowHealthDetection: 每帧
+                ├─ 血量 < minRateThreshold → delta=1 (红色晕影满)
+                ├─ 血量 > maxRateThreshold → delta=0 (无效果)
+                ├─ 之间 → 线性插值 delta → RedVignetteAction.setProgress(delta)
+                └─ 血量 < maxHealthThreshold → PauseAction + QuitAction
 ```
 
 #### 5.2.2 实体伤害检测
@@ -325,6 +339,10 @@ WorldRenderEvents.BEFORE_TRANSLUCENT [Fabric事件]
 GameRenderer.close() [Minecraft原生]
   └─ Mixin: GameRendererMixin [RETURN注入]
        └─ GameRendererCloseEvent.CALLBACK → FilledThroughWallsRenderer.close() 释放GPU资源
+
+InGameHud.renderVignetteOverlay() [Minecraft原生]
+  └─ Mixin: InGameHudMixin [INVOKE前注入]
+       └─ RedVignetteAction.getProgress()>0 → 将晕影颜色与红色按 progress 混合 → 低血量红色晕影
 ```
 
 ### 5.3 配置界面
@@ -367,7 +385,8 @@ Root (null)
 │   ├── safeguard:environment/anti_suffocation    [叶]
 │   └── safeguard:environment/lava               [叶]
 └── safeguard:status                      [枝干节点]
-    └── safeguard:status/damage                    [叶]
+    ├── safeguard:status/damage                    [叶]
+    └── safeguard:status/low_health               [叶]
 ```
 
 保护动作树（使用 `ProtectionManager#getActionStatesRoot` 获取）：
@@ -383,10 +402,11 @@ Root (null)
 └── safeguard:passive               [枝干节点]
     ├── safeguard:passive/hud       [枝干节点]
     │   └── safeguard:passive/hud/action_bar_title  [叶]
-    └── safeguard:passive/other     [枝干节点]
-        ├── safeguard:passive/other/outline        [叶]
-        ├── safeguard:passive/other/block_outline  [叶]
-        └── safeguard:passive/other/play_sound     [叶]
+        └── safeguard:passive/other     [枝干节点]
+            ├── safeguard:passive/other/outline        [叶]
+            ├── safeguard:passive/other/block_outline  [叶]
+            ├── safeguard:passive/other/play_sound     [叶]
+            └── safeguard:passive/other/red_vignette   [叶]
 ```
 
 ---
@@ -407,8 +427,8 @@ Root (null)
 ### 命名约定
 
 - **Identifier 路径**: `namespace:category/subcategory/leaf`，`/` 表示层级
-    - 检测项: `safeguard:combat/anti_creeper`、`safeguard:environment/lava`、`safeguard:status/damage`
-    - 动作: `safeguard:active/afk/pause`、`safeguard:passive/other/block_outline`
+    - 检测项: `safeguard:combat/anti_creeper`、`safeguard:environment/lava`、`safeguard:status/damage`、`safeguard:status/low_health`
+    - 动作: `safeguard:active/afk/pause`、`safeguard:passive/other/block_outline`、`safeguard:passive/other/red_vignette`
     - 分类: `combat`(战斗)、`environment`(环境)、`status`(状态)、`active/afk`(主动)、`passive/hud`(HUD)、`passive/other`
       (其他)
 - **翻译键**: `detection.<ns>.<path>`、`action.<ns>.<path>` (`/`→`.`)

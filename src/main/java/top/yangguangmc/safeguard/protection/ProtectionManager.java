@@ -35,6 +35,7 @@ public class ProtectionManager {
         register(new AntiSuffocationDetection());
         register(new LavaDetection());
         register(new DamageDetection());
+        register(new LowHealthDetection());
         LOGGER.info("Protections initialized with {} detections and {} actions.", protections.size(), protections.values().stream().mapToLong(Collection::size).sum());
     }
 
