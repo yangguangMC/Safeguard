@@ -61,8 +61,9 @@ public class AntiSuffocationDetection extends Detection {
                         && pos.getY() > player.getEyeY()
                         && Math.abs(Vec3d.ofCenter(pos).getZ() - player.getZ()) < 1)) {
             AboveContext above2 = getFallingAbove(world, player, ((BlockHitResult) Objects.requireNonNull(client.crosshairTarget)).getBlockPos());
-            tryExecuteAction(ActionBarTitleAction.class, action ->
-                    action.updateTitle(client, false, above2.nearestName(), above2.count(), checkHeight));
+            if (above2.count() <= 0 && above2.nearestName().getString().isBlank())
+                tryExecuteAction(ActionBarTitleAction.class, action ->
+                        action.updateTitle(client, false, above2.nearestName(), above2.count(), checkHeight));
         }
     }
 
