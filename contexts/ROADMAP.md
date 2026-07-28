@@ -68,7 +68,7 @@
 - [x] **着火检测** (`environment/on_fire`)：监听 `player.isOnFire()` 状态 → ActionBar 提示 + 搜索背包中可灭火物品。
   - [ ] 补充：寻找最近水源位置（延后至阶段 3）。
 - [x] **窒息检测** (`environment/anti_suffocation`)：检测玩家是否处于窒息状态、头顶是否有可坠落方块（沙砾/沙子等）→ ActionBar 显示方块名称和距离。
-- [ ] **饥饿检测** (`status/low_hunger`)：当饥饿值低于阈值时触发 → ActionBar 提示 + 显示最佳食物建议图标。
+- [x] **饥饿检测** (`status/low_hunger`)：当饥饿值低于阈值时触发 → ActionBar 提示 + 显示最佳食物建议。
 - [ ] **装备耐久检测** (`status/low_durability`)：轮询玩家盔甲栏位和手持物品耐久度，低于阈值时触发 → ActionBar 提示 + 对应槽位警告。
 - [x] **伤害检测** (`status/damage`)：受到任何伤害时触发 → 可选暂停/退出。
 - [ ] **药效检测** (`status/effect_hud`)：监听 `player.getStatusEffects()`，在屏幕角落绘制当前 Buff/Debuff 图标及剩余时间，时效不足时高亮警告。

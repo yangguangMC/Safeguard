@@ -37,6 +37,7 @@ public class ProtectionManager {
         register(new DamageDetection());
         register(new LowHealthDetection());
         register(new OnFireDetection());
+        register(new LowHungerDetection());
         LOGGER.info("Protections initialized with {} detections and {} actions.", protections.size(), protections.values().stream().mapToLong(Collection::size).sum());
     }
 
