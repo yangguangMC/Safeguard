@@ -102,7 +102,8 @@ Safe Guard/
 │           └── zh_cn.json                 # 中文翻译
 ├── backup/         # 备份文件
 └── contexts/       # 对项目的描述、约定等，以及项目常见依赖的反编译、反混淆后的源码
-    ├── minecraft-merged-496669bc46-1.21.11-yarn-build.6-v2-sources/    # 项目依赖的 Minecraft 反编译、反混淆后的源码，可多阅读
+    ├── minecraft-sources/                  # 项目依赖的 Minecraft 反编译、反混淆后的源码，可多阅读
+    ├── yet-another-config-lib-sources/     # 项目依赖的 YACL 提供的源码
     ├── CONTEXT.md      # 用于快速了解项目结构的介绍文档
     └── ROADMAP.md      # 项目路线图与发展规划
 ```

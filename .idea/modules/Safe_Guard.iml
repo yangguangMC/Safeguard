@@ -5,7 +5,8 @@
       <excludeFolder url="file://$MODULE_DIR$/../../backup" />
       <excludeFolder url="file://$MODULE_DIR$/../../contexts/minecraft-1.21.11-yarn-sources" />
       <excludeFolder url="file://$MODULE_DIR$/../../run" />
-      <excludeFolder url="file://$MODULE_DIR$/../../contexts/minecraft-merged-496669bc46-1.21.11-yarn-build.6-v2-sources" />
+      <excludeFolder url="file://$MODULE_DIR$/../../contexts/minecraft-sources" />
+      <excludeFolder url="file://$MODULE_DIR$/../../contexts/yet-another-config-lib-sources" />
     </content>
   </component>
 </module>
