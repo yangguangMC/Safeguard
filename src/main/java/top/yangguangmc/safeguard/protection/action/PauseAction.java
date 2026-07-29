@@ -5,6 +5,7 @@ import net.minecraft.client.gui.screen.GameMenuScreen;
 import net.minecraft.client.toast.SystemToast;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import top.yangguangmc.safeguard.ModContext;
 
 public class PauseAction extends Action {
@@ -23,6 +24,6 @@ public class PauseAction extends Action {
         client.getSoundManager().play(createSoundInstance(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F));
         client.getToastManager().add(new SystemToast(ModContext.SAFEGUARD_PAUSE, Text.translatable("messages.safeguard.name"),
                 modContext.protectionManager().getDetectionName(getParent().getId()).copy().append(Text.translatable("action.safeguard.active.afk.pause.title"))));
-        getStateNode().setEnabled(false);
+        modContext.protectionManager().getDetectionStatesRoot().getNode(Identifier.of(ModContext.MOD_ID, "active/afk")).setEnabled(false);
     }
 }
