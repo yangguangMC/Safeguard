@@ -1,6 +1,6 @@
 # Safeguard 项目上下文文档
 
-> **最后编辑于**: 2026-07-28
+> **最后编辑于**: 2026-07-29
 > **目标读者**: 不了解此项目的开发者 / AI 助手
 > **目的**: 快速了解项目结构、模块职责、依赖关系和数据流转
 
@@ -64,6 +64,7 @@ Safeguard/
 │   │   ├── protection/
 │   │   │   ├── ProtectionManager.java     # 保护功能总管理器
 │   │   │   ├── CategoryDefinition.java    # 分类默认状态定义
+│   │   │   ├── GlobalProtectionConditions.java # 全局保护前置条件
 │   │   │   ├── SwitchTreeItem.java        # 树节点接口
 │   │   │   ├── SwitchTreeNode.java        # 树状开关容器
 │   │   │   ├── detection/
@@ -141,14 +142,15 @@ Safeguard/
 
 ### 3.4 保护系统核心
 
-| 文件                          | 职责                                                                                                                                                                                                                                                                                                                    |
-|-------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `ProtectionManager.java`      | **总管理器**。持有 `protections`(Map<Detection,Collection<Action>>)、`detectionRoot`/`actionRoot` 两棵 SwitchTreeNode 树。构造函数中预定义 `active/afk` 分类为默认关闭。提供 `predefineActionCategory()`/`predefineDetectionCategory()` API 供第三方扩展。`init()` 中注册所有检测项，注册时调用 `detection.init(ctx)`。 |
-| `CategoryDefinition.java`     | **分类默认状态定义** (record)。声明树中枝干节点的默认启用状态（Identifier + defaultEnabled）。供 `ProtectionManager.predefineXxxCategory()` 使用，第三方扩展通过创建此类实例声明自定义分类。                                                                                                                            |
-| `SwitchTreeItem.java`         | **树节点接口**。定义 `getId()` 和 `isEnabledByDefault()`。Detection 和 Action 都实现此接口。`isEnabledByDefault()` 现仅作为约定保留，默认状态由树的 `defaultEnabled` 管理。                                                                                                                                             |
-| `SwitchTreeNode.java`         | **树状开关容器**。Identifier ID(/分隔层级)、enabled 状态、defaultEnabled 默认状态、父子引用。`isEffectivelyEnabled()`(级联检查)、`addOrGetNode()`(动态添加)、`predefineCategory()`(预定义分类默认值)、`setEnabled()` 触发 `notifyLeafDescendants()` 通知所有叶节点。根节点持有 nodeMap 实现 O(1) 查找。                 |
-| `GameRendererCloseEvent.java` | **GameRenderer 关闭事件**。供 `FilledThroughWallsRenderer` 等组件在 GameRenderer 关闭时清理 GPU 资源。`GameRendererMixin` 在 `GameRenderer.close()` RETURN 处触发此事件。                                                                                                                                               |
-| `GatedEvent.java`             | **门控事件包装器**。在 Fabric Event 上叠加"按所有者挂起/恢复"能力。内部维护 `Map<Object,List<T>>` + `Set<Object>`，`listen(owner,listener)` 注册、`suspend/resume(owner)` 控制。纯 lambda + Supplier 实现，零反射。                                                                                                     |
+| 文件                              | 职责                                                                                                                                                                                                                                                                                                                    |
+|-----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `ProtectionManager.java`          | **总管理器**。持有 `protections`(Map<Detection,Collection<Action>>)、`detectionRoot`/`actionRoot` 两棵 SwitchTreeNode 树。构造函数中预定义 `active/afk` 分类为默认关闭。提供 `predefineActionCategory()`/`predefineDetectionCategory()` API 供第三方扩展。`init()` 中注册所有检测项，注册时调用 `detection.init(ctx)`。 |
+| `CategoryDefinition.java`         | **分类默认状态定义** (record)。声明树中枝干节点的默认启用状态（Identifier + defaultEnabled）。供 `ProtectionManager.predefineXxxCategory()` 使用，第三方扩展通过创建此类实例声明自定义分类。                                                                                                                            |
+| `SwitchTreeItem.java`             | **树节点接口**。定义 `getId()` 和 `isEnabledByDefault()`。Detection 和 Action 都实现此接口。`isEnabledByDefault()` 现仅作为约定保留，默认状态由树的 `defaultEnabled` 管理。                                                                                                                                             |
+| `SwitchTreeNode.java`             | **树状开关容器**。Identifier ID(/分隔层级)、enabled 状态、defaultEnabled 默认状态、父子引用。`isEffectivelyEnabled()`(级联检查)、`addOrGetNode()`(动态添加)、`predefineCategory()`(预定义分类默认值)、`setEnabled()` 触发 `notifyLeafDescendants()` 通知所有叶节点。根节点持有 nodeMap 实现 O(1) 查找。                 |
+| `GlobalProtectionConditions.java` | **全局保护前置条件**。静态工具类，持有 `List<Predicate<ClientPlayerEntity>>`。`shouldProtect(player)` 在 `GatedEvent` 的 gateFactory 中被调用，全部条件（AND 逻辑）满足才允许事件分发给检测项。与树节点持久化开关正交。当前条件：非创造/旁观、非 invulnerable、抗性提升未到 255 级（amplifier < 254）。                 |
+| `GameRendererCloseEvent.java`     | **GameRenderer 关闭事件**。供 `FilledThroughWallsRenderer` 等组件在 GameRenderer 关闭时清理 GPU 资源。`GameRendererMixin` 在 `GameRenderer.close()` RETURN 处触发此事件。                                                                                                                                               |
+| `GatedEvent.java`                 | **门控事件包装器**。在 Fabric Event 上叠加"按所有者挂起/恢复"能力。内部维护 `Map<Object,List<T>>` + `Set<Object>`，`listen(owner,listener)` 注册、`suspend/resume(owner)` 控制。纯 lambda + Supplier 实现，零反射。使用它的事件声明处应适时调用 `GlobalProtectionConditions.shouldProtect()` 进行全局前置检查。         |
 
 ### 3.5 检测项 (Detection)
 

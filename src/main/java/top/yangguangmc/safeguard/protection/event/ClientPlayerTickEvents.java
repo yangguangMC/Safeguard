@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
+import top.yangguangmc.safeguard.protection.GlobalProtectionConditions;
 
 public class ClientPlayerTickEvents {
     private ClientPlayerTickEvents() {
@@ -20,14 +21,16 @@ public class ClientPlayerTickEvents {
 
 
     /**
-     * {@link #START_TICK} 的门控版本，支持按所有者挂起/恢复。
-     * 推荐 Detection 子类通过此常量注册监听器。
+     * Gated version of {@link #START_TICK} that supports suspending/resuming listeners through owner.
+     * It's recommended for subclasses of {@link top.yangguangmc.safeguard.protection.detection.Detection}
+     * to register listeners through this constant.
      *
      * @see GatedEvent
      */
     public static final GatedEvent<StartTick> GATED_START_TICK = new GatedEvent<>(
             START_TICK,
             active -> (client, world, player) -> {
+                if (!GlobalProtectionConditions.shouldProtect(player)) return;
                 for (StartTick cb : active.get()) cb.onStartTick(client, world, player);
             }
     );
