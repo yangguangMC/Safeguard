@@ -17,12 +17,12 @@ import net.minecraft.util.Identifier;
 import top.yangguangmc.safeguard.gui.screen.ConfigScreen;
 import top.yangguangmc.safeguard.protection.SwitchTreeNode;
 
-public class SafeGuardCommand {
+public class SafeguardCommand {
     private static ModContext ctx;
 
     public static void init(ModContext ctx) {
-        SafeGuardCommand.ctx = ctx;
-        ClientCommandRegistrationCallback.EVENT.register(SafeGuardCommand::register);
+        SafeguardCommand.ctx = ctx;
+        ClientCommandRegistrationCallback.EVENT.register(SafeguardCommand::register);
     }
 
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher, CommandRegistryAccess registryAccess) {
@@ -61,7 +61,7 @@ public class SafeGuardCommand {
                                                                                 context.getSource().sendFeedback(newText(Text.translatable("command.safeguard.detection.set", ctx.protectionManager().getDetectionName(id), state)));
                                                                                 return Command.SINGLE_SUCCESS;
                                                                             } else {
-                                                                context.getSource().sendError(newText(Text.translatable("command.safeguard.detection.not_found", id.toString())));
+                                                                                context.getSource().sendError(newText(Text.translatable("command.safeguard.detection.not_found", id.toString())));
                                                                                 return 0;
                                                                             }
                                                                         })

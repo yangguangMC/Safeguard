@@ -1,7 +1,7 @@
 {
-  "messages.safeguard.name": "Safe Guard",
-  "messages.safeguard.prefix": "[SafeGuard] ",
-  "screen.safeguard.config": "Safe Guard Configurations",
+  "messages.safeguard.name": "Safeguard",
+  "messages.safeguard.prefix": "[Safeguard] ",
+  "screen.safeguard.config": "Safeguard Configurations",
   "screen.safeguard.branch_description": "This is a category node. Disabling it will disable all its children",
   "category.safeguard.detections": "Detections",
   "category.safeguard.actions": "Protection Actions",

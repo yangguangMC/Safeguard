@@ -1,6 +1,4 @@
-# SafeGuard
-
-![SafeGuard Icon](src/main/resources/assets/safeguard/icon.png)
+# Safeguard
 
 ![Minecraft 1.21.11](https://img.shields.io/badge/Minecraft-1.21.11-brightgreen)
 ![Fabric](https://img.shields.io/badge/Loader-Fabric-blue)
@@ -12,7 +10,7 @@
 
 ## Overview
 
-SafeGuard is a **client-side Fabric mod** that detects in-game dangers and helps you avoid them — through visual/audio
+Safeguard is a **client-side Fabric mod** that detects in-game dangers and helps you avoid them — through visual/audio
 warnings, or optional automatic actions like pausing and disconnecting.
 
 It does **not** introduce new items, mechanics, or dimensions. It does **not** make you invincible. Everything runs

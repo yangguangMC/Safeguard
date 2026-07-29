@@ -1,4 +1,4 @@
-# SafeGuard 项目上下文文档
+# Safeguard 项目上下文文档
 
 > **最后编辑于**: 2026-07-28
 > **目标读者**: 不了解此项目的开发者 / AI 助手
@@ -10,7 +10,7 @@
 
 ## 1. 项目概述
 
-**SafeGuard** 是一个面向 Minecraft 1.21.11 的 **Fabric 客户端模组**，专注于原版生存及其衍生场景。核心使命是：
+**Safeguard** 是一个面向 Minecraft 1.21.11 的 **Fabric 客户端模组**，专注于原版生存及其衍生场景。核心使命是：
 **通过主动接管或被动提醒的方式，保护玩家免受游戏内各种危险情境的伤害**——包括但不限于摔落、岩浆、窒息、怪物偷袭、玩家偷袭（PVP）、受到伤害等。
 
 所有检测与保护动作均在 **客户端本地完成**，不依赖服务端支持。不做玩法层面的改动，不引入新物品/新机制/新维度。
@@ -18,7 +18,7 @@
 | 属性           | 值                          |
 |----------------|-----------------------------|
 | Mod ID         | `safeguard`                 |
-| Mod 名称       | `Safe Guard`                |
+| Mod 名称       | `Safeguard`                 |
 | 包名           | `top.yangguangmc.safeguard` |
 | 作者           | `yangguangMC`               |
 | 许可           | MIT                         |
@@ -41,17 +41,17 @@
 ## 2. 项目目录结构
 
 ```
-Safe Guard/
+Safeguard/
 ├── build.gradle                          # Gradle 构建脚本
 ├── settings.gradle                       # Gradle 设置
 ├── gradle.properties                     # 构建变量
 ├── src/main/
 │   ├── java/top/yangguangmc/safeguard/
-│   │   ├── SafeGuard.java                # 模组入口 (ClientModInitializer)
+│   │   ├── Safeguard.java                # 模组入口 (ClientModInitializer)
 │   │   ├── ModContext.java               # 全局上下文记录
 │   │   ├── ConfigManager.java            # 配置序列化管理
-│   │   ├── SafeGuardCommand.java         # 客户端命令
-│   │   ├── SafeGuardModMenuApiImpl.java  # ModMenu API 实现
+│   │   ├── SafeguardCommand.java         # 客户端命令
+│   │   ├── SafeguardModMenuApiImpl.java  # ModMenu API 实现
 │   │   ├── gui/screen/
 │   │   │   └── ConfigScreen.java         # YACL 配置界面
 │   │   ├── injection/mixin/
@@ -116,16 +116,16 @@ Safe Guard/
 
 | 文件                           | 职责                                                                                                                                                                                             | 关键依赖                                                                         |
 |--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| `SafeGuard.java`               | **模组主入口**，实现 `ClientModInitializer`。创建 `ProtectionManager`、`ConfigManager`、`FilledThroughWallsRenderer`，组装 `ModContext`，注册命令和配置界面，处理配置加载/保存生命周期。         | `ProtectionManager`, `ConfigManager`, `ModContext`, `FilledThroughWallsRenderer` |
-| `ModContext.java`              | **全局上下文记录 (record)**，持有 `SafeGuard` 实例、`ProtectionManager`、`ConfigManager`、`FilledThroughWallsRenderer` 引用。定义常量 `MOD_NAME`=`SafeGuard`、`MOD_ID`=`safeguard`、Toast 类型。 | 被几乎所有模块引用                                                               |
+| `Safeguard.java`               | **模组主入口**，实现 `ClientModInitializer`。创建 `ProtectionManager`、`ConfigManager`、`FilledThroughWallsRenderer`，组装 `ModContext`，注册命令和配置界面，处理配置加载/保存生命周期。         | `ProtectionManager`, `ConfigManager`, `ModContext`, `FilledThroughWallsRenderer` |
+| `ModContext.java`              | **全局上下文记录 (record)**，持有 `Safeguard` 实例、`ProtectionManager`、`ConfigManager`、`FilledThroughWallsRenderer` 引用。定义常量 `MOD_NAME`=`Safeguard`、`MOD_ID`=`safeguard`、Toast 类型。 | 被几乎所有模块引用                                                               |
 | `ConfigManager.java`           | **配置管理器**。负责将检测项/动作的树状开关状态及绑定关系保存为 JSON 并加载。`trySave()` 支持备份恢复：写入失败时先备份原文件再重试。                                                            | `ProtectionManager`, `SwitchTreeNode`, YACL, Gson                                |
-| `SafeGuardModMenuApiImpl.java` | **Mod Menu 集成**。实现 `ModMenuApi`，提供配置界面工厂方法 → `ConfigScreen::create`。                                                                                                            | `ConfigScreen`, ModMenu API                                                      |
+| `SafeguardModMenuApiImpl.java` | **Mod Menu 集成**。实现 `ModMenuApi`，提供配置界面工厂方法 → `ConfigScreen::create`。                                                                                                            | `ConfigScreen`, ModMenu API                                                      |
 
 ### 3.2 命令系统 & GUI
 
 | 文件                    | 职责                                                                                                                                                                                        | 关键依赖                                                  |
 |-------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------|
-| `SafeGuardCommand.java` | **客户端命令** `/safeguard`。子命令: `screen`(打开配置)、`detection <id> [state]`(查看/设置检测项)、`action <id> [state]`(查看/设置动作)。提供 ID 自动补全。注册采用静态 `init(ctx)` 模式。 | `ModContext`, `ProtectionManager`, Brigadier              |
+| `SafeguardCommand.java` | **客户端命令** `/safeguard`。子命令: `screen`(打开配置)、`detection <id> [state]`(查看/设置检测项)、`action <id> [state]`(查看/设置动作)。提供 ID 自动补全。注册采用静态 `init(ctx)` 模式。 | `ModContext`, `ProtectionManager`, Brigadier              |
 | `ConfigScreen.java`     | **YACL 配置界面**。三个配置分类：检测项开关(从 detectionRoot 树)、动作开关(从 actionRoot 树)、链接配置(检测项↔动作绑定)。静态 `init(ctx)` 持有上下文。                                      | `ModContext`, `ProtectionManager`, `SwitchTreeNode`, YACL |
 
 ### 3.3 Mixin 注入层
@@ -204,14 +204,14 @@ ID，并因此具有共享的配置和开关状态。但对于保护动作的 ID
 ## 4. 核心依赖关系图
 
 ```
-                         SafeGuard (ClientModInitializer)
+                         Safeguard (ClientModInitializer)
                            │ 创建并注入
                            ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │                   ModContext                                      │
 │  record: (instance, protectionManager, configMgr,                │
 │           filledThroughWallsRenderer)                             │
-│  常量: MOD_NAME=SafeGuard, MOD_ID=safeguard, Toast类型            │
+│  常量: MOD_NAME=Safeguard, MOD_ID=safeguard, Toast类型            │
 └──────┬──────────────────────┬────────────────────┬───────────────┘
        │                      │                    │
        ▼                      ▼                    ▼
@@ -250,7 +250,7 @@ ID，并因此具有共享的配置和开关状态。但对于保护动作的 ID
 ### 5.1 启动初始化
 
 ```
-Minecraft 加载模组 → SafeGuard.onInitializeClient()
+Minecraft 加载模组 → Safeguard.onInitializeClient()
   ├─ new ProtectionManager() → 空 Map + 两棵空树
   ├─ new ConfigManager()
   ├─ new FilledThroughWallsRenderer()
@@ -270,7 +270,7 @@ Minecraft 加载模组 → SafeGuard.onInitializeClient()
   ├─ configManager.tryLoad() → 从 JSON 加载配置
   ├─ ClientLifecycleEvents.CLIENT_STOPPING → configManager.trySave()
   ├─ ConfigScreen.init(ctx) → 静态持有 ctx
-  ├─ SafeGuardCommand.init(ctx) → 注册 /safeguard 命令
+  ├─ SafeguardCommand.init(ctx) → 注册 /safeguard 命令
   └─ filledThroughWallsRenderer.init() → 注册 WorldRenderEvents + GameRendererCloseEvent
 ```
 

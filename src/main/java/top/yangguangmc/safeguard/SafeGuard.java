@@ -9,7 +9,7 @@ import top.yangguangmc.safeguard.protection.ProtectionManager;
 import top.yangguangmc.safeguard.util.FilledThroughWallsRenderer;
 
 
-public final class SafeGuard implements ClientModInitializer {
+public final class Safeguard implements ClientModInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModContext.MOD_ID);
 
     @Override
@@ -24,7 +24,7 @@ public final class SafeGuard implements ClientModInitializer {
         configManager.tryLoad();
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> configManager.trySave());
         ConfigScreen.init(ctx);
-        SafeGuardCommand.init(ctx);
+        SafeguardCommand.init(ctx);
         filledThroughWallsRenderer.init();
         LOGGER.info("Initialized successfully.");
     }

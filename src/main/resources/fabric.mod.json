@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "id": "safeguard",
   "version": "${version}",
-  "name": "Safe Guard",
-  "description": "A client-side mod that helps you avoid possible dangers in survival mode.",
+  "name": "Safeguard",
+  "description": "A client-side helper that watches your back in Minecraft survival.",
   "authors": [
     "yangguangMC"
   ],
@@ -13,10 +13,10 @@
   "environment": "client",
   "entrypoints": {
     "client": [
-      "top.yangguangmc.safeguard.SafeGuard"
+      "top.yangguangmc.safeguard.Safeguard"
     ],
     "modmenu": [
-      "top.yangguangmc.safeguard.SafeGuardModMenuApiImpl"
+      "top.yangguangmc.safeguard.SafeguardModMenuApiImpl"
     ]
   },
   "mixins": [

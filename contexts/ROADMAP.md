@@ -1,4 +1,4 @@
-# SafeGuard 开发路线图 (Roadmap)
+# Safeguard 开发路线图 (Roadmap)
 
 > 如果你作为 AI 助手正在阅读本文：注意本文的作用是 **记录长期规划而非指定短期目标**，并且本文的具体方案和实现排序
 > **仅供参考**，实际会话中请以短期的明确的目标为准。
@@ -24,7 +24,7 @@
 - [x] 使用 Fabric Loom 创建 JDK 21 的 Gradle 项目。
 - [x] 配置 `gradle.properties`。
 - [x] 编写 `fabric.mod.json`（定义 `minecraft` 版本依赖、`fabric-loader` 版本、入口点）。
-- [x] 创建客户端入口类 `SafeGuard`（实现 `ClientModInitializer`），打印客户端启动日志。
+- [x] 创建客户端入口类 `Safeguard`（实现 `ClientModInitializer`），打印客户端启动日志。
 
 ### 0.2 配置系统
 

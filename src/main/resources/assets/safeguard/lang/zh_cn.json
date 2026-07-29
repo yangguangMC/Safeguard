@@ -1,7 +1,7 @@
 {
-  "messages.safeguard.name": "安全护卫",
-  "messages.safeguard.prefix": "[安全护卫] ",
-  "screen.safeguard.config": "安全护卫 设置",
+  "messages.safeguard.name": "Safeguard",
+  "messages.safeguard.prefix": "[Safeguard] ",
+  "screen.safeguard.config": "安全守卫 设置",
   "screen.safeguard.branch_description": "这是分类控制节点，关闭后将禁用其所有子项",
   "category.safeguard.detections": "检测项",
   "category.safeguard.actions": "保护动作",
