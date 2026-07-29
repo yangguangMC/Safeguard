@@ -8,8 +8,10 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import top.yangguangmc.safeguard.ModContext;
 
-public class PauseAction extends Action {
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 
+public class PauseAction extends Action {
     public PauseAction() {
         super("active/afk/pause");
     }
@@ -20,10 +22,16 @@ public class PauseAction extends Action {
             getStateNode().setEnabled(false);
             return;
         }
+        Text parentName = modContext.protectionManager().getDetectionName(getParent().getId());
+        client.inGameHud.getChatHud().addMessage(Text.translatable("messages.safeguard.prefix").append(
+                Text.translatable("action.safeguard.active.afk.pause.chat_message", parentName,
+                        new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime())
+                )
+        ));
         client.setScreen(new GameMenuScreen(true));
         client.getSoundManager().play(createSoundInstance(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F));
         client.getToastManager().add(new SystemToast(ModContext.SAFEGUARD_PAUSE, Text.translatable("messages.safeguard.name"),
-                modContext.protectionManager().getDetectionName(getParent().getId()).copy().append(Text.translatable("action.safeguard.active.afk.pause.title"))));
-        modContext.protectionManager().getDetectionStatesRoot().getNode(Identifier.of(ModContext.MOD_ID, "active/afk")).setEnabled(false);
+                parentName.copy().append(Text.translatable("action.safeguard.active.afk.pause.title"))));
+        modContext.protectionManager().getActionStatesRoot().getNode(Identifier.of(ModContext.MOD_ID, "active/afk")).setEnabled(false);
     }
 }

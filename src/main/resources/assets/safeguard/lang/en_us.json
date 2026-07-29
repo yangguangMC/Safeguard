@@ -1,6 +1,6 @@
 {
   "messages.safeguard.name": "Safeguard",
-  "messages.safeguard.prefix": "[Safeguard] ",
+  "messages.safeguard.prefix": "§a[Safeguard] ",
   "screen.safeguard.config": "Safeguard Configurations",
   "screen.safeguard.branch_description": "This is a category node. Disabling it will disable all its children",
   "category.safeguard.detections": "Detections",
@@ -60,6 +60,11 @@
   "detection.safeguard.status.low_hunger.low": "Hunger low",
   "detection.safeguard.status.low_hunger.replenish": "Replenish hunger",
   "detection.safeguard.status.low_hunger.suggestion": " Suggestion: ",
+  "action.safeguard.active.afk.pause.chat_message": "[Auto Pause] Danger detected by \"%s\" at %s, paused the game!",
+  "action.safeguard.active.afk.pause.title": " Danger detected! Game paused.",
+  "action.safeguard.active.afk.pause.unavailable": "Pause unavailable - not in singleplayer!",
+  "action.safeguard.active.afk.quit.chat_message": "[Auto Quit] Danger detected by \"%s\" at %s, quited the game!",
+  "action.safeguard.active.afk.quit.title": " Danger detected! Disconnected.",
   "gui.safeguard.slot.hotbar": " (Hotbar %s)",
   "gui.safeguard.slot.inventory": " (Inventory)",
   "gui.safeguard.slot.offhand": " (Offhand)",
@@ -82,8 +87,5 @@
   "item.safeguard.fire_strategy.powder_snow_bucket": "Powder Snow Bucket",
   "item.safeguard.fire_strategy.cauldron": "Cauldron",
   "item.safeguard.fire_strategy.enchanted_golden_apple": "Enchanted Golden Apple",
-  "item.safeguard.fire_strategy.totem_of_undying": "Totem of Undying",
-  "action.safeguard.active.afk.pause.title": " Danger detected! Game paused.",
-  "action.safeguard.active.afk.pause.unavailable": "Pause unavailable - not in singleplayer!",
-  "action.safeguard.active.afk.quit.title": " Danger detected! Disconnected."
+  "item.safeguard.fire_strategy.totem_of_undying": "Totem of Undying"
 }

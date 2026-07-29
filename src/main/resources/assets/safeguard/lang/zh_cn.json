@@ -1,6 +1,6 @@
 {
   "messages.safeguard.name": "Safeguard",
-  "messages.safeguard.prefix": "[Safeguard] ",
+  "messages.safeguard.prefix": "§a[Safeguard] ",
   "screen.safeguard.config": "安全守卫 设置",
   "screen.safeguard.branch_description": "这是分类控制节点，关闭后将禁用其所有子项",
   "category.safeguard.detections": "检测项",
@@ -60,6 +60,11 @@
   "detection.safeguard.status.low_hunger.low": "饥饿值低",
   "detection.safeguard.status.low_hunger.replenish": "补充饥饿值",
   "detection.safeguard.status.low_hunger.suggestion": " 建议：",
+  "action.safeguard.active.afk.pause.chat_message": "[自动暂停] 由“%s”在 %s 检测到危险并暂停游戏！",
+  "action.safeguard.active.afk.pause.title": " 检测到危险，已自动暂停游戏！",
+  "action.safeguard.active.afk.pause.unavailable": "检测到非单人游戏，暂停不可用！",
+  "action.safeguard.active.afk.quit.chat_message": "[自动退出] 由“%s”在 %s 检测到危险并退出游戏！",
+  "action.safeguard.active.afk.quit.title": " 检测到危险，已自动退出游戏！",
   "gui.safeguard.slot.hotbar": " (快捷栏 %s)",
   "gui.safeguard.slot.inventory": " (背包)",
   "gui.safeguard.slot.offhand": " (副手)",
@@ -82,8 +87,5 @@
   "item.safeguard.fire_strategy.powder_snow_bucket": "细雪桶",
   "item.safeguard.fire_strategy.cauldron": "炼药锅",
   "item.safeguard.fire_strategy.enchanted_golden_apple": "附魔金苹果",
-  "item.safeguard.fire_strategy.totem_of_undying": "不死图腾",
-  "action.safeguard.active.afk.pause.title": " 检测到危险，已自动暂停游戏！",
-  "action.safeguard.active.afk.pause.unavailable": "检测到非单人游戏，暂停不可用！",
-  "action.safeguard.active.afk.quit.title": " 检测到危险，已自动退出游戏！"
+  "item.safeguard.fire_strategy.totem_of_undying": "不死图腾"
 }
