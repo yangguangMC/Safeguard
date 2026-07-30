@@ -37,6 +37,7 @@ public class ConfigScreen {
                 .category(buildDetectionCategory(detectionRoot))
                 .category(buildActionCategory(actionRoot))
                 .category(buildLinksCategory(detectionRoot))
+                .save(ctx.configManager()::trySave)
                 .build()
                 .generateScreen(parent);
     }
