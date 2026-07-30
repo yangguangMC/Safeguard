@@ -32,16 +32,12 @@ public class ConfigManager {
             save();
         } catch (Exception e) {
             LOGGER.error("Could not save config file!", e);
-            LOGGER.info("Trying to backup original file and save again...");
+            LOGGER.info("Trying to backup original file and retry saving...");
             try {
-                Path config = getConfig();
-                if (Files.exists(config)) {
-                    Files.copy(config, YACLPlatform.getConfigDir().resolve(ModContext.MOD_ID + ".json.backup"), StandardCopyOption.REPLACE_EXISTING);
-                    Files.delete(config);
-                }
+                backupAndRename();
                 save();
             } catch (Exception ex) {
-                LOGGER.error("Could not save config file again!", ex);
+                LOGGER.error("Could not save config file during backup or after retrying!", ex);
             }
         }
     }
@@ -59,6 +55,7 @@ public class ConfigManager {
         json.add("action", actionJson);
 
         Files.writeString(getConfig(), gson.toJson(json), StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        LOGGER.debug("Successfully saved config to '{}'.", getConfig());
     }
 
     public void tryLoad() {
@@ -66,12 +63,22 @@ public class ConfigManager {
             LOGGER.info("No config file found, using defaults.");
             return;
         }
+        boolean loaded = false;
         try {
             load();
+            loaded = true;
         } catch (IOException e) {
             LOGGER.warn("Failed to load config, using defaults.", e);
         } catch (Exception e) {
             LOGGER.warn("Config file corrupted, using defaults.", e);
+        }
+        if (!loaded) {
+            LOGGER.info("Trying to backup original file...");
+            try {
+                backupAndRename();
+            } catch (Exception ex) {
+                LOGGER.error("Failed to backup original config file!", ex);
+            }
         }
     }
 
@@ -84,6 +91,17 @@ public class ConfigManager {
 
         JsonObject aj = json.getAsJsonObject("action");
         if (aj != null) loadActionTree(aj, "", "");
+        LOGGER.debug("Successfully loaded config from '{}'.", getConfig());
+    }
+
+    private void backupAndRename() throws IOException {
+        Path config = getConfig();
+        if (Files.exists(config)) {
+            Path target = YACLPlatform.getConfigDir().resolve(ModContext.MOD_ID + ".json.backup");
+            Files.copy(config, target, StandardCopyOption.REPLACE_EXISTING);
+            Files.delete(config);
+            LOGGER.info("Successfully backed config up at '{}'.", target);
+        }
     }
 
     private void buildDetectionTree(JsonObject parent, SwitchTreeNode node, boolean isTopLevel) {
