@@ -25,7 +25,7 @@ import java.util.function.Predicate;
 
 public class LowHungerDetection extends Detection {
     @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
-    private int findFoodThreshold = 14;
+    private int findFoodThreshold = 12;
     @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
     private int lowHungerThreshold = 6;
 
@@ -35,11 +35,17 @@ public class LowHungerDetection extends Detection {
     }
 
     private void onStartTick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
-        if (player.getHungerManager().getFoodLevel() > findFoodThreshold) return;
-        FoodScorer.FoodResult result = FoodScorer.findBestFood(player, findFoodThreshold);
-        tryExecuteAction(ActionBarTitleAction.class, action ->
-                action.updateTitle(client, player.getHungerManager().getFoodLevel() < lowHungerThreshold, result));
-        if (player.getHungerManager().getFoodLevel() < lowHungerThreshold) {
+        int foodLevel = player.getHungerManager().getFoodLevel();
+        if (foodLevel > findFoodThreshold) return;
+        FoodScorer.FoodResult result = FoodScorer.findBestFood(player, lowHungerThreshold);
+        boolean isLow = foodLevel < lowHungerThreshold;
+        boolean healingPriority = player.getHealth() <= player.getMaxHealth() * FoodScorer.HALF_HEALTH_RATIO;
+        // 饥饿极低或血量告急时始终显示；正常饥饿值下仅当背包有多种食物选择时才推荐
+        boolean shouldShow = isLow || healingPriority || result.foodCount() > 1;
+        if (shouldShow)
+            tryExecuteAction(ActionBarTitleAction.class, action ->
+                    action.updateTitle(client, isLow, result));
+        if (isLow) {
             tryExecuteAction(PauseAction.class, action -> action.pause(client));
             tryExecuteAction(QuitAction.class, action -> action.quit(client));
         }
@@ -75,6 +81,10 @@ public class LowHungerDetection extends Detection {
                     || item == Items.PUFFERFISH;
         };
 
+        private static boolean isValidFood(ItemStack stack, Predicate<ItemStack> blacklist) {
+            return stack.get(DataComponentTypes.FOOD) != null && !blacklist.test(stack);
+        }
+
         /**
          * 在背包（含副手）中搜索最佳食物。
          *
@@ -91,24 +101,29 @@ public class LowHungerDetection extends Detection {
             PlayerInventory inv = player.getInventory();
             FoodResult best = FoodResult.NOT_FOUND;
             double bestScore = Double.NEGATIVE_INFINITY;
+            int foodCount = 0;
 
             for (int i = 0; i < PlayerInventory.MAIN_SIZE; i++) {
                 ItemStack stack = inv.getStack(i);
-                best = evaluate(stack, i, currentFood, currentSat, healingPriority, blacklist, best, bestScore);
+                if (!isValidFood(stack, blacklist)) continue;
+                foodCount++;
+                best = evaluate(stack, i, currentFood, currentSat, healingPriority, best, bestScore);
                 if (best.score() > bestScore) bestScore = best.score();
             }
             ItemStack offHand = inv.getStack(PlayerInventory.OFF_HAND_SLOT);
-            best = evaluate(offHand, PlayerInventory.OFF_HAND_SLOT, currentFood, currentSat, healingPriority, blacklist, best, bestScore);
+            if (isValidFood(offHand, blacklist)) {
+                foodCount++;
+                best = evaluate(offHand, PlayerInventory.OFF_HAND_SLOT, currentFood, currentSat, healingPriority, best, bestScore);
+            }
 
-            return best;
+            return best.isFound() ? best.withCountAndHealing(foodCount, healingPriority) : best;
         }
 
         private static FoodResult evaluate(ItemStack stack, int slot, int currentFood, float currentSat,
-                                           boolean healingPriority, Predicate<ItemStack> blacklist,
+                                           boolean healingPriority,
                                            FoodResult currentBest, double currentBestScore) {
             FoodComponent food = stack.get(DataComponentTypes.FOOD);
-            if (food == null) return currentBest;
-            if (blacklist.test(stack)) return currentBest;
+            assert food != null;
 
             double totalNutrition = food.nutrition();
             double totalSat = food.saturation();
@@ -145,19 +160,26 @@ public class LowHungerDetection extends Detection {
 
             if (score > currentBestScore) {
                 Text name = stack.getName().copy();
-                return new FoodResult(name, slot, score);
+                return new FoodResult(name, slot, score, 0, false);
             }
             return currentBest;
         }
 
         /**
-         * 扩展 FoodResult，携带评分用于内部比较。
+         * 食物评分结果，同时携带评分用于内部比较和推荐门控所需的元数据。
          */
-        private record FoodResult(Text name, int slot, double score) {
-            static final FoodResult NOT_FOUND = new FoodResult(null, -1, Double.NEGATIVE_INFINITY);
+        private record FoodResult(Text name, int slot, double score, int foodCount, boolean healingPriority) {
+            static final FoodResult NOT_FOUND = new FoodResult(null, -1, Double.NEGATIVE_INFINITY, 0, false);
 
             boolean isFound() {
                 return name != null;
+            }
+
+            /**
+             * 由 {@link FoodScorer#findBestFood} 在遍历完毕后调用，注入计数与血量状态。
+             */
+            FoodResult withCountAndHealing(int foodCount, boolean healingPriority) {
+                return new FoodResult(this.name, this.slot, this.score, foodCount, healingPriority);
             }
         }
     }

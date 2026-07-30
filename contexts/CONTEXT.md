@@ -168,7 +168,7 @@ suspend/resume，子类无需手动检查启用状态。触发动作使用 `tryE
 | `DamageDetection.java`            | `status/damage`                | 玩家受到伤害时自动暂停/退出。                                                                                  | PauseAction, QuitAction                                        |
 | `LavaDetection.java`              | `environment/lava`             | 玩家挖掘时扫描周围岩浆，ActionBar 显示最近岩浆距离，BlockOutlineAction 高亮。                                  | ActionBarTitleAction, BlockOutlineAction                       |
 | `LowHealthDetection.java`         | `status/low_health`            | 根据当前生命值计算 RedVignetteAction 的混合进度 (0~1)；低于阈值时触发暂停/退出。                               | RedVignetteAction, PauseAction, QuitAction                     |
-| `LowHungerDetection.java`         | `status/low_hunger`            | 饥饿值低时评分背包中可食物品并在 ActionBar 推荐；极低时触发暂停/退出。                                         | ActionBarTitleAction, PauseAction, QuitAction                  |
+| `LowHungerDetection.java`         | `status/low_hunger`            | 饥饿值低于一定阈值时评分背包食物并推荐（正常饥饿仅当多种食物时推荐，避免频繁打扰）；低于更低阈值时暂停/退出。  | ActionBarTitleAction, PauseAction, QuitAction                  |
 | `OnFireDetection.java`            | `environment/on_fire`          | 着火时搜索背包中灭火/防火物品，ActionBar 显示剩余时间及建议物品。                                              | ActionBarTitleAction                                           |
 
 ### 3.6 保护动作 (Action)
