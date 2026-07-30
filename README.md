@@ -41,16 +41,16 @@ All detections are **enabled by default** unless otherwise noted.
 
 Actions are triggered by detections. Each can be toggled on/off independently.
 
-| Type       | Action                                      | Default |
-|------------|---------------------------------------------|---------|
-| 🛡️ Active  | **Auto Pause** (singleplayer only)          | ❌ off  |
-| 🛡️ Active  | **Auto Quit**                               | ❌ off  |
-| 🛡️ Active  | **Auto MLG** (water / slime placement)      | ✅ on   |
-| 💬 Passive | **Action Bar Title** warning text           | ✅ on   |
-| 💬 Passive | **Entity Outline** glowing highlight        | ✅ on   |
-| 💬 Passive | **Block Highlight** through walls           | ✅ on   |
-| 💬 Passive | **Sound Alert**                             | ✅ on   |
-| 💬 Passive | **Red Vignette** (low-health screen effect) | ✅ on   |
+| Type             | Action                                      | Default |
+|------------------|---------------------------------------------|---------|
+| 🛡️ Active/AFK    | **Auto Pause** (singleplayer only)          | ❌ off  |
+| 🛡️ Active/AFK    | **Auto Quit**                               | ❌ off  |
+| 🛡️ Active/Other  | **Auto MLG** (water / slime placement)      | ✅ on   |
+| 💬 Passive/HUD   | **Action Bar Title** warning text           | ✅ on   |
+| 💬 Passive/HUD   | **Red Vignette** (low-health screen effect) | ✅ on   |
+| 💬 Passive/Other | **Entity Outline** glowing highlight        | ✅ on   |
+| 💬 Passive/Other | **Block Highlight** through walls           | ✅ on   |
+| 💬 Passive/Other | **Sound Alert**                             | ✅ on   |
 
 ---
 
