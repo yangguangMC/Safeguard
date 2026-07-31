@@ -46,32 +46,80 @@ public class Utils {
     }
 
     public static String getDirectionIndicator(MinecraftClient client, ClientWorld world, Entity target, Camera camera) {
-        double relativeYaw = getRelativeYaw(camera.getCameraPos(), camera.getCameraYaw(), target, e -> client.getRenderTickCounter().getTickProgress(!world.getTickManager().shouldSkipTick(e)));
-        String directionIndicator;
+        EntityTickProgress tickProgress = e -> client.getRenderTickCounter()
+                .getTickProgress(!world.getTickManager().shouldSkipTick(e));
+        Vec3d targetPos = target.getCameraPosVec(tickProgress.getTickProgress(target));
+        return getDirectionIndicator(camera, targetPos);
+    }
+
+    /**
+     * 根据相机状态与目标世界坐标返回方位指示字符串（含水平+垂直方向）。
+     *
+     * @param camera    玩家相机
+     * @param targetPos 目标世界坐标
+     * @return 方向指示文本，如 "N"、"NE↑"、"SW↓"
+     */
+    public static String getDirectionIndicator(Camera camera, Vec3d targetPos) {
+        Vec3d cameraPos = camera.getCameraPos();
+        double relativeYaw = computeRelativeYaw(cameraPos, camera.getCameraYaw(), targetPos);
+        String horizontal = directionFromRelativeYaw(relativeYaw);
+
+        double dx = targetPos.getX() - cameraPos.getX();
+        double dy = targetPos.getY() - cameraPos.getY();
+        double dz = targetPos.getZ() - cameraPos.getZ();
+        double horizontalDist = Math.sqrt(dx * dx + dz * dz);
+        if (horizontalDist < 1e-6) return horizontal;
+
+        double pitchToTarget = -Math.toDegrees(Math.atan2(dy, horizontalDist));
+        double relativePitch = pitchToTarget - camera.getPitch();
+        if (relativePitch > 30.0)
+            return horizontal + Text.translatable("gui.safeguard.direction.below").getString();
+        if (relativePitch < -30.0)
+            return horizontal + Text.translatable("gui.safeguard.direction.above").getString();
+        return horizontal;
+    }
+
+    /**
+     * 核心公式：计算从相机看向目标位置的相对偏航角。
+     *
+     * @param cameraPos 相机世界坐标
+     * @param yaw       相机偏航角（度）
+     * @param targetPos 目标世界坐标
+     * @return 相对偏航角，范围 [-180, 180]
+     */
+    public static double computeRelativeYaw(Vec3d cameraPos, float yaw, Vec3d targetPos) {
+        Vec3d vec3d = cameraPos.subtract(targetPos).rotateYClockwise();
+        float f = (float) MathHelper.atan2(vec3d.getZ(), vec3d.getX()) * (180.0F / (float) Math.PI);
+        return MathHelper.subtractAngles(yaw, f);
+    }
+
+    /**
+     * 将相对偏航角映射为水平方向指示字符串。
+     *
+     * @param relativeYaw 相对偏航角
+     * @return N/NE/E/SE/S/SW/W/NW 之一
+     */
+    public static String directionFromRelativeYaw(double relativeYaw) {
         if (relativeYaw < -180 || relativeYaw > 180) throw new AssertionError();
         if (relativeYaw >= -157.5 && relativeYaw < -112.5)
-            directionIndicator = Text.translatable("gui.safeguard.direction.sw").getString();
-        else if (relativeYaw >= -112.5 && relativeYaw < -67.5)
-            directionIndicator = Text.translatable("gui.safeguard.direction.w").getString();
-        else if (relativeYaw >= -67.5 && relativeYaw < -22.5)
-            directionIndicator = Text.translatable("gui.safeguard.direction.nw").getString();
-        else if (relativeYaw >= -22.5 && relativeYaw < 22.5)
-            directionIndicator = Text.translatable("gui.safeguard.direction.n").getString();
-        else if (relativeYaw >= 22.5 && relativeYaw < 67.5)
-            directionIndicator = Text.translatable("gui.safeguard.direction.ne").getString();
-        else if (relativeYaw >= 67.5 && relativeYaw < 112.5)
-            directionIndicator = Text.translatable("gui.safeguard.direction.e").getString();
-        else if (relativeYaw >= 112.5 && relativeYaw < 157.5)
-            directionIndicator = Text.translatable("gui.safeguard.direction.se").getString();
-        else
-            directionIndicator = Text.translatable("gui.safeguard.direction.s").getString();  // relativeYaw <= -157.5 || relativeYaw >= 157.5
-        return directionIndicator;
+            return Text.translatable("gui.safeguard.direction.sw").getString();
+        if (relativeYaw >= -112.5 && relativeYaw < -67.5)
+            return Text.translatable("gui.safeguard.direction.w").getString();
+        if (relativeYaw >= -67.5 && relativeYaw < -22.5)
+            return Text.translatable("gui.safeguard.direction.nw").getString();
+        if (relativeYaw >= -22.5 && relativeYaw < 22.5)
+            return Text.translatable("gui.safeguard.direction.n").getString();
+        if (relativeYaw >= 22.5 && relativeYaw < 67.5)
+            return Text.translatable("gui.safeguard.direction.ne").getString();
+        if (relativeYaw >= 67.5 && relativeYaw < 112.5)
+            return Text.translatable("gui.safeguard.direction.e").getString();
+        if (relativeYaw >= 112.5 && relativeYaw < 157.5)
+            return Text.translatable("gui.safeguard.direction.se").getString();
+        return Text.translatable("gui.safeguard.direction.s").getString();  // relativeYaw <= -157.5 || relativeYaw >= 157.5
     }
 
     public static double getRelativeYaw(Vec3d cameraPos, float yaw, Entity entity, EntityTickProgress tickProgress) {
-        Vec3d vec3d = cameraPos.subtract(entity.getCameraPosVec(tickProgress.getTickProgress(entity))).rotateYClockwise();
-        float f = (float) MathHelper.atan2(vec3d.getZ(), vec3d.getX()) * (180.0F / (float) Math.PI);
-        return MathHelper.subtractAngles(yaw, f);
+        return computeRelativeYaw(cameraPos, yaw, entity.getCameraPosVec(tickProgress.getTickProgress(entity)));
     }
 
     /**
@@ -80,7 +128,8 @@ public class Utils {
     public static boolean isBehindPlayer(MinecraftClient client, ClientWorld world, Entity entity, Camera camera) {
         EntityTickProgress tickProgress = e -> client.getRenderTickCounter()
                 .getTickProgress(!world.getTickManager().shouldSkipTick(e));
-        double relativeYaw = getRelativeYaw(camera.getCameraPos(), camera.getCameraYaw(), entity, tickProgress);
+        double relativeYaw = computeRelativeYaw(camera.getCameraPos(), camera.getCameraYaw(),
+                entity.getCameraPosVec(tickProgress.getTickProgress(entity)));
         return Math.abs(relativeYaw) > 90.0;
     }
 

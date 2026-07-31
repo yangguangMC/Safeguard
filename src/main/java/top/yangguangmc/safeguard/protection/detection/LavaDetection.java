@@ -3,12 +3,12 @@ package top.yangguangmc.safeguard.protection.detection;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.render.Camera;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import top.yangguangmc.safeguard.protection.action.Action;
@@ -88,35 +88,11 @@ public class LavaDetection extends Detection {
 
         public void updateTitle(MinecraftClient client, ClientPlayerEntity player, BlockPos nearestLava) {
             double distance = Math.sqrt(Vec3d.ofCenter(nearestLava).squaredDistanceTo(player.getEyePos()));
-            String direction = getDirectionIndicator(player, nearestLava);
+            Camera camera = client.gameRenderer.getCamera();
+            String direction = Utils.getDirectionIndicator(camera, Vec3d.ofCenter(nearestLava));
 
             MutableText text = Text.translatable("detection.safeguard.environment.lava.warning", String.format("%.1f", distance), direction);
             client.inGameHud.setOverlayMessage(text.styled(style -> style.withColor(Formatting.GOLD)), false);
-        }
-
-        /**
-         * 根据玩家朝向计算目标方块相对于玩家的方位指示符。
-         */
-        private static String getDirectionIndicator(ClientPlayerEntity player, BlockPos targetPos) {
-            double dx = targetPos.getX() + 0.5 - player.getX();
-            double dz = targetPos.getZ() + 0.5 - player.getZ();
-            double angle = Math.toDegrees(Math.atan2(dz, dx)) - player.getYaw() - 90;   // 技术债：为什么要旋转 90 度？
-            double relativeYaw = MathHelper.wrapDegrees(angle);
-
-            String horizontal;
-            if (relativeYaw >= -157.5 && relativeYaw < -112.5) horizontal = Text.translatable("gui.safeguard.direction.sw").getString();
-            else if (relativeYaw >= -112.5 && relativeYaw < -67.5) horizontal = Text.translatable("gui.safeguard.direction.w").getString();
-            else if (relativeYaw >= -67.5 && relativeYaw < -22.5) horizontal = Text.translatable("gui.safeguard.direction.nw").getString();
-            else if (relativeYaw >= -22.5 && relativeYaw < 22.5) horizontal = Text.translatable("gui.safeguard.direction.n").getString();
-            else if (relativeYaw >= 22.5 && relativeYaw < 67.5) horizontal = Text.translatable("gui.safeguard.direction.ne").getString();
-            else if (relativeYaw >= 67.5 && relativeYaw < 112.5) horizontal = Text.translatable("gui.safeguard.direction.e").getString();
-            else if (relativeYaw >= 112.5 && relativeYaw < 157.5) horizontal = Text.translatable("gui.safeguard.direction.se").getString();
-            else horizontal = Text.translatable("gui.safeguard.direction.s").getString();
-
-            double dy = targetPos.getY() + 0.5 - player.getEyeY();
-            if (dy > 3) return Text.translatable("gui.safeguard.direction.above").getString() + horizontal;
-            if (dy < -3) return Text.translatable("gui.safeguard.direction.below").getString() + horizontal;
-            return horizontal;
         }
     }
 }
