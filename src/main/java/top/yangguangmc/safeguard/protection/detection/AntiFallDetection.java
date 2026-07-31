@@ -96,6 +96,10 @@ public class AntiFallDetection extends Detection {
                 Items.HONEY_BLOCK,
                 Items.TWISTING_VINES
         );
+        @SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal"})
+        private double minFallDistance = 3;
+        @SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal"})
+        private double minHeight = 6;
         private int placementSchedule = -1;
 
         public MLGAction() {
@@ -130,7 +134,7 @@ public class AntiFallDetection extends Detection {
                 placementSchedule--;
                 return;
             }
-            if (player.isOnGround() || player.fallDistance < 1.5 || player.hasStatusEffect(StatusEffects.SLOW_FALLING)
+            if (player.isOnGround() || player.fallDistance < minFallDistance || player.hasStatusEffect(StatusEffects.SLOW_FALLING)
                     || player.isGliding() || player.getInventory().getMainStacks().stream().limit(9).map(ItemStack::getItem)
                     .noneMatch(world.getEnvironmentAttributes().getAttributeValue(EnvironmentAttributes.WATER_EVAPORATES_GAMEPLAY)
                             ? MLG_ITEMS_NETHER::contains : MLG_ITEMS_NORMAL::contains)) {
@@ -146,7 +150,7 @@ public class AntiFallDetection extends Detection {
                 return;
             }
             blockPos = blockPos.up();
-            if (player.getY() - blockPos.getY() <= 4) {
+            if (player.getY() - blockPos.getY() < minHeight) {
                 placementSchedule = -1;
                 return;
             }
