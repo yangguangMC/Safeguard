@@ -10,6 +10,7 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ToolComponent;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.hit.BlockHitResult;
@@ -48,21 +49,50 @@ public class Utils {
         double relativeYaw = getRelativeYaw(camera.getCameraPos(), camera.getCameraYaw(), target, e -> client.getRenderTickCounter().getTickProgress(!world.getTickManager().shouldSkipTick(e)));
         String directionIndicator;
         if (relativeYaw < -180 || relativeYaw > 180) throw new AssertionError();
-        if (relativeYaw >= -157.5 && relativeYaw < -112.5) directionIndicator = Text.translatable("gui.safeguard.direction.sw").getString();
-        else if (relativeYaw >= -112.5 && relativeYaw < -67.5) directionIndicator = Text.translatable("gui.safeguard.direction.w").getString();
-        else if (relativeYaw >= -67.5 && relativeYaw < -22.5) directionIndicator = Text.translatable("gui.safeguard.direction.nw").getString();
-        else if (relativeYaw >= -22.5 && relativeYaw < 22.5) directionIndicator = Text.translatable("gui.safeguard.direction.n").getString();
-        else if (relativeYaw >= 22.5 && relativeYaw < 67.5) directionIndicator = Text.translatable("gui.safeguard.direction.ne").getString();
-        else if (relativeYaw >= 67.5 && relativeYaw < 112.5) directionIndicator = Text.translatable("gui.safeguard.direction.e").getString();
-        else if (relativeYaw >= 112.5 && relativeYaw < 157.5) directionIndicator = Text.translatable("gui.safeguard.direction.se").getString();
-        else directionIndicator = Text.translatable("gui.safeguard.direction.s").getString();  // relativeYaw <= -157.5 || relativeYaw >= 157.5
+        if (relativeYaw >= -157.5 && relativeYaw < -112.5)
+            directionIndicator = Text.translatable("gui.safeguard.direction.sw").getString();
+        else if (relativeYaw >= -112.5 && relativeYaw < -67.5)
+            directionIndicator = Text.translatable("gui.safeguard.direction.w").getString();
+        else if (relativeYaw >= -67.5 && relativeYaw < -22.5)
+            directionIndicator = Text.translatable("gui.safeguard.direction.nw").getString();
+        else if (relativeYaw >= -22.5 && relativeYaw < 22.5)
+            directionIndicator = Text.translatable("gui.safeguard.direction.n").getString();
+        else if (relativeYaw >= 22.5 && relativeYaw < 67.5)
+            directionIndicator = Text.translatable("gui.safeguard.direction.ne").getString();
+        else if (relativeYaw >= 67.5 && relativeYaw < 112.5)
+            directionIndicator = Text.translatable("gui.safeguard.direction.e").getString();
+        else if (relativeYaw >= 112.5 && relativeYaw < 157.5)
+            directionIndicator = Text.translatable("gui.safeguard.direction.se").getString();
+        else
+            directionIndicator = Text.translatable("gui.safeguard.direction.s").getString();  // relativeYaw <= -157.5 || relativeYaw >= 157.5
         return directionIndicator;
     }
 
-    private static double getRelativeYaw(Vec3d cameraPos, float yaw, Entity entity, EntityTickProgress tickProgress) {
+    public static double getRelativeYaw(Vec3d cameraPos, float yaw, Entity entity, EntityTickProgress tickProgress) {
         Vec3d vec3d = cameraPos.subtract(entity.getCameraPosVec(tickProgress.getTickProgress(entity))).rotateYClockwise();
         float f = (float) MathHelper.atan2(vec3d.getZ(), vec3d.getX()) * (180.0F / (float) Math.PI);
         return MathHelper.subtractAngles(yaw, f);
+    }
+
+    /**
+     * 判断目标实体是否在玩家背后（相对偏航角绝对值 > 90°）。
+     */
+    public static boolean isBehindPlayer(MinecraftClient client, ClientWorld world, Entity entity, Camera camera) {
+        EntityTickProgress tickProgress = e -> client.getRenderTickCounter()
+                .getTickProgress(!world.getTickManager().shouldSkipTick(e));
+        double relativeYaw = getRelativeYaw(camera.getCameraPos(), camera.getCameraYaw(), entity, tickProgress);
+        return Math.abs(relativeYaw) > 90.0;
+    }
+
+    /**
+     * 判断目标实体是否正在朝玩家靠近。
+     * 即移动速度不为 0，且加上速度后的末位置比初位置更靠近玩家。
+     */
+    public static boolean isApproaching(LivingEntity entity, ClientPlayerEntity player) {
+        Vec3d velocity = entity.getVelocity();
+        if (velocity.lengthSquared() == 0) return false;
+        Vec3d futurePos = entity.getEntityPos().add(velocity);
+        return futurePos.squaredDistanceTo(player.getEntityPos()) < entity.squaredDistanceTo(player);
     }
 
     public static void simulatePress(KeyBinding keyBinding) {

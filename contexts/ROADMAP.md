@@ -40,7 +40,8 @@
 - [x] 实现 `ConfigManager`：使用 Gson 读写 `.minecraft/config/safeguard.json`。
 - [x] 模组启动时加载配置，若无则生成默认配置。
 - [x] 完整正确实现 `ConfigManager.save()` `ConfigManager.load()`。
-- [ ] 实现配置变更监听，变更后自动序列化到磁盘。
+- [x] 配置变更后序列化到磁盘
+- [x] 细化配置备份粒度
 
 ### 0.3 保护系统框架
 
@@ -74,7 +75,7 @@
 - [x] **着火检测** (`environment/on_fire`)：监听 `player.isOnFire()` 状态 → ActionBar 提示 + 搜索背包中可灭火物品。
 - [x] **窒息检测** (`environment/anti_suffocation`)：检测玩家是否处于窒息状态、头顶是否有可坠落方块（沙砾/沙子等）→
   ActionBar 显示方块名称和距离。
-- [x] **饥饿检测** (`status/low_hunger`)：当饥饿值低于阈值时触发 → ActionBar 提示 + 显示最佳食物建议。
+- [x] **饥饿检测** (`status/low_hunger`)：当饥饿值低于阈值时触发 → ActionBar 提示 + 显示最佳食物建议（看情况智能推荐，避免烦人）。
 - [x] **伤害检测** (`status/damage`)：受到任何伤害时触发 → 可选暂停/退出。
 
 ### 1.2 MVP（最小可用产品）公测前的打磨

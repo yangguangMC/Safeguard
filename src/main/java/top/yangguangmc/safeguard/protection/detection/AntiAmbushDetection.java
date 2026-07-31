@@ -2,6 +2,7 @@ package top.yangguangmc.safeguard.protection.detection;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.render.Camera;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -21,7 +22,7 @@ import java.util.Comparator;
 import java.util.List;
 
 public class AntiAmbushDetection extends Detection {
-    @SuppressWarnings("FieldMayBeFinal")
+    @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
     private int checkInterval = 5;
     private int tickCounter;
 
@@ -47,7 +48,20 @@ public class AntiAmbushDetection extends Detection {
                 .map(entity -> (LivingEntity) entity)
                 .filter(entity -> player.squaredDistanceTo(entity) <= 16 * 16)
                 .filter(other -> !player.isTeammate(other))
-                .filter(entity -> (entity.isInvisible() && entity.isInvisibleTo(player)) || !player.canSee(entity))
+                .filter(entity -> {
+                    // 规则A: 非玩家且坐在载具中 → 排除（无法发起偷袭）
+                    if (!(entity instanceof PlayerEntity) && entity.hasVehicle()) return false;
+                    // 规则B: 非玩家处于洞穴而玩家不处于 → 排除
+                    if (!(entity instanceof PlayerEntity)
+                            && !world.isSkyVisible(entity.getBlockPos())
+                            && world.isSkyVisible(player.getBlockPos())) return false;
+                    // 规则C: 在背后且正在靠近 → 即使视野可见也强制计入
+                    Camera camera = client.gameRenderer.getCamera();
+                    if (Utils.isBehindPlayer(client, world, entity, camera)
+                            && Utils.isApproaching(entity, player)) return true;
+                    // 基础规则: 隐身/不可见才计入
+                    return (entity.isInvisible() && entity.isInvisibleTo(player)) || !player.canSee(entity);
+                })
                 .sorted(Comparator.comparing(player::squaredDistanceTo))
                 .toList();
         @SuppressWarnings("DataFlowIssue") final int color = Formatting.GOLD.getColorValue();
