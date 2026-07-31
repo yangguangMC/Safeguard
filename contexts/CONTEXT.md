@@ -157,19 +157,19 @@ Safeguard/
 suspend/resume，子类无需手动检查启用状态。触发动作使用 `tryExecuteAction()` 自动双重开关检查。 检测项是"事实单例"的，一个
 `Identifier` 对应唯一实例。
 
-| 文件                              | ID                             | 职责（触发条件 + 触发动作）                                                                                    | 绑定的 Action                                                  |
-|-----------------------------------|--------------------------------|----------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
-| `Detection.java`                  | —                              | 抽象基类。ID、`boundActions`、绑定管理。`listen()`(声明门控事件监听)、`tryExecuteAction()`(自动双重开关包装)。 | -                                                              |
-| `AntiCreeperDetection.java`       | `combat/anti_creeper`          | 检测 8 格内苦力怕。ActionBar 显示距离/引信倒计时；近距离触发暂停/退出。                                        | ActionBarTitleAction, PlaySoundAction, PauseAction, QuitAction |
-| `AntiFallDetection.java`          | `environment/anti_fall`        | 三个子功能：防挖掘时掉落、已坠落保护（暂停/退出）、MLG 自动落地水。                                            | ActionBarTitleAction, PauseAction, QuitAction, MLGAction       |
-| `AntiAmbushDetection.java`        | `combat/anti_ambush`           | 定期检测附近敌对生物/隐身玩家，ActionBar 显示信息，OutlineAction 高亮。                                        | ActionBarTitleAction, OutlineAction                            |
-| `ProjectileTrackerDetection.java` | `combat/projectile_tracker`    | 检测飞向玩家的弹射物（箭/火球等），ActionBar 警告。                                                            | ActionBarTitleAction                                           |
-| `AntiSuffocationDetection.java`   | `environment/anti_suffocation` | 三个子功能：窒息检测（isInsideWall）、上方坠落方块检测、挖掘头顶方块意图检测。                                 | ActionBarTitleAction                                           |
-| `DamageDetection.java`            | `status/damage`                | 玩家受到伤害时自动暂停/退出。                                                                                  | PauseAction, QuitAction                                        |
-| `LavaDetection.java`              | `environment/lava`             | 玩家挖掘时扫描周围岩浆，ActionBar 显示最近岩浆距离，BlockOutlineAction 高亮。                                  | ActionBarTitleAction, BlockOutlineAction                       |
-| `LowHealthDetection.java`         | `status/low_health`            | 根据当前生命值计算 RedVignetteAction 的混合进度 (0~1)；低于阈值时触发暂停/退出。                               | RedVignetteAction, PauseAction, QuitAction                     |
-| `LowHungerDetection.java`         | `status/low_hunger`            | 饥饿值低于一定阈值时评分背包食物并推荐（正常饥饿仅当多种食物时推荐，避免频繁打扰）；低于更低阈值时暂停/退出。  | ActionBarTitleAction, PauseAction, QuitAction                  |
-| `OnFireDetection.java`            | `environment/on_fire`          | 着火时搜索背包中灭火/防火物品，ActionBar 显示剩余时间及建议物品。                                              | ActionBarTitleAction                                           |
+| 文件                              | ID                             | 职责（触发条件 + 触发动作）                                                                                                 | 绑定的 Action                                                  |
+|-----------------------------------|--------------------------------|-----------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------|
+| `Detection.java`                  | —                              | 抽象基类。ID、`boundActions`、绑定管理。`listen()`(声明门控事件监听)、`tryExecuteAction()`(自动双重开关包装)。              | -                                                              |
+| `AntiCreeperDetection.java`       | `combat/anti_creeper`          | 检测 8 格内苦力怕。ActionBar 显示距离/引信倒计时；近距离触发暂停/退出。                                                     | ActionBarTitleAction, PlaySoundAction, PauseAction, QuitAction |
+| `AntiFallDetection.java`          | `environment/anti_fall`        | 三个子功能：防挖掘时掉落、已坠落保护（暂停/退出）、MLG 自动落地水。                                                         | ActionBarTitleAction, PauseAction, QuitAction, MLGAction       |
+| `AntiAmbushDetection.java`        | `combat/anti_ambush`           | 定期检测附近敌对生物/隐身玩家（排除坐载具怪物、洞穴内外差异；背后靠近则强制检测）。ActionBar 显示信息，OutlineAction 高亮。 | ActionBarTitleAction, OutlineAction                            |
+| `ProjectileTrackerDetection.java` | `combat/projectile_tracker`    | 检测飞向玩家的弹射物（箭/火球等），ActionBar 警告。                                                                         | ActionBarTitleAction                                           |
+| `AntiSuffocationDetection.java`   | `environment/anti_suffocation` | 三个子功能：窒息检测（isInsideWall）、上方坠落方块检测、挖掘头顶方块意图检测。                                              | ActionBarTitleAction                                           |
+| `DamageDetection.java`            | `status/damage`                | 玩家受到伤害时自动暂停/退出。                                                                                               | PauseAction, QuitAction                                        |
+| `LavaDetection.java`              | `environment/lava`             | 玩家挖掘时扫描周围岩浆，ActionBar 显示最近岩浆距离，BlockOutlineAction 高亮。                                               | ActionBarTitleAction, BlockOutlineAction                       |
+| `LowHealthDetection.java`         | `status/low_health`            | 根据当前生命值计算 RedVignetteAction 的混合进度 (0~1)；低于阈值时触发暂停/退出。                                            | RedVignetteAction, PauseAction, QuitAction                     |
+| `LowHungerDetection.java`         | `status/low_hunger`            | 饥饿值低于一定阈值时评分背包食物并推荐（正常饥饿仅当多种食物时推荐，避免频繁打扰）；低于更低阈值时暂停/退出。               | ActionBarTitleAction, PauseAction, QuitAction                  |
+| `OnFireDetection.java`            | `environment/on_fire`          | 着火时搜索背包中灭火/防火物品，ActionBar 显示剩余时间及建议物品。                                                           | ActionBarTitleAction                                           |
 
 ### 3.6 保护动作 (Action)
 
@@ -192,10 +192,10 @@ suspend/resume，子类无需手动检查启用状态。触发动作使用 `tryE
 
 ### 3.7 工具类
 
-| 文件                              | 职责                                                                                                                                                            |
-|-----------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `FilledThroughWallsRenderer.java` | **方块填充渲染器**。在指定位置绘制深度穿透填充立方体。使用 **标签隔离** 机制（`Map<String, List<BoxRenderState>>`），各调用方通过标签管理自己的方块，互不干扰。 |
-| `Utils.java`                      | **工具类**。提供 `simulatePress()`(模拟按键)、`directionIndicator()`(方向指示器)、`hasDestroyIntention()`(判断玩家是否有挖掘意图) 等静态方法。                  |
+| 文件                              | 职责                                                                                                                                                                                                                                                                                                 |
+|-----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `FilledThroughWallsRenderer.java` | **方块填充渲染器**。在指定位置绘制深度穿透填充立方体。使用 **标签隔离** 机制（`Map<String, List<BoxRenderState>>`），各调用方通过标签管理自己的方块，互不干扰。                                                                                                                                      |
+| `Utils.java`                      | **工具类**。提供 `simulatePress()`(模拟按键)、`getDirectionIndicator()`(方向指示器，含水平+垂直俯仰)、`computeRelativeYaw()`(核心偏航角公式)、`directionFromRelativeYaw()`(8扇区映射)、`isBehindPlayer()`(背后判断)、`isApproaching()`(靠近判断)、`hasDestroyIntention()`(挖掘意图判断) 等静态方法。 |
 
 ---
 
