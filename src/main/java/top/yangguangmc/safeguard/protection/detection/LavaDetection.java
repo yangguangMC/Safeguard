@@ -91,7 +91,7 @@ public class LavaDetection extends Detection {
             Camera camera = client.gameRenderer.getCamera();
             String direction = Utils.getDirectionIndicator(camera, Vec3d.ofCenter(nearestLava));
 
-            MutableText text = Text.translatable("detection.safeguard.environment.lava.warning", String.format("%.1f", distance), direction);
+            MutableText text = Text.translatable("detection.safeguard.environment.lava.warning", String.format("%.0f", distance), direction);
             client.inGameHud.setOverlayMessage(text.styled(style -> style.withColor(Formatting.GOLD)), false);
         }
     }

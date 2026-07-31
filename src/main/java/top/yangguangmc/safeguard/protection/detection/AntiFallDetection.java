@@ -189,7 +189,7 @@ public class AntiFallDetection extends Detection {
                         .min(Comparator.comparing(SafeResult::posBelow))
                         .filter(o -> !result.equals(o)).ifPresent(result2 ->
                                 message.append(Text.translatable("detection.safeguard.environment.anti_fall.warning_secondary",
-                                        result2.posBelow(), result2.name()).styled(style -> {
+                                        result2.name(), result2.posBelow()).styled(style -> {
                                     if (result2.unsafety() > 2) return style.withColor(Formatting.RED).withBold(true);
                                     return style.withColor(Formatting.RED);
                                 }))

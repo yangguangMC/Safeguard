@@ -54,7 +54,7 @@
   "detection.safeguard.environment.anti_suffocation.suffocating": "Suffocating in ",
   "detection.safeguard.environment.anti_suffocation.above": "Above: ",
   "detection.safeguard.environment.anti_suffocation.count": ", %s total",
-  "detection.safeguard.environment.lava.warning": "Warning: Nearest lava %s blocks, direction %s",
+  "detection.safeguard.environment.lava.warning": "Warning: Nearest lava %s in blocks, direction %s",
   "detection.safeguard.environment.on_fire.warning": "Warning: On fire",
   "detection.safeguard.environment.on_fire.suggestion": " Suggestion: ",
   "detection.safeguard.status.low_hunger.low": "Hunger low",

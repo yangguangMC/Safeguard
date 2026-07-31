@@ -47,7 +47,7 @@
   "detection.safeguard.combat.projectile_tracker.warning_unknown": "警告：%s 靠近 %s",
   "detection.safeguard.combat.projectile_tracker.warning_known": "警告：%s 向你发射 %s %s",
   "detection.safeguard.environment.anti_fall.warning": "警告：下方 %s 格处存在 %s",
-  "detection.safeguard.environment.anti_fall.warning_secondary": " | 警告：下方 %s 格处存在 %s",
+  "detection.safeguard.environment.anti_fall.warning_secondary": " | 警告：下方 %2$s 格处存在 %1$s",
   "detection.safeguard.environment.anti_fall.cliff": "悬崖/空洞",
   "detection.safeguard.environment.anti_fall.solid": "固体方块",
   "detection.safeguard.environment.anti_suffocation.warning_prefix": "警告：",
