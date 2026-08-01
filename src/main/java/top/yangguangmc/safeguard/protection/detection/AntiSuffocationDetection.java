@@ -26,7 +26,7 @@ import java.util.Objects;
 
 public class AntiSuffocationDetection extends Detection {
     @SuppressWarnings("FieldMayBeFinal")
-    private int checkHeight = 99;
+    private int checkHeight = 36;
 
     public AntiSuffocationDetection() {
         super("environment/anti_suffocation", new ActionBarTitleAction());
@@ -60,10 +60,13 @@ public class AntiSuffocationDetection extends Detection {
                 pos -> Math.abs(Vec3d.ofCenter(pos).getX() - player.getX()) <= 1
                         && pos.getY() > player.getEyeY()
                         && Math.abs(Vec3d.ofCenter(pos).getZ() - player.getZ()) < 1)) {
-            AboveContext above2 = getFallingAbove(world, player, ((BlockHitResult) Objects.requireNonNull(client.crosshairTarget)).getBlockPos());
-            if (above2.count() > 0 && !above2.nearestName().getString().isBlank())
-                tryExecuteAction(ActionBarTitleAction.class, action ->
-                        action.updateTitle(client, false, above2.nearestName(), above2.count(), checkHeight));
+            BlockPos pos = ((BlockHitResult) Objects.requireNonNull(client.crosshairTarget)).getBlockPos();
+            if (BlockPos.stream(pos, pos.up(2)).map(pos1 -> world.getBlockState(pos1).getBlock()).anyMatch(block -> block instanceof Falling)) {
+                AboveContext above2 = getFallingAbove(world, player, pos);
+                if (above2.count() > 0 && !above2.nearestName().getString().isBlank())
+                    tryExecuteAction(ActionBarTitleAction.class, action ->
+                            action.updateTitle(client, false, above2.nearestName(), above2.count(), checkHeight));
+            }
         }
     }
 
