@@ -16,6 +16,11 @@ public class QuitAction extends Action {
         super("active/afk/quit");
     }
 
+    @Override
+    public boolean defaultEnabled() {
+        return false;
+    }
+
     public void quit(MinecraftClient client) {
         Text parentName = modContext.protectionManager().getDetectionName(getParent().getId());
         client.inGameHud.getChatHud().addMessage(Text.translatable("messages.safeguard.prefix").append(

@@ -5,7 +5,7 @@ import net.minecraft.util.Identifier;
 public interface SwitchTreeItem {
     Identifier getId();
 
-    default boolean isEnabledByDefault() {
+    default boolean defaultEnabled() {
         return true;
     }
 }

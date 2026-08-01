@@ -106,6 +106,11 @@ public class AntiFallDetection extends Detection {
             super("active/other/mlg");
         }
 
+        @Override
+        public boolean defaultEnabled() {
+            return false;
+        }
+
         public void tick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
             if (placementSchedule != -1) LOGGER.debug("[MLG Action] Schedule: {}", placementSchedule);
             // 若已经计划好位置了

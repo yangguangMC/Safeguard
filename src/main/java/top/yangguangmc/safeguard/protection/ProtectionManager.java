@@ -20,9 +20,7 @@ public class ProtectionManager {
     private ModContext ctx;
 
     public ProtectionManager() {
-        // 预定义默认关闭的分类
-        // 递归创建路径上的所有 category 都会使用传入的 defaultEnabled？这不是我们通常想要的。只能预定义其前一节点。
-        predefineActionCategory(new CategoryDefinition("active", true));
+        // active/afk 分类默认关闭，方便用户挂机时一键批量切换
         predefineActionCategory(new CategoryDefinition("active/afk", false));
     }
 
@@ -43,9 +41,10 @@ public class ProtectionManager {
 
     public void register(Detection detection) {
         protections.put(detection, detection.getBoundActions());
-        SwitchTreeNode detectionNode = detectionRoot.addOrGetNode(detection.getId());
+        SwitchTreeNode detectionNode = detectionRoot.addOrGetNode(detection.getId(), detection.defaultEnabled());
         detectionNode.addEffectiveStateListener(detection::applyActiveState);
-        for (Action action : detection.getBoundActions()) actionRoot.addOrGetNode(action.getId());
+        for (Action action : detection.getBoundActions())
+            actionRoot.addOrGetNode(action.getId(), action.defaultEnabled());
         detection.init(ctx);
         detection.applyActiveState(detectionNode.isEffectivelyEnabled());
     }

@@ -1,6 +1,6 @@
 # Safeguard 项目上下文文档
 
-> **最后编辑于**: 2026-07-29
+> **最后编辑于**: 2026-08-01
 > **目标读者**: 不了解此项目的开发者 / AI 助手
 > **目的**: 快速了解项目结构、模块职责、依赖关系和数据流转
 
@@ -179,7 +179,7 @@ suspend/resume，子类无需手动检查启用状态。触发动作使用 `tryE
 | 文件                      | ID                            | 职责                                                                       | 默认启用 |
 |---------------------------|-------------------------------|----------------------------------------------------------------------------|----------|
 | `Action.java`             | —                             | 抽象基类。`getStateNode()` 获取树中开关节点。                              | —        |
-| `PauseAction.java`        | `active/afk/pause`            | 自动暂停（仅单人游戏）。发送聊天消息 + Toast，执行后 `setEnabled(false)`。 | **否**   |
+| `PauseAction.java`        | `active/afk/pause`            | 自动暂停（仅单人游戏）。发送聊天消息 + Toast，执行后 `setEnabled(false)`。 | 是       |
 | `QuitAction.java`         | `active/afk/quit`             | 自动退出。发送聊天消息 + Toast，执行后 `setEnabled(false)`。               | **否**   |
 | `OutlineAction.java`      | `passive/other/outline`       | 实体轮廓高亮。ConcurrentHashMap 维护 UUID→剩余tick/颜色。                  | 是       |
 | `BlockOutlineAction.java` | `passive/other/block_outline` | 方块轮廓高亮。通过 FilledThroughWallsRenderer 标签隔离渲染。               | 是       |

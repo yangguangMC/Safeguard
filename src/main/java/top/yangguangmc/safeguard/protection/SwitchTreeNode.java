@@ -297,10 +297,12 @@ public class SwitchTreeNode {
                                                          Map<Identifier, SwitchTreeNode> nodeMap,
                                                          boolean defaultEnabled) {
         if (nodeMap.containsKey(id)) return nodeMap.get(id);
-        SwitchTreeNode node = new SwitchTreeNode(id, nodeMap, defaultEnabled);
+        // 确保祖先存在（祖先始终默认为 true，避免副作用）
         Identifier parentId = getParentIdentifier(id);
         SwitchTreeNode parentNode = (parentId == null) ? root
-                : createNodeAndAncestors(parentId, root, nodeMap, defaultEnabled);
+                : createNodeAndAncestors(parentId, root, nodeMap, true);
+        // 创建目标节点，使用指定的 defaultEnabled
+        SwitchTreeNode node = new SwitchTreeNode(id, nodeMap, defaultEnabled);
         parentNode.addChild(node);
         return node;
     }
