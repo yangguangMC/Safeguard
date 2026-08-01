@@ -17,6 +17,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShapes;
+import org.jetbrains.annotations.Nullable;
 import top.yangguangmc.safeguard.protection.action.Action;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
 import top.yangguangmc.safeguard.util.Utils;
@@ -25,8 +26,19 @@ import java.util.List;
 import java.util.Objects;
 
 public class AntiSuffocationDetection extends Detection {
+    /**
+     * 窒息检测箱体宽度因子，源自 {@link net.minecraft.entity.Entity#isInsideWall()}
+     */
+    private static final float SUFFOCATION_BOX_WIDTH_FACTOR = 0.8F;
+    /**
+     * 窒息检测箱体高度，源自 {@link net.minecraft.entity.Entity#isInsideWall()}
+     */
+    private static final double SUFFOCATION_BOX_HEIGHT = 1.0E-6;
+    /**
+     * 向上扫描受重力影响对象的最大数量
+     */
     @SuppressWarnings("FieldMayBeFinal")
-    private int checkHeight = 36;
+    private int maxFallingScanCount = 36;
 
     public AntiSuffocationDetection() {
         super("environment/anti_suffocation", new ActionBarTitleAction());
@@ -34,64 +46,132 @@ public class AntiSuffocationDetection extends Detection {
     }
 
     private void onStartTick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
-        AboveContext above = getFallingAbove(world, player, BlockPos.ofFloored(player.getEyePos()));
-        // 情况 1：正在窒息
-        if (player.isInsideWall()) {
-            // 算法来自官方 net.minecraft.entity.Entity.isInsideWall
-            Box box = Box.of(player.getEyePos(), player.getWidth() * 0.8F, 1.0E-6, player.getWidth() * 0.8F);
-            Text name = world.getBlockState(BlockPos.stream(box).filter(pos -> {
-                BlockState blockState = world.getBlockState(pos);
-                return !blockState.isAir()
-                        && blockState.shouldSuffocate(world, pos)
-                        && VoxelShapes.matchesAnywhere(blockState.getCollisionShape(world, pos).offset(pos), VoxelShapes.cuboid(box), BooleanBiFunction.AND);
-            }).findAny().orElseThrow()).getBlock().getName();
+        // 情况1：正在窒息
+        Text suffocatingBlock = getSuffocatingBlockName(world, player);
+        if (suffocatingBlock != null) {
+            FallingScanResult aboveResult = scanFallingAbove(world, player, BlockPos.ofFloored(player.getEyePos()));
             tryExecuteAction(ActionBarTitleAction.class, action ->
-                    action.updateTitle(client, true, name, above.count(), checkHeight));
+                    action.updateTitle(client, true, suffocatingBlock, aboveResult.count(), maxFallingScanCount));
             return;
         }
-        // 情况 2：上方有下落中的方块
-        if (!above.entities().isEmpty()) {
+        // 情况2：上方有坠落对象（Falling 方块 或 FallingBlockEntity）
+        FallingScanResult aboveResult = scanFallingBlockEntities(world, player);
+        if (aboveResult.count() > 0) {
             tryExecuteAction(ActionBarTitleAction.class, action ->
-                    action.updateTitle(client, false, above.nearestName(), above.count(), checkHeight));
+                    action.updateTitle(client, false, aboveResult.nearestName(), aboveResult.count(), maxFallingScanCount));
             return;
         }
-        // 情况 3：尝试挖掘头顶方块
-        if (Utils.hasDestroyIntention(client, world, player,
-                pos -> Math.abs(Vec3d.ofCenter(pos).getX() - player.getX()) <= 1
-                        && pos.getY() > player.getEyeY()
-                        && Math.abs(Vec3d.ofCenter(pos).getZ() - player.getZ()) < 1)) {
-            BlockPos pos = ((BlockHitResult) Objects.requireNonNull(client.crosshairTarget)).getBlockPos();
-            if (BlockPos.stream(pos, pos.up(2)).map(pos1 -> world.getBlockState(pos1).getBlock()).anyMatch(block -> block instanceof Falling)) {
-                AboveContext above2 = getFallingAbove(world, player, pos);
-                if (above2.count() > 0 && !above2.nearestName().getString().isBlank())
+        // 情况3：挖掘头顶方块意图
+        if (Utils.hasDestroyIntention(client, world, player, pos -> isBlockAbovePlayerHead(pos, player))) {
+            BlockPos targetPos = ((BlockHitResult) Objects.requireNonNull(client.crosshairTarget)).getBlockPos();
+            if (hasFallingBlockNearTarget(world, targetPos)) {
+                FallingScanResult aboveTarget = scanFallingBlocks(world, targetPos);
+                if (aboveTarget.count() > 0 && !aboveTarget.nearestName().getString().isBlank())
                     tryExecuteAction(ActionBarTitleAction.class, action ->
-                            action.updateTitle(client, false, above2.nearestName(), above2.count(), checkHeight));
+                            action.updateTitle(client, false, aboveTarget.nearestName(), aboveTarget.count(), maxFallingScanCount));
             }
         }
     }
 
-    private AboveContext getFallingAbove(ClientWorld world, ClientPlayerEntity player, BlockPos startPos) {
+    /**
+     * 向上扫描受重力影响的对象（Falling 方块 + FallingBlockEntity），返回合并结果。
+     *
+     * @param world    当前客户端世界
+     * @param player   玩家
+     * @param startPos 扫描起始位置
+     * @return 扫描结果（count + nearestName）
+     */
+    private FallingScanResult scanFallingAbove(ClientWorld world, ClientPlayerEntity player, BlockPos startPos) {
+        FallingScanResult blocks = scanFallingBlocks(world, startPos);
+        FallingScanResult entities = scanFallingBlockEntities(world, player);
+        Text name = blocks.nearestName().getString().isBlank()
+                ? entities.nearestName()
+                : blocks.nearestName();
+        return new FallingScanResult(Math.min(blocks.count() + entities.count(), maxFallingScanCount + 1), name);
+    }
+
+    /**
+     * 向上扫描实现 {@link Falling} 接口的方块。
+     * <p>
+     * 使用手动 for 循环而非 {@link BlockPos#stream(BlockPos, BlockPos)}，
+     * 因为后者内部复用同一个 {@link BlockPos.Mutable} 对象，无法收集为列表（.toList() 中所有元素引用相同坐标）。
+     *
+     * @param world    当前客户端世界
+     * @param startPos 扫描起始位置
+     * @return 扫描结果
+     */
+    private FallingScanResult scanFallingBlocks(ClientWorld world, BlockPos startPos) {
         int count = 0;
-        List<Entity> entities = null;
-        Text name = null;
-        for (BlockPos pos = startPos; count < checkHeight && !world.isOutOfHeightLimit(pos); pos = pos.up()) {
+        Text name = Text.empty();
+        for (BlockPos pos = startPos; count < maxFallingScanCount + 1 && !world.isOutOfHeightLimit(pos); pos = pos.up()) {
             Block block = world.getBlockState(pos).getBlock();
             if (block instanceof Falling) {
                 count++;
-                if (name == null) name = block.getName();
+                if (name.getString().isBlank()) name = block.getName();
             }
         }
-        if (count < checkHeight) {
-            entities = world.getOtherEntities(player,
-                    player.getBoundingBox().expand(0.5).withMinY(player.getEyeY()).withMaxY(player.getEyeY() + checkHeight),
-                    entity -> entity instanceof FallingBlockEntity);
-            count += entities.size();
-            if (name == null && !entities.isEmpty()) name = entities.getFirst().getDisplayName();
-        }
-        return new AboveContext(count, entities == null ? List.of() : entities, name == null ? Text.empty() : name);
+        return new FallingScanResult(count, name);
     }
 
-    private record AboveContext(int count, List<Entity> entities, Text nearestName) {
+    /**
+     * 扫描头顶的 {@link FallingBlockEntity} 实体。
+     *
+     * @param world  当前客户端世界
+     * @param player 玩家
+     * @return 扫描结果
+     */
+    private FallingScanResult scanFallingBlockEntities(ClientWorld world, ClientPlayerEntity player) {
+        List<Entity> entities = world.getOtherEntities(player,
+                player.getBoundingBox().expand(0.5).withMinY(player.getEyeY()).withMaxY(player.getEyeY() + maxFallingScanCount),
+                entity -> entity instanceof FallingBlockEntity);
+        int count = Math.min(entities.size(), maxFallingScanCount + 1);
+        Text name = entities.isEmpty() ? Text.empty() : entities.getFirst().getDisplayName();
+        return new FallingScanResult(count, name);
+    }
+
+    /**
+     * 获取玩家当前正在窒息碰撞的方块名称。
+     * 算法源自 {@link net.minecraft.entity.Entity#isInsideWall()}。
+     *
+     * @param world  当前客户端世界
+     * @param player 玩家
+     * @return 窒息方块的名称，未窒息时返回 {@code null}
+     */
+    @Nullable
+    private Text getSuffocatingBlockName(ClientWorld world, ClientPlayerEntity player) {
+        if (!player.isInsideWall()) return null;
+        float f = player.getWidth() * SUFFOCATION_BOX_WIDTH_FACTOR;
+        Box box = Box.of(player.getEyePos(), f, SUFFOCATION_BOX_HEIGHT, f);
+        return BlockPos.stream(box).filter(pos -> {
+            BlockState state = world.getBlockState(pos);
+            return !state.isAir()
+                    && state.shouldSuffocate(world, pos)
+                    && VoxelShapes.matchesAnywhere(state.getCollisionShape(world, pos).offset(pos), VoxelShapes.cuboid(box), BooleanBiFunction.AND);
+        }).findAny().map(pos -> world.getBlockState(pos).getBlock().getName()).orElse(null);
+    }
+
+    /**
+     * 判断目标方块上方 2 格内是否存在 {@link Falling} 类型的方块。
+     * <p>
+     * 同样不依赖 {@link BlockPos#stream(BlockPos, BlockPos)} 以避开 Mutable 复用陷阱。
+     */
+    private boolean hasFallingBlockNearTarget(ClientWorld world, BlockPos targetPos) {
+        for (BlockPos pos = targetPos; pos.getY() <= targetPos.getY() + 2; pos = pos.up()) {
+            if (world.getBlockState(pos).getBlock() instanceof Falling) return true;
+        }
+        return false;
+    }
+
+    /**
+     * 判断方块位置是否在玩家头顶（水平方向上与玩家重心距离 ≤1，Y 轴高于眼部高度）。
+     */
+    private static boolean isBlockAbovePlayerHead(BlockPos pos, ClientPlayerEntity player) {
+        return Math.abs(Vec3d.ofCenter(pos).getX() - player.getX()) <= 1
+                && pos.getY() > player.getEyeY()
+                && Math.abs(Vec3d.ofCenter(pos).getZ() - player.getZ()) < 1;
+    }
+
+    private record FallingScanResult(int count, Text nearestName) {
     }
 
     private static class ActionBarTitleAction extends Action {
@@ -99,14 +179,14 @@ public class AntiSuffocationDetection extends Detection {
             super("passive/hud/action_bar_title");
         }
 
-        public void updateTitle(MinecraftClient client, boolean suffocating, Text block, int count, int maxCount) {
+        public void updateTitle(MinecraftClient client, boolean suffocating, Text block, int count, int maxFallingScanCount) {
             MutableText text = Text.translatable("detection.safeguard.environment.anti_suffocation.warning_prefix")
                     .append(suffocating
                             ? Text.translatable("detection.safeguard.environment.anti_suffocation.suffocating")
-                            : (block == null ? Text.empty() : Text.translatable("detection.safeguard.environment.anti_suffocation.above")))
-                    .append(block == null ? Text.empty() : block);
+                            : Text.translatable("detection.safeguard.environment.anti_suffocation.above"))
+                    .append(block);
             if (count > 0)
-                text.append(Text.translatable("detection.safeguard.environment.anti_suffocation.count", count > maxCount ? maxCount + "+" : String.valueOf(count)));
+                text.append(Text.translatable("detection.safeguard.environment.anti_suffocation.count", count > maxFallingScanCount ? maxFallingScanCount + "+" : String.valueOf(count)));
             client.inGameHud.setOverlayMessage(text.styled(style -> style.withColor(Formatting.RED)), false);
         }
     }
