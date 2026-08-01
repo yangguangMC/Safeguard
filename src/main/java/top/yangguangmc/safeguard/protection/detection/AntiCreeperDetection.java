@@ -20,7 +20,7 @@ import top.yangguangmc.safeguard.util.Utils;
 import java.util.function.UnaryOperator;
 
 public class AntiCreeperDetection extends Detection {
-    private final double distance = 8;
+    private final double distance = 12;
 
     public AntiCreeperDetection() {
         super("combat/anti_creeper",
@@ -49,8 +49,8 @@ public class AntiCreeperDetection extends Detection {
             float fuseTime = creeper.getLerpedFuseTime(client.getRenderTickCounter().getTickProgress(world.getTickManager().shouldSkipTick(e)));
             tryExecuteAction(ActionBarTitleAction.class, action ->
                     action.updateTitle(client, world, creeper, d2, fuseTime, style -> {
-                        if (d2 <= 1 / 2.0 * distance) return style.withColor(Formatting.RED).withBold(true);
-                        else if (d2 <= 3 / 4.0 * distance) return style.withColor(Formatting.GOLD);
+                        if (d2 <= 1 / 3.0 * distance) return style.withColor(Formatting.RED).withBold(fuseTime > 0);
+                        else if (d2 <= 1 / 2.0 * distance) return style.withColor(Formatting.GOLD);
                         else return style.withColor(Formatting.YELLOW);
                     }));
             tryExecuteAction(PlaySoundAction.class, action -> {

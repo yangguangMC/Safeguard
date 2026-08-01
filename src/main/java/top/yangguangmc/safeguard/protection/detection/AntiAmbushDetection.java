@@ -6,10 +6,7 @@ import net.minecraft.client.render.Camera;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.mob.GhastEntity;
-import net.minecraft.entity.mob.HostileEntity;
-import net.minecraft.entity.mob.PhantomEntity;
-import net.minecraft.entity.mob.SlimeEntity;
+import net.minecraft.entity.mob.*;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -58,7 +55,8 @@ public class AntiAmbushDetection extends Detection {
                     // 规则C: 在背后且正在靠近 → 即使视野可见也强制计入
                     Camera camera = client.gameRenderer.getCamera();
                     if (Utils.isBehindPlayer(client, world, entity, camera)
-                            && Utils.isApproaching(entity, player)) return true;
+                            && Utils.isApproaching(entity, player)
+                            && !(entity instanceof CreeperEntity)) return true;
                     // 基础规则: 隐身/不可见才计入
                     return (entity.isInvisible() && entity.isInvisibleTo(player)) || !player.canSee(entity);
                 })
