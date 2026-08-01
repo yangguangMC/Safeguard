@@ -16,7 +16,7 @@
       "top.yangguangmc.safeguard.Safeguard"
     ],
     "modmenu": [
-      "top.yangguangmc.safeguard.SafeguardModMenuApiImpl"
+      "top.yangguangmc.safeguard.compat.SafeguardModMenuApiImpl"
     ]
   },
   "mixins": [
