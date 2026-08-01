@@ -4,6 +4,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import top.yangguangmc.safeguard.compat.IrisCompat;
 import top.yangguangmc.safeguard.gui.screen.ConfigScreen;
 import top.yangguangmc.safeguard.protection.ProtectionManager;
 import top.yangguangmc.safeguard.util.FilledThroughWallsRenderer;
@@ -26,6 +27,7 @@ public final class Safeguard implements ClientModInitializer {
         ConfigScreen.init(ctx);
         SafeguardCommand.init(ctx);
         filledThroughWallsRenderer.init();
+        IrisCompat.registerPipelines();
         LOGGER.info("Initialized successfully.");
     }
 }

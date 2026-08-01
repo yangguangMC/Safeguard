@@ -2,6 +2,7 @@ package top.yangguangmc.safeguard.util;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
+import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.systems.CommandEncoder;
@@ -38,6 +39,10 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class FilledThroughWallsRenderer {
     public static final RenderPipeline FILLED_THROUGH_WALLS = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.POSITION_COLOR_SNIPPET)
             .withLocation(Identifier.of(ModContext.MOD_ID, "pipeline/filled_through_walls"))
+            .withBlend(BlendFunction.TRANSLUCENT)
+            .withCull(false)
+            .withDepthWrite(false)
+            .withColorWrite(true)
             .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
             .build()
     );

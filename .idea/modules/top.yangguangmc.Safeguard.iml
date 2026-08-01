@@ -5,6 +5,9 @@
       <excludeFolder url="file://$MODULE_DIR$/../../contexts/minecraft-sources" />
       <excludeFolder url="file://$MODULE_DIR$/../../contexts/yet-another-config-lib-sources" />
       <excludeFolder url="file://$MODULE_DIR$/../../run" />
+      <excludeFolder url="file://$MODULE_DIR$/../../backup" />
+      <excludeFolder url="file://$MODULE_DIR$/../../contexts/litematica-LTS-1.21.11" />
+      <excludeFolder url="file://$MODULE_DIR$/../../contexts/malilib-LTS-1.21.11" />
     </content>
   </component>
 </module>
