@@ -4,6 +4,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.projectile.FireworkRocketEntity;
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
@@ -29,6 +30,8 @@ public class ProjectileTrackerDetection extends Detection {
                 Vec3d arrowPos = proj.getEntityPos();
                 Vec3d velocity = proj.getVelocity();
                 if (velocity.lengthSquared() < 0.0001) continue;
+                if (velocity.lengthSquared() < 1.5 && velocity.horizontalLengthSquared() < 0.05) continue;
+                if (proj instanceof FireworkRocketEntity fireworkRocket && !fireworkRocket.wasShotAtAngle()) continue;
                 if (player.squaredDistanceTo(arrowPos.add(velocity)) >= player.squaredDistanceTo(arrowPos)) continue;
                 Vec3d playerPos = player.getEntityPos();
                 float yaw1 = (float) (MathHelper.atan2(velocity.getZ(), velocity.getX()) * (180.0F / (float) Math.PI));
