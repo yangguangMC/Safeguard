@@ -63,11 +63,32 @@ Actions are triggered by detections. Each can be toggled on/off independently.
 
 ---
 
+## Screenshots
+
+### Anti Creeper
+
+![Anti Creeper](images/anti_creeper.png)
+
+### Anti Ambush
+
+![Anti Ambush](images/anti_ambush.png)
+
+### Lava Detection
+
+![Lava Detection](images/lava_detection.png)
+
+### Low Hunger
+
+![Low Hunger](images/low_hunger.png)
+Intelligently recommends food based on your current food and saturation level.
+
+---
+
 ## Configuration
 
 Open the config screen via **Mod Menu** or `/safeguard screen`.
 
-![Config Screen](images/en_us/config_screen.png)
+![Config Screen](images/config_screen.png)
 
 Toggle detections and actions in a tree structure — disabling a category (e.g. "Combat")
 disables everything under it. Config is saved to `.minecraft/config/safeguard.json`.
