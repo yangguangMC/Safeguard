@@ -82,9 +82,9 @@ public class Utils {
         double pitchToTarget = -Math.toDegrees(Math.atan2(dy, horizontalDist));
         double relativePitch = pitchToTarget - camera.getPitch();
         if (relativePitch > 30.0)
-            return horizontal + Text.translatable("gui.safeguard.direction.below").getString();
+            return horizontal + " " + Text.translatable("gui.safeguard.direction.below").getString();
         if (relativePitch < -30.0)
-            return horizontal + Text.translatable("gui.safeguard.direction.above").getString();
+            return horizontal + " " + Text.translatable("gui.safeguard.direction.above").getString();
         return horizontal;
     }
 
