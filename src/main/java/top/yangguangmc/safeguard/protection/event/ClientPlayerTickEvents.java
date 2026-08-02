@@ -6,6 +6,7 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
 import top.yangguangmc.safeguard.protection.GlobalProtectionConditions;
+import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
 
 public class ClientPlayerTickEvents {
     private ClientPlayerTickEvents() {
@@ -31,6 +32,7 @@ public class ClientPlayerTickEvents {
             START_TICK,
             active -> (client, world, player) -> {
                 if (!GlobalProtectionConditions.shouldProtect(player)) return;
+                ActionBarTitleAction.resetForTick();
                 for (StartTick cb : active.get()) cb.onStartTick(client, world, player);
             }
     );

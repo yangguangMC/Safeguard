@@ -13,16 +13,13 @@ import net.minecraft.item.Items;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.attribute.EnvironmentAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yangguangmc.safeguard.ModContext;
-import top.yangguangmc.safeguard.protection.action.Action;
-import top.yangguangmc.safeguard.protection.action.PauseAction;
-import top.yangguangmc.safeguard.protection.action.QuitAction;
+import top.yangguangmc.safeguard.protection.action.*;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
 import top.yangguangmc.safeguard.util.Utils;
 
@@ -39,8 +36,23 @@ public class AntiFallDetection extends Detection {
         if (player.getPitch() > 0 && Utils.hasDestroyIntention(client, world, player, pos -> pos.equals(player.supportingBlockPos.orElse(null)))) {
             List<SafeResult> result = checkSafety(8, ((BlockHitResult) Objects.requireNonNull(client.crosshairTarget)).getBlockPos(), world, player);
             result.removeIf(r -> r.unsafety() <= 0);
-            if (!result.isEmpty())
-                tryExecuteAction(ActionBarTitleAction.class, action -> action.updateTitle(client, result));
+            if (!result.isEmpty()) {
+                SafeResult worst = result.stream().max(Comparator.comparing(SafeResult::unsafety)).get();
+                MutableText message = Text.empty();
+                message.append(Text.translatable("detection.safeguard.environment.anti_fall.warning",
+                        worst.name(), worst.posBelow()));
+                result.stream()
+                        .min(Comparator.comparing(SafeResult::posBelow))
+                        .filter(o -> !worst.equals(o))
+                        .ifPresent(result2 ->
+                                message.append(Text.translatable("detection.safeguard.environment.anti_fall.warning_secondary",
+                                        result2.name(), result2.posBelow())));
+                int dangerOrdinal = DangerLevel.LOW.ordinal();
+                if (worst.posBelow < 3) dangerOrdinal--;    // ordinal++ == danger--
+                if (worst.unsafety() > 2) dangerOrdinal--;
+                DangerLevel level = DangerLevel.values()[Math.max(dangerOrdinal, DangerLevel.HIGH.ordinal())];
+                tryExecuteAction(ActionBarTitleAction.class, action -> action.updateTitle(level, message, client));
+            }
         }
         // 已坠落保护
         if (!player.isOnGround() && player.fallDistance > 1.5 && checkSafety(5, player.getBlockPos(), world, player).stream().allMatch(result -> result.unsafety() > 0)) {
@@ -178,33 +190,6 @@ public class AntiFallDetection extends Detection {
                 if (distance < lastDistance) lastDistance = distance;
                 if (i > 320) throw new AssertionError("Too high iteration count! This should not happen!");
             }
-        }
-    }
-
-    private static class ActionBarTitleAction extends Action {
-        public ActionBarTitleAction() {
-            super("passive/hud/action_bar_title");
-        }
-
-        public void updateTitle(MinecraftClient client, List<SafeResult> results) {
-            MutableText message = Text.empty();
-            results.stream().max(Comparator.comparing(SafeResult::unsafety)).ifPresent(result -> {
-                message.append(Text.translatable("detection.safeguard.environment.anti_fall.warning",
-                        result.name(), result.posBelow()).styled(style -> {
-                    if (result.unsafety() > 2) return style.withColor(Formatting.RED).withBold(true);
-                    return style.withColor(Formatting.RED);
-                }));
-                results.stream()
-                        .min(Comparator.comparing(SafeResult::posBelow))
-                        .filter(o -> !result.equals(o)).ifPresent(result2 ->
-                                message.append(Text.translatable("detection.safeguard.environment.anti_fall.warning_secondary",
-                                        result2.name(), result2.posBelow()).styled(style -> {
-                                    if (result2.unsafety() > 2) return style.withColor(Formatting.RED).withBold(true);
-                                    return style.withColor(Formatting.RED);
-                                }))
-                        );
-            });
-            client.inGameHud.setOverlayMessage(message, false);
         }
     }
 }

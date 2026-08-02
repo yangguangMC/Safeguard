@@ -14,11 +14,12 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import top.yangguangmc.safeguard.protection.action.Action;
+import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
+import top.yangguangmc.safeguard.protection.action.DangerLevel;
 import top.yangguangmc.safeguard.protection.action.PauseAction;
 import top.yangguangmc.safeguard.protection.action.QuitAction;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
+import top.yangguangmc.safeguard.util.Utils;
 
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -42,9 +43,17 @@ public class LowHungerDetection extends Detection {
         boolean healingPriority = player.getHealth() <= player.getMaxHealth() * FoodScorer.HALF_HEALTH_RATIO;
         // 饥饿极低或血量告急时始终显示；正常饥饿值下仅当背包有多种食物选择时才推荐
         boolean shouldShow = isLow || healingPriority || result.foodCount() > 1;
-        if (shouldShow)
+        if (shouldShow) {
+            MutableText message = isLow
+                    ? Text.translatable("detection.safeguard.status.low_hunger.low")
+                    : Text.translatable("detection.safeguard.status.low_hunger.replenish");
+            if (result.isFound())
+                message.append(Text.translatable("detection.safeguard.status.low_hunger.suggestion"))
+                        .append(result.name()).append(Utils.getInventoryPosIndicator(result.slot()));
+            DangerLevel level = isLow ? DangerLevel.LOW : DangerLevel.INFO;
             tryExecuteAction(ActionBarTitleAction.class, action ->
-                    action.updateTitle(client, isLow, result));
+                    action.updateTitle(level, message, client));
+        }
         if (isLow) {
             tryExecuteAction(PauseAction.class, action -> action.pause(client));
             tryExecuteAction(QuitAction.class, action -> action.quit(client));
@@ -181,29 +190,6 @@ public class LowHungerDetection extends Detection {
             FoodResult withCountAndHealing(int foodCount, boolean healingPriority) {
                 return new FoodResult(this.name, this.slot, this.score, foodCount, healingPriority);
             }
-        }
-    }
-
-    private static class ActionBarTitleAction extends Action {
-        public ActionBarTitleAction() {
-            super("passive/hud/action_bar_title");
-        }
-
-        public void updateTitle(MinecraftClient client, boolean low, FoodScorer.FoodResult result) {
-            MutableText text = low
-                    ? Text.translatable("detection.safeguard.status.low_hunger.low")
-                    : Text.translatable("detection.safeguard.status.low_hunger.replenish");
-            if (result.isFound()) {
-                text.append(Text.translatable("detection.safeguard.status.low_hunger.suggestion")).append(result.name());
-                if (result.slot() < PlayerInventory.HOTBAR_SIZE)
-                    text.append(Text.translatable("gui.safeguard.slot.hotbar", result.slot() + 1));
-                else if (result.slot() < PlayerInventory.MAIN_SIZE)
-                    text.append(Text.translatable("gui.safeguard.slot.inventory"));
-                else if (result.slot() == PlayerInventory.OFF_HAND_SLOT)
-                    text.append(Text.translatable("gui.safeguard.slot.offhand"));
-            }
-            text.styled(style -> style.withColor(low ? Formatting.RED : Formatting.GOLD));
-            client.inGameHud.setOverlayMessage(text, false);
         }
     }
 }

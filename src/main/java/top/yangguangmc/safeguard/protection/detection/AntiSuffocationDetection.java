@@ -10,7 +10,6 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.FallingBlockEntity;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.function.BooleanBiFunction;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.math.BlockPos;
@@ -18,7 +17,8 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShapes;
 import org.jetbrains.annotations.Nullable;
-import top.yangguangmc.safeguard.protection.action.Action;
+import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
+import top.yangguangmc.safeguard.protection.action.DangerLevel;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
 import top.yangguangmc.safeguard.util.Utils;
 
@@ -51,14 +51,18 @@ public class AntiSuffocationDetection extends Detection {
         if (suffocatingBlock != null) {
             FallingScanResult aboveResult = scanFallingAbove(world, player, BlockPos.ofFloored(player.getEyePos()));
             tryExecuteAction(ActionBarTitleAction.class, action ->
-                    action.updateTitle(client, true, suffocatingBlock, aboveResult.count(), maxFallingScanCount));
+                    action.updateTitle(DangerLevel.CRITICAL,
+                            buildMessage(true, suffocatingBlock, aboveResult.count()),
+                            client));
             return;
         }
         // 情况2：上方有坠落对象（Falling 方块 或 FallingBlockEntity）
         FallingScanResult aboveResult = scanFallingBlockEntities(world, player);
         if (aboveResult.count() > 0) {
             tryExecuteAction(ActionBarTitleAction.class, action ->
-                    action.updateTitle(client, false, aboveResult.nearestName(), aboveResult.count(), maxFallingScanCount));
+                    action.updateTitle(DangerLevel.LOW,
+                            buildMessage(false, aboveResult.nearestName(), aboveResult.count()),
+                            client));
             return;
         }
         // 情况3：挖掘头顶方块意图
@@ -68,9 +72,25 @@ public class AntiSuffocationDetection extends Detection {
                 FallingScanResult aboveTarget = scanFallingBlocks(world, targetPos);
                 if (aboveTarget.count() > 0 && !aboveTarget.nearestName().getString().isBlank())
                     tryExecuteAction(ActionBarTitleAction.class, action ->
-                            action.updateTitle(client, false, aboveTarget.nearestName(), aboveTarget.count(), maxFallingScanCount));
+                            action.updateTitle(DangerLevel.LOW,
+                                    buildMessage(false, aboveTarget.nearestName(), aboveTarget.count()),
+                                    client));
             }
         }
+    }
+
+    /**
+     * 构建 ActionBar 消息文本（纯文本，不含样式）。
+     */
+    private static MutableText buildMessage(boolean suffocating, Text block, int count) {
+        MutableText text = Text.empty()
+                .append(suffocating
+                        ? Text.translatable("detection.safeguard.environment.anti_suffocation.suffocating")
+                        : Text.translatable("detection.safeguard.environment.anti_suffocation.above"))
+                .append(block);
+        if (count > 0)
+            text.append(Text.translatable("detection.safeguard.environment.anti_suffocation.count", String.valueOf(count)));
+        return text;
     }
 
     /**
@@ -172,22 +192,5 @@ public class AntiSuffocationDetection extends Detection {
     }
 
     private record FallingScanResult(int count, Text nearestName) {
-    }
-
-    private static class ActionBarTitleAction extends Action {
-        public ActionBarTitleAction() {
-            super("passive/hud/action_bar_title");
-        }
-
-        public void updateTitle(MinecraftClient client, boolean suffocating, Text block, int count, int maxFallingScanCount) {
-            MutableText text = Text.translatable("detection.safeguard.environment.anti_suffocation.warning_prefix")
-                    .append(suffocating
-                            ? Text.translatable("detection.safeguard.environment.anti_suffocation.suffocating")
-                            : Text.translatable("detection.safeguard.environment.anti_suffocation.above"))
-                    .append(block);
-            if (count > 0)
-                text.append(Text.translatable("detection.safeguard.environment.anti_suffocation.count", count > maxFallingScanCount ? maxFallingScanCount + "+" : String.valueOf(count)));
-            client.inGameHud.setOverlayMessage(text.styled(style -> style.withColor(Formatting.RED)), false);
-        }
     }
 }

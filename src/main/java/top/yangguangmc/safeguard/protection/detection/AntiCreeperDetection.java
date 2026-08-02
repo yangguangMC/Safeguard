@@ -7,20 +7,14 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Style;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import top.yangguangmc.safeguard.protection.action.Action;
-import top.yangguangmc.safeguard.protection.action.PauseAction;
-import top.yangguangmc.safeguard.protection.action.PlaySoundAction;
-import top.yangguangmc.safeguard.protection.action.QuitAction;
+import top.yangguangmc.safeguard.protection.action.*;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
 import top.yangguangmc.safeguard.util.Utils;
 
-import java.util.function.UnaryOperator;
-
 public class AntiCreeperDetection extends Detection {
-    private final double distance = 12;
+    @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
+    private int distance = 12;
 
     public AntiCreeperDetection() {
         super("combat/anti_creeper",
@@ -44,15 +38,22 @@ public class AntiCreeperDetection extends Detection {
             }
         }
         if (e != null && minD <= distance * distance) {
-            CreeperEntity creeper = e;
             double d2 = Math.sqrt(minD);
-            float fuseTime = creeper.getLerpedFuseTime(client.getRenderTickCounter().getTickProgress(world.getTickManager().shouldSkipTick(e)));
+            float fuseTime = e.getLerpedFuseTime(client.getRenderTickCounter().getTickProgress(world.getTickManager().shouldSkipTick(e)));
+            Camera camera = client.gameRenderer.getCamera();
+            String directionIndicator = Utils.getDirectionIndicator(client, world, e, camera);
+
+            DangerLevel level;
+            if (fuseTime > 0) level = DangerLevel.CRITICAL;
+            else if (d2 <= 1 / 3.0 * distance) level = DangerLevel.HIGH;
+            else if (d2 <= 1 / 2.0 * distance) level = DangerLevel.MEDIUM;
+            else level = DangerLevel.LOW;
+
             tryExecuteAction(ActionBarTitleAction.class, action ->
-                    action.updateTitle(client, world, creeper, d2, fuseTime, style -> {
-                        if (d2 <= 1 / 3.0 * distance) return style.withColor(Formatting.RED).withBold(fuseTime > 0);
-                        else if (d2 <= 1 / 2.0 * distance) return style.withColor(Formatting.GOLD);
-                        else return style.withColor(Formatting.YELLOW);
-                    }));
+                    action.updateTitle(level,
+                            Text.translatable("detection.safeguard.combat.anti_creeper.warning",
+                                    String.format("%.1f", d2), String.format("%.0f%%", fuseTime * 100), directionIndicator),
+                            client));
             tryExecuteAction(PlaySoundAction.class, action -> {
                 action.tick(client);
                 action.setPlaying(fuseTime > 0);
@@ -61,18 +62,6 @@ public class AntiCreeperDetection extends Detection {
                 tryExecuteAction(QuitAction.class, action -> action.quit(client));
                 tryExecuteAction(PauseAction.class, action -> action.pause(client));
             }
-        }
-    }
-
-    private static class ActionBarTitleAction extends Action {
-        public ActionBarTitleAction() {
-            super("passive/hud/action_bar_title");
-        }
-
-        public void updateTitle(MinecraftClient client, ClientWorld world, CreeperEntity creeper, double distance, float fuseTime, UnaryOperator<Style> styleProvider) {
-            Camera camera = client.gameRenderer.getCamera();
-            String directionIndicator = Utils.getDirectionIndicator(client, world, creeper, camera);
-            client.inGameHud.setOverlayMessage(Text.translatable("detection.safeguard.combat.anti_creeper.warning", String.format("%.1f", distance), String.format("%.0f%%", fuseTime * 100), directionIndicator).styled(styleProvider), false);
         }
     }
 }

@@ -11,6 +11,7 @@ import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ToolComponent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.hit.BlockHitResult;
@@ -208,5 +209,26 @@ public class Utils {
         ItemStack item = player.getActiveOrMainHandStack();
         ToolComponent component = item.get(DataComponentTypes.TOOL);
         return component != null && component.isCorrectForDrops(world.getBlockState(pos));
+    }
+
+    /**
+     * 根据背包槽位索引返回该槽位所在区域的翻译文本指示。
+     * 若槽位不在有效范围 [0, 40] 内，抛出 {@link IndexOutOfBoundsException}。
+     *
+     * @param slot 背包槽位索引
+     * @return 对应区域的翻译文本
+     * @throws IndexOutOfBoundsException 若 {@code slot} 不在 [0, 40] 内
+     */
+    public static Text getInventoryPosIndicator(int slot) {
+        if (slot < 0)
+            throw new IndexOutOfBoundsException("%d out of [0-%d]".formatted(slot, PlayerInventory.OFF_HAND_SLOT));
+        if (slot < PlayerInventory.HOTBAR_SIZE) return Text.translatable("gui.safeguard.slot.hotbar", slot + 1);
+        else if (slot < PlayerInventory.MAIN_SIZE) return Text.translatable("gui.safeguard.slot.inventory");
+        else if (slot == PlayerInventory.OFF_HAND_SLOT) return Text.translatable("gui.safeguard.slot.offhand");
+        else if (slot == PlayerInventory.MAIN_SIZE) return Text.translatable("gui.safeguard.slot.armor.head");
+        else if (slot == PlayerInventory.MAIN_SIZE + 1) return Text.translatable("gui.safeguard.slot.armor.chest");
+        else if (slot == PlayerInventory.MAIN_SIZE + 2) return Text.translatable("gui.safeguard.slot.armor.legs");
+        else if (slot == PlayerInventory.MAIN_SIZE + 3) return Text.translatable("gui.safeguard.slot.armor.feet");
+        else throw new IndexOutOfBoundsException("%d out of [0-%d]".formatted(slot, PlayerInventory.OFF_HAND_SLOT));
     }
 }

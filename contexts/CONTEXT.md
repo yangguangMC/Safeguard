@@ -1,6 +1,6 @@
 # Safeguard 项目上下文文档
 
-> **最后编辑于**: 2026-08-01
+> **最后编辑于**: 2026-08-02
 > **目标读者**: 不了解此项目的开发者 / AI 助手
 > **目的**: 快速了解项目结构、模块职责、依赖关系和数据流转
 
@@ -80,13 +80,15 @@ Safeguard/
 │   │   │   │   ├── LowHungerDetection.java        # 饥饿检测
 │   │   │   │   └── OnFireDetection.java           # 着火检测
 │   │   │   ├── action/
-│   │   │   │   ├── Action.java             # 保护动作基类
-│   │   │   │   ├── PauseAction.java        # 自动暂停
-│   │   │   │   ├── QuitAction.java         # 自动退出
-│   │   │   │   ├── OutlineAction.java      # 实体轮廓高亮
-│   │   │   │   ├── BlockOutlineAction.java # 方块轮廓高亮
-│   │   │   │   ├── PlaySoundAction.java    # 播放音效
-│   │   │   │   └── RedVignetteAction.java  # 红色晕影
+│   │   │   │   ├── Action.java              # 保护动作基类
+│   │   │   │   ├── ActionBarTitleAction.java # ActionBar 标题显示（统一优先级仲裁）
+│   │   │   │   ├── DangerLevel.java          # 危险等级枚举（样式+优先级）
+│   │   │   │   ├── PauseAction.java         # 自动暂停
+│   │   │   │   ├── QuitAction.java          # 自动退出
+│   │   │   │   ├── OutlineAction.java       # 实体轮廓高亮
+│   │   │   │   ├── BlockOutlineAction.java  # 方块轮廓高亮
+│   │   │   │   ├── PlaySoundAction.java     # 播放音效
+│   │   │   │   └── RedVignetteAction.java   # 红色晕影
 │   │   │   └── event/
 │   │   │       ├── ClientPlayerTickEvents.java  # Tick事件
 │   │   │       ├── EntityDamagedEvents.java     # 实体受伤事件
@@ -186,9 +188,9 @@ suspend/resume，子类无需手动检查启用状态。触发动作使用 `tryE
 | `PlaySoundAction.java`    | `passive/other/play_sound`    | 间隔播放音效。                                                             | 是       |
 | `RedVignetteAction.java`  | `passive/hud/red_vignette`    | 红色晕影。持有静态 `progress` 字段 (0~1)，由 LowHealthDetection 更新。     | 是       |
 
-> **注**: `ActionBarTitleAction` 是各 Detection 的内部类 (ID统一为 `passive/hud/action_bar_title`)，通过
-> `client.inGameHud.setOverlayMessage()` 在 ActionBar 显示警告信息。`MLGAction` 是 `AntiFallDetection` 的内部类 (ID为
-> `active/other/mlg`)。
+> **注**: `ActionBarTitleAction` 已提取为顶层类 (ID: `passive/hud/action_bar_title`)，通过 `DangerLevel` 进行跨检测项优先级仲裁，
+> 消除多检测项同时触发时的竞争闪烁问题。检测项只负责传入纯文本和危险等级，格式化由 Action 统一完成。
+> `MLGAction` 是 `AntiFallDetection` 的内部类 (ID为 `active/other/mlg`)。
 
 ### 3.7 工具类
 

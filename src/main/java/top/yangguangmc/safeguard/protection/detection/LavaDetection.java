@@ -7,12 +7,12 @@ import net.minecraft.client.render.Camera;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.attribute.EnvironmentAttributes;
-import top.yangguangmc.safeguard.protection.action.Action;
+import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
 import top.yangguangmc.safeguard.protection.action.BlockOutlineAction;
+import top.yangguangmc.safeguard.protection.action.DangerLevel;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
 import top.yangguangmc.safeguard.util.Utils;
 
@@ -75,24 +75,14 @@ public class LavaDetection extends Detection {
                 .min(Comparator.comparingDouble(pos -> Vec3d.ofCenter(pos).squaredDistanceTo(eyePos)))
                 .orElseThrow();
 
+        Camera camera = client.gameRenderer.getCamera();
+        double distance = Math.sqrt(Vec3d.ofCenter(nearestPos).squaredDistanceTo(player.getEyePos()));
+        String direction = Utils.getDirectionIndicator(camera, Vec3d.ofCenter(nearestPos));
+        MutableText message = Text.translatable("detection.safeguard.environment.lava.warning", String.format("%.0f", distance), direction);
+
         tryExecuteAction(ActionBarTitleAction.class,
-                action -> action.updateTitle(client, player, nearestPos));
+                action -> action.updateTitle(DangerLevel.MEDIUM, message, client));
         tryExecuteAction(BlockOutlineAction.class,
                 action -> action.outline(lavaPositions, highlightColor));
-    }
-
-    private static class ActionBarTitleAction extends Action {
-        public ActionBarTitleAction() {
-            super("passive/hud/action_bar_title");
-        }
-
-        public void updateTitle(MinecraftClient client, ClientPlayerEntity player, BlockPos nearestLava) {
-            double distance = Math.sqrt(Vec3d.ofCenter(nearestLava).squaredDistanceTo(player.getEyePos()));
-            Camera camera = client.gameRenderer.getCamera();
-            String direction = Utils.getDirectionIndicator(camera, Vec3d.ofCenter(nearestLava));
-
-            MutableText text = Text.translatable("detection.safeguard.environment.lava.warning", String.format("%.0f", distance), direction);
-            client.inGameHud.setOverlayMessage(text.styled(style -> style.withColor(Formatting.GOLD)), false);
-        }
     }
 }
