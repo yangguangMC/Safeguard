@@ -190,7 +190,7 @@ public class AntiFallDetection extends Detection {
             MutableText message = Text.empty();
             results.stream().max(Comparator.comparing(SafeResult::unsafety)).ifPresent(result -> {
                 message.append(Text.translatable("detection.safeguard.environment.anti_fall.warning",
-                        result.posBelow(), result.name()).styled(style -> {
+                        result.name(), result.posBelow()).styled(style -> {
                     if (result.unsafety() > 2) return style.withColor(Formatting.RED).withBold(true);
                     return style.withColor(Formatting.RED);
                 }));
