@@ -85,10 +85,6 @@ As a general rule, **check with server admins** before using any client mods in 
 
 ![Anti Creeper](images/anti_creeper.png)
 
-### Anti Ambush
-
-![Anti Ambush](images/anti_ambush.png)
-
 ### Lava Detection
 
 ![Lava Detection](images/lava_detection.png)
@@ -96,7 +92,9 @@ As a general rule, **check with server admins** before using any client mods in 
 ### Low Hunger
 
 ![Low Hunger](images/low_hunger.png)
-Intelligently recommends food based on your current hunger and saturation level.
+
+Intelligently recommends food based on your current hunger and saturation level, preventing waste and providing maximum
+efficiency.
 
 ---
 
