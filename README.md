@@ -16,6 +16,12 @@ best to warn and protect you in case of danger. Everything runs locally on the c
 
 ---
 
+## Beta Notice
+
+Safeguard is currently in **beta testing**. You may encounter bugs or incomplete features. If you find a problem,
+please [report it on GitHub Issues](https://github.com/yangguangMC/Safeguard/issues) — your feedback helps improve the
+mod!
+
 ## Features
 
 All protections are organized in a **tree-structured toggle system** — each detection and action belongs to a category
@@ -27,18 +33,18 @@ won't interfere with normal gameplay — just enable it when you step away.
 
 All detections are **enabled by default** unless otherwise noted.
 
-| Category       | Detection              | What it warns about                                                             |
-|----------------|------------------------|---------------------------------------------------------------------------------|
-| 💥 Combat      | **Anti Creeper**       | Nearby creepers, showing distance and fuse countdown                            |
-| 💥 Combat      | **Anti Ambush**        | Hostile mobs and invisible players around you                                   |
-| 💥 Combat      | **Projectile Tracker** | Projectiles heading your way (arrows, fireballs, etc.)                          |
-| 🌍 Environment | **Anti Fall**          | Mining above caves/cliffs, dangerous falls, plus optional auto MLG              |
-| 🌍 Environment | **Anti Suffocation**   | Being inside a wall or under falling blocks                                     |
-| 🌍 Environment | **Lava Detection**     | Lava near your mining path                                                      |
-| 🌍 Environment | **On Fire**            | When burning — also suggests items that can extinguish in your inventory        |
-| 💊 Status      | **Damage Detection**   | Taking damage (triggers auto-pause / quit — but AFK category is off by default) |
-| 💊 Status      | **Low Health**         | Health dropping below thresholds (red vignette + optional auto actions)         |
-| 💊 Status      | **Low Hunger**         | Hunger running low, with smart food recommendations                             |
+| Category       | Detection              | What it warns about                                                                                                |
+|----------------|------------------------|--------------------------------------------------------------------------------------------------------------------|
+| 💥 Combat      | **Anti Creeper**       | Nearby creepers, showing distance and fuse countdown                                                               |
+| 💥 Combat      | **Anti Ambush**        | Hostile mobs and invisible players around you                                                                      |
+| 💥 Combat      | **Projectile Tracker** | Projectiles heading your way (arrows, fireballs, etc.)                                                             |
+| 🌍 Environment | **Anti Fall**          | Mining above caves/cliffs, dangerous falls, plus optional auto MLG                                                 |
+| 🌍 Environment | **Anti Suffocation**   | Being inside a wall or under falling blocks (triggers a notification indicating how many falling blocks are there) |
+| 🌍 Environment | **Lava Detection**     | Lava near your mining path                                                                                         |
+| 🌍 Environment | **On Fire**            | When burning — also suggests items that can extinguish in your inventory                                           |
+| 💊 Status      | **Damage Detection**   | Taking damage (triggers auto-pause / quit — but AFK category is off by default)                                    |
+| 💊 Status      | **Low Health**         | Health dropping below thresholds (red vignette + optional auto actions)                                            |
+| 💊 Status      | **Low Hunger**         | Hunger running low, with smart food recommendations                                                                |
 
 ### Protection Actions
 
@@ -55,11 +61,21 @@ Actions are triggered by detections. Each can be toggled on/off independently.
 | 💬 Passive/Other | **Block Highlight** through walls           | ✅ on       |
 | 💬 Passive/Other | **Sound Alert**                             | ✅ on       |
 
-[^1]: However, it is blocked by AFK category which is off by default.
+[^1]: However, it is blocked by the AFK category, which is off by default.
 
-[^2]: The two Actions will disable the "AFK" category when triggered (to prevent being triggered repeatedly).
+[^2]: The two actions will disable the AFK category when triggered (to prevent being triggered repeatedly).
 
 [^3]: Auto Pause does not apply in multiplayer. If you want protection on a server, enable Auto Quit manually.
+
+---
+
+## Playing on servers
+
+Safeguard is a client-side mod — most features work entirely on your local game client and do not affect server
+gameplay. A few features (notably, for example, **Auto MLG**) send interaction packets to the server, which strict
+anti-cheat systems could potentially flag.
+
+As a general rule, **check with server admins** before using any client mods in multiplayer; use at your own risk.
 
 ---
 
@@ -80,7 +96,7 @@ Actions are triggered by detections. Each can be toggled on/off independently.
 ### Low Hunger
 
 ![Low Hunger](images/low_hunger.png)
-Intelligently recommends food based on your current food and saturation level.
+Intelligently recommends food based on your current hunger and saturation level.
 
 ---
 
