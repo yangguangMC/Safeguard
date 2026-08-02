@@ -21,6 +21,8 @@ import java.util.List;
 public class AntiAmbushDetection extends Detection {
     @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
     private int checkInterval = 5;
+    @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
+    private int checkDistance = 12;
     private int tickCounter;
 
     public AntiAmbushDetection() {
@@ -33,7 +35,7 @@ public class AntiAmbushDetection extends Detection {
         if (tickCounter % checkInterval != 0) return;
         List<LivingEntity> entities = world.getOtherEntities(
                         player,
-                        player.getBoundingBox().expand(16),
+                        player.getBoundingBox().expand(checkDistance),
                         entity -> entity.isAlive() && (
                                 entity instanceof HostileEntity
                                         || entity instanceof PlayerEntity
@@ -43,7 +45,7 @@ public class AntiAmbushDetection extends Detection {
                         )
                 ).stream()
                 .map(entity -> (LivingEntity) entity)
-                .filter(entity -> player.squaredDistanceTo(entity) <= 16 * 16)
+                .filter(entity -> player.squaredDistanceTo(entity) <= checkDistance * checkDistance)
                 .filter(other -> !player.isTeammate(other))
                 .filter(entity -> {
                     // 规则A: 非玩家且坐在载具中 → 排除（无法发起偷袭）
@@ -52,11 +54,12 @@ public class AntiAmbushDetection extends Detection {
                     if (!(entity instanceof PlayerEntity)
                             && !world.isSkyVisible(entity.getBlockPos())
                             && world.isSkyVisible(player.getBlockPos())) return false;
-                    // 规则C: 在背后且正在靠近 → 即使视野可见也强制计入
+                    // 规则C: 除苦力怕外在背后且正在靠近且速度快于玩家 → 即使视野可见也强制计入
                     Camera camera = client.gameRenderer.getCamera();
-                    if (Utils.isBehindPlayer(client, world, entity, camera)
+                    if (!(entity instanceof CreeperEntity)
                             && Utils.isApproaching(entity, player)
-                            && !(entity instanceof CreeperEntity)) return true;
+                            && entity.getVelocity().lengthSquared() > player.getVelocity().lengthSquared()
+                            && Utils.isBehindPlayer(client, world, entity, camera)) return true;
                     // 基础规则: 隐身/不可见才计入
                     return (entity.isInvisible() && entity.isInvisibleTo(player)) || !player.canSee(entity);
                 })
