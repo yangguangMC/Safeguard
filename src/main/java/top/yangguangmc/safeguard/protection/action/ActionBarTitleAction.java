@@ -89,10 +89,7 @@ public class ActionBarTitleAction extends Action {
     }
 
     /**
-     * 重置仲裁状态，应在每 tick 所有检测项处理开始前调用。
-     * <p>
-     * 由 {@link top.yangguangmc.safeguard.protection.ProtectionManager} 在分发事件前调用。
-     * </p>
+     * 重置仲裁状态，应在每次开始更新 ActionBar 前（目前等价于每 tick 所有检测项处理开始）前调用。
      */
     public static void resetForTick() {
         currentLevel = DangerLevel.LOW;
