@@ -27,6 +27,7 @@ public class ActionBarTitleAction extends Action {
     /**
      * 同一 tick 内当前已显示的消息文本（原始，未套用样式）
      */
+    @SuppressWarnings("unused")
     private static Text currentRawMessage;
 
     static {
@@ -52,7 +53,25 @@ public class ActionBarTitleAction extends Action {
         if (level.compareTo(currentLevel) > 0) return;  // 新消息危险等级不够高，忽略
         currentLevel = level;
         currentRawMessage = rawText;
-        client.inGameHud.setOverlayMessage(rawText.copy().styled(style -> applyStyle(style, level.style())), false);
+        Text displayText = wrapWithPrefix(level, rawText);
+        client.inGameHud.setOverlayMessage(displayText.copy().styled(style -> applyStyle(style, level.style())), false);
+    }
+
+    /**
+     * 根据危险等级的前缀翻译键包裹原始消息。
+     * <p>
+     * 若该等级有前缀翻译键（如 {@code "危险：%s"}），则将原始消息作为 {@code %s}
+     * 参数传入翻译模板；若无前缀键（如 {@link DangerLevel#INFO}），直接返回原始消息。
+     * </p>
+     *
+     * @param level   危险等级
+     * @param rawText 原始消息文本
+     * @return 带前缀的完整消息，或原消息（若无前缀键）
+     */
+    private static Text wrapWithPrefix(DangerLevel level, Text rawText) {
+        String prefixKey = level.getPrefixKey();
+        if (prefixKey == null) return rawText;
+        return Text.translatable(prefixKey, rawText);
     }
 
     /**

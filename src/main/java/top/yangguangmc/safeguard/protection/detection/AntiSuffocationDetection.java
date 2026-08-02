@@ -83,7 +83,7 @@ public class AntiSuffocationDetection extends Detection {
      * 构建 ActionBar 消息文本（纯文本，不含样式）。
      */
     private static MutableText buildMessage(boolean suffocating, Text block, int count) {
-        MutableText text = Text.translatable("detection.safeguard.environment.anti_suffocation.warning_prefix")
+        MutableText text = Text.empty()
                 .append(suffocating
                         ? Text.translatable("detection.safeguard.environment.anti_suffocation.suffocating")
                         : Text.translatable("detection.safeguard.environment.anti_suffocation.above"))

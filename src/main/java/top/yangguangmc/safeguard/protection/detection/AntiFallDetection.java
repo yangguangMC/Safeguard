@@ -47,7 +47,10 @@ public class AntiFallDetection extends Detection {
                         .ifPresent(result2 ->
                                 message.append(Text.translatable("detection.safeguard.environment.anti_fall.warning_secondary",
                                         result2.name(), result2.posBelow())));
-                DangerLevel level = worst.unsafety() > 2 ? DangerLevel.HIGH : DangerLevel.MEDIUM;
+                int dangerOrdinal = DangerLevel.LOW.ordinal();
+                if (worst.posBelow < 3) dangerOrdinal--;    // ordinal++ == danger--
+                if (worst.unsafety() > 2) dangerOrdinal--;
+                DangerLevel level = DangerLevel.values()[Math.max(dangerOrdinal, DangerLevel.HIGH.ordinal())];
                 tryExecuteAction(ActionBarTitleAction.class, action -> action.updateTitle(level, message, client));
             }
         }
