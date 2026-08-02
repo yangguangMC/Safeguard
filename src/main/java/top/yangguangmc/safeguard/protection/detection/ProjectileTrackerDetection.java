@@ -33,6 +33,14 @@ public class ProjectileTrackerDetection extends Detection {
                 if (velocity.lengthSquared() < 1.5 && velocity.horizontalLengthSquared() < 0.05) continue;
                 if (proj instanceof FireworkRocketEntity fireworkRocket && !fireworkRocket.wasShotAtAngle()) continue;
                 if (player.squaredDistanceTo(arrowPos.add(velocity)) >= player.squaredDistanceTo(arrowPos)) continue;
+                if (proj.getOwner() != null
+                        && proj.getOwner().squaredDistanceTo(player) < 144
+                        && Math.abs(Utils.computeRelativeYaw(
+                        client.gameRenderer.getCamera().getCameraPos(),
+                        client.gameRenderer.getCamera().getCameraYaw(),
+                        proj.getEntityPos()
+                )) < 15)
+                    continue;
                 Vec3d playerPos = player.getEntityPos();
                 float yaw1 = (float) (MathHelper.atan2(velocity.getZ(), velocity.getX()) * (180.0F / (float) Math.PI));
                 Vec3d vec3d = playerPos.subtract(arrowPos);
