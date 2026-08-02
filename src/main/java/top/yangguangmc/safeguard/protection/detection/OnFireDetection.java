@@ -17,6 +17,7 @@ import net.minecraft.world.attribute.EnvironmentAttributes;
 import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
 import top.yangguangmc.safeguard.protection.action.DangerLevel;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
+import top.yangguangmc.safeguard.util.Utils;
 
 import java.util.List;
 import java.util.function.Predicate;
@@ -74,15 +75,9 @@ public class OnFireDetection extends Detection {
         StrategyResult result = findBestStrategy(world, player);
 
         MutableText message = Text.translatable("detection.safeguard.environment.on_fire.warning");
-        if (result.isFound()) {
-            message.append(Text.translatable("detection.safeguard.environment.on_fire.suggestion")).append(result.displayName());
-            if (result.slot() < PlayerInventory.HOTBAR_SIZE)
-                message.append(Text.translatable("gui.safeguard.slot.hotbar", result.slot() + 1));
-            else if (result.slot() < PlayerInventory.MAIN_SIZE)
-                message.append(Text.translatable("gui.safeguard.slot.inventory"));
-            else if (result.slot() == PlayerInventory.OFF_HAND_SLOT)
-                message.append(Text.translatable("gui.safeguard.slot.offhand"));
-        }
+        if (result.isFound())
+            message.append(Text.translatable("detection.safeguard.environment.on_fire.suggestion"))
+                    .append(result.displayName()).append(Utils.getInventoryPosIndicator(result.slot()));
 
         DangerLevel level = result.isFound() ? DangerLevel.MEDIUM : DangerLevel.HIGH;
         tryExecuteAction(ActionBarTitleAction.class,

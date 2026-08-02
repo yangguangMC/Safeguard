@@ -19,6 +19,7 @@ import top.yangguangmc.safeguard.protection.action.DangerLevel;
 import top.yangguangmc.safeguard.protection.action.PauseAction;
 import top.yangguangmc.safeguard.protection.action.QuitAction;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
+import top.yangguangmc.safeguard.util.Utils;
 
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -46,15 +47,9 @@ public class LowHungerDetection extends Detection {
             MutableText message = isLow
                     ? Text.translatable("detection.safeguard.status.low_hunger.low")
                     : Text.translatable("detection.safeguard.status.low_hunger.replenish");
-            if (result.isFound()) {
-                message.append(Text.translatable("detection.safeguard.status.low_hunger.suggestion")).append(result.name());
-                if (result.slot() < PlayerInventory.HOTBAR_SIZE)
-                    message.append(Text.translatable("gui.safeguard.slot.hotbar", result.slot() + 1));
-                else if (result.slot() < PlayerInventory.MAIN_SIZE)
-                    message.append(Text.translatable("gui.safeguard.slot.inventory"));
-                else if (result.slot() == PlayerInventory.OFF_HAND_SLOT)
-                    message.append(Text.translatable("gui.safeguard.slot.offhand"));
-            }
+            if (result.isFound())
+                message.append(Text.translatable("detection.safeguard.status.low_hunger.suggestion"))
+                        .append(result.name()).append(Utils.getInventoryPosIndicator(result.slot()));
             DangerLevel level = isLow ? DangerLevel.LOW : DangerLevel.INFO;
             tryExecuteAction(ActionBarTitleAction.class, action ->
                     action.updateTitle(level, message, client));
