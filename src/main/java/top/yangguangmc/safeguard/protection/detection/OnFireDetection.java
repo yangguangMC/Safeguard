@@ -13,9 +13,9 @@ import net.minecraft.item.Items;
 import net.minecraft.potion.Potions;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
 import net.minecraft.world.attribute.EnvironmentAttributes;
-import top.yangguangmc.safeguard.protection.action.Action;
+import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
+import top.yangguangmc.safeguard.protection.action.DangerLevel;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
 
 import java.util.List;
@@ -72,8 +72,21 @@ public class OnFireDetection extends Detection {
         if (!player.isOnFire() || player.isFireImmune() || player.hasStatusEffect(StatusEffects.FIRE_RESISTANCE))
             return;
         StrategyResult result = findBestStrategy(world, player);
+
+        MutableText message = Text.translatable("detection.safeguard.environment.on_fire.warning");
+        if (result.isFound()) {
+            message.append(Text.translatable("detection.safeguard.environment.on_fire.suggestion")).append(result.displayName());
+            if (result.slot() < PlayerInventory.HOTBAR_SIZE)
+                message.append(Text.translatable("gui.safeguard.slot.hotbar", result.slot() + 1));
+            else if (result.slot() < PlayerInventory.MAIN_SIZE)
+                message.append(Text.translatable("gui.safeguard.slot.inventory"));
+            else if (result.slot() == PlayerInventory.OFF_HAND_SLOT)
+                message.append(Text.translatable("gui.safeguard.slot.offhand"));
+        }
+
+        DangerLevel level = result.isFound() ? DangerLevel.MEDIUM : DangerLevel.HIGH;
         tryExecuteAction(ActionBarTitleAction.class,
-                action -> action.updateTitle(client, result));
+                action -> action.updateTitle(level, message, client));
     }
 
     private StrategyResult findBestStrategy(ClientWorld world, ClientPlayerEntity player) {
@@ -196,26 +209,5 @@ public class OnFireDetection extends Detection {
                 || searchPotion(inventory, Items.LINGERING_POTION, c -> c.matches(Potions.WATER)) >= 0;
 
         return hasWaterSource ? cauldronSlot : -1;
-    }
-
-    private static class ActionBarTitleAction extends Action {
-        public ActionBarTitleAction() {
-            super("passive/hud/action_bar_title");
-        }
-
-        public void updateTitle(MinecraftClient client, StrategyResult result) {
-            MutableText text = Text.translatable("detection.safeguard.environment.on_fire.warning");
-            if (result.isFound()) {
-                text.append(Text.translatable("detection.safeguard.environment.on_fire.suggestion")).append(result.displayName());
-                if (result.slot() < PlayerInventory.HOTBAR_SIZE)
-                    text.append(Text.translatable("gui.safeguard.slot.hotbar", result.slot() + 1));
-                else if (result.slot() < PlayerInventory.MAIN_SIZE)
-                    text.append(Text.translatable("gui.safeguard.slot.inventory"));
-                else if (result.slot() == PlayerInventory.OFF_HAND_SLOT)
-                    text.append(Text.translatable("gui.safeguard.slot.offhand"));
-                text.styled(style -> style.withColor(Formatting.GOLD));
-            } else text.styled(style -> style.withColor(Formatting.RED));
-            client.inGameHud.setOverlayMessage(text, false);
-        }
     }
 }

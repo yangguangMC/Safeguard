@@ -10,7 +10,8 @@ import net.minecraft.entity.mob.*;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import top.yangguangmc.safeguard.protection.action.Action;
+import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
+import top.yangguangmc.safeguard.protection.action.DangerLevel;
 import top.yangguangmc.safeguard.protection.action.OutlineAction;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
 import top.yangguangmc.safeguard.util.Utils;
@@ -65,30 +66,19 @@ public class AntiAmbushDetection extends Detection {
                 })
                 .sorted(Comparator.comparing(player::squaredDistanceTo))
                 .toList();
-        @SuppressWarnings("DataFlowIssue") final int color = Formatting.GOLD.getColorValue();
         if (!entities.isEmpty()) {
+            Entity nearest = entities.getFirst();
             tryExecuteAction(ActionBarTitleAction.class, action ->
-                    action.updateTitle(client, world, entities.size(), entities.getFirst(), color));
-        }
-        for (LivingEntity entity : entities) {
-            tryExecuteAction(OutlineAction.class, action -> action.outline(entity, 60, color));
-        }
-    }
-
-    private static class ActionBarTitleAction extends Action {
-        public ActionBarTitleAction() {
-            super("passive/hud/action_bar_title");
-        }
-
-        public void updateTitle(MinecraftClient client, ClientWorld world, int amount, Entity nearest, int color) {
-            client.inGameHud.setOverlayMessage(
-                    Text.translatable("detection.safeguard.combat.anti_ambush.warning",
-                                    String.valueOf(amount),
+                    action.updateTitle(DangerLevel.MEDIUM,
+                            Text.translatable("detection.safeguard.combat.anti_ambush.warning",
+                                    String.valueOf(entities.size()),
                                     nearest.getDisplayName(),
-                                    Utils.getDirectionIndicator(client, world, nearest, client.gameRenderer.getCamera()))
-                            .withColor(color),
-                    false
-            );
+                                    Utils.getDirectionIndicator(client, world, nearest, client.gameRenderer.getCamera())),
+                            client));
+        }
+        @SuppressWarnings("DataFlowIssue") int outlineColor = Formatting.GOLD.getColorValue();
+        for (LivingEntity entity : entities) {
+            tryExecuteAction(OutlineAction.class, action -> action.outline(entity, 60, outlineColor));
         }
     }
 }
