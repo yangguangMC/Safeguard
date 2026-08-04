@@ -5,7 +5,7 @@
 - 将 `## Feedback & Contributing` 后一段文字简化
 - 移除 `## License`
 - 移除文章内嵌的 Icon
-- 替换脚注
+- 移除所有（除了下面这第一个之外的）分隔符 `---`
 - 替换所有引用的仓库内容的
   链接 （[必须是原始的链接](https://raw.githubusercontent.com/yangguangMC/Safeguard/master/images)）
 - 替换脚注
@@ -19,8 +19,6 @@
 
 **A client-side helper that watches your back in Minecraft survival.**
 
----
-
 ## Overview
 
 Safeguard is a **client-side Fabric mod** that detects in-game dangers and helps you avoid them — through visual/audio
@@ -28,8 +26,6 @@ warnings, or optional automatic actions like pausing and disconnecting.
 
 It does **not** introduce new items, mechanics, or dimensions. It does **not** make you invincible. It simply tries its
 best to warn and protect you in case of danger. Everything runs locally on the client — no server-side support needed.
-
----
 
 ## Beta Notice
 
@@ -82,13 +78,11 @@ Actions are triggered by detections. Each can be toggled on/off independently.
 
 Notes:
 
-[^1]: However, it is blocked by the AFK category, which is off by default.
+[1]: However, it is blocked by the AFK category, which is off by default.
 
-[^2]: The two actions will disable the AFK category when triggered (to prevent being triggered repeatedly).
+[2]: The two actions will disable the AFK category when triggered (to prevent being triggered repeatedly).
 
-[^3]: Auto Pause does not apply in multiplayer. If you want protection on a server, enable Auto Quit manually.
-
----
+[3]: Auto Pause does not apply in multiplayer. If you want protection on a server, enable Auto Quit manually.
 
 ## Playing on servers
 
@@ -101,8 +95,6 @@ during digging; they are not general-purpose x-ray tools and have saved many una
 Many survival servers do allow client-side helper mods like this one — that's why we don't block server use outright.
 Still, it is your responsibility to ensure compliance: **ask the server owner or admins before using the mod**, and
 always use it at your own risk.
-
----
 
 ## Screenshots
 
@@ -125,8 +117,6 @@ player; it is not a general-purpose x-ray. A real lifesaver for miners who've ev
 Intelligently recommends food based on your current hunger and saturation level, preventing waste and providing maximum
 efficiency.
 
----
-
 ## Configuration
 
 Open the config screen via **Mod Menu** or `/safeguard screen`.
@@ -135,8 +125,6 @@ Open the config screen via **Mod Menu** or `/safeguard screen`.
 
 Toggle detections and actions in a tree structure — disabling a category (e.g. "Combat")
 disables everything under it. Config is saved to `.minecraft/config/safeguard.json`.
-
----
 
 ## Commands
 
@@ -149,8 +137,6 @@ disables everything under it. Config is saved to `.minecraft/config/safeguard.js
 It is purely client-side and is never sent to the server. IDs use the format
 `namespace:category/.../name`. The command provides **tab completion**.
 
----
-
 ## Dependencies
 
 | Type        | Name                                              | Version   |
@@ -158,8 +144,6 @@ It is purely client-side and is never sent to the server. IDs use the format
 | Required    | [Fabric API](https://modrinth.com/mod/fabric-api) | ≥ 0.141.4 |
 | Required    | [YACL](https://modrinth.com/mod/yacl)             | ≥ 3.8.2   |
 | Recommended | [Mod Menu](https://modrinth.com/mod/modmenu)      | ≥ 17.0.0  |
-
----
 
 ## Feedback & Contributing
 
