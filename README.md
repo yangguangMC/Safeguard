@@ -6,7 +6,7 @@
 
 Downloads:
 
-- \[[Modrinth](https://modrinth.com/project/safeguard_mod)\]
+- \[[Modrinth](https://modrinth.com/mod/safeguard_mod)\]
 - \[[CurseForge](https://www.curseforge.com/minecraft/mc-mods/safeguard-mod)\]
 - \[[GitHub Release](https://github.com/yangguangMC/Safeguard/releases)\]
 
