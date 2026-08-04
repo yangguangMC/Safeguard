@@ -32,9 +32,13 @@ best to warn and protect you in case of danger. Everything runs locally on the c
 
 ## Beta Notice
 
-Safeguard is currently in **beta testing**. You may encounter bugs or incomplete features. If you find a problem,
-please [report it on GitHub Issues](https://github.com/yangguangMC/Safeguard/issues) — your feedback helps improve the
-mod!
+Safeguard is currently in **beta testing** and ships as an **MVP (Minimum Viable Product)** — it covers a broad range of
+common dangers, but there is still plenty of room to grow. **Many more features and refinements are planned** for future
+updates, such as per-item configuration options, new detection types (equipment durability warnings, potion effect HUD,
+recommending optimal torch placement), and advanced features like projectile trajectory visualization.
+
+Your feedback during this beta phase is especially valuable. If you encounter bugs, have ideas for improvement, or want
+to suggest a new detection, please [report them on GitHub Issues](https://github.com/yangguangMC/Safeguard/issues)!
 
 ## Features
 
