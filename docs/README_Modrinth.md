@@ -5,7 +5,8 @@
 - 将 `## Feedback & Contributing` 后一段文字简化
 - 移除 `## License`
 - 移除文章内嵌的 Icon
--
+- 替换脚注
+- 移除 LavaDetection 等比较 cheaty 的内容（Modrinth 审查更严格）
 
 替换所有引用的仓库内容的链接 （[必须是原始的链接](https://raw.githubusercontent.com/yangguangMC/Safeguard/master/images)）
 
@@ -106,10 +107,6 @@ As a general rule, **check with server admins** before using any client mods in 
 ### Anti Creeper
 
 ![Anti Creeper](https://raw.githubusercontent.com/yangguangMC/Safeguard/master/images/anti_creeper.png)
-
-### Lava Detection
-
-![Lava Detection](https://raw.githubusercontent.com/yangguangMC/Safeguard/master/images/lava_detection.png)
 
 ### Low Hunger
 
