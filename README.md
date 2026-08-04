@@ -46,7 +46,7 @@ All detections are **enabled by default** unless otherwise noted.
 | Category       | Detection              | What it warns about                                                                                                |
 |----------------|------------------------|--------------------------------------------------------------------------------------------------------------------|
 | 💥 Combat      | **Anti Creeper**       | Nearby creepers, showing distance and fuse countdown                                                               |
-| 💥 Combat      | **Anti Ambush**        | Hostile mobs and invisible players around you                                                                      |
+| 💥 Combat      | **Anti Ambush**        | Hostile mobs that pose ambush threats                                                                              |
 | 💥 Combat      | **Projectile Tracker** | Projectiles heading your way (arrows, fireballs, etc.)                                                             |
 | 🌍 Environment | **Anti Fall**          | Mining above caves/cliffs, dangerous falls, plus optional auto MLG                                                 |
 | 🌍 Environment | **Anti Suffocation**   | Being inside a wall or under falling blocks (triggers a notification indicating how many falling blocks are there) |
@@ -81,11 +81,15 @@ Actions are triggered by detections. Each can be toggled on/off independently.
 
 ## Playing on servers
 
-Safeguard is a client-side mod — most features work entirely on your local game client and do not affect server
-gameplay. A few features (notably, for example, **Auto MLG**) send interaction packets to the server, which strict
-anti-cheat systems could potentially flag.
+Safeguard is designed for **vanilla survival and its derivatives** (PvE), not for competitive PvP. Most features work
+entirely on your local game client and do not affect server gameplay. However, a few features — notably **Auto MLG**,
+which simulates player actions like placing water — could be flagged by strict anti-cheat systems. Block highlighting
+functions (such as Lava Detection's) are limited to flagging **danger blocks immediately adjacent to the player**
+during digging; they are not general-purpose x-ray tools and have saved many unaware miners from sudden lava deaths.
 
-As a general rule, **check with server admins** before using any client mods in multiplayer; use at your own risk.
+Many survival servers do allow client-side helper mods like this one — that's why we don't block server use outright.
+Still, it is your responsibility to ensure compliance: **ask the server owner or admins before using the mod**, and
+always use it at your own risk.
 
 ---
 
@@ -98,6 +102,10 @@ As a general rule, **check with server admins** before using any client mods in 
 ### Lava Detection
 
 ![Lava Detection](images/lava_detection.png)
+
+Warns you about **lava immediately adjacent to your mining path** — blocks that could flood your tunnel if you dig into
+them. The highlight only activates when you are actively digging, and is strictly limited to danger blocks next to the
+player; it is not a general-purpose x-ray. A real lifesaver for miners who've ever been caught off-guard by sudden lava.
 
 ### Low Hunger
 
