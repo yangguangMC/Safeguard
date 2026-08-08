@@ -3,3 +3,13 @@
 /workspace.xml
 # 依赖于环境的 Maven 主目录路径
 /mavenHomeManager.xml
+../.gradle/
+../backup/
+../build/
+../contexts/fabric-api/
+../contexts/litematica-LTS-1.21.11/
+../contexts/malilib-LTS-1.21.11/
+../contexts/minecraft-sources-1.21.11/
+../contexts/yet-another-config-lib-sources/
+../contexts/minecraft-merged-496669bc46-1.21.11-net.fabricmc.yarn.1_21_11.1.21.11+build.6-v2-sources.jar
+../run/
