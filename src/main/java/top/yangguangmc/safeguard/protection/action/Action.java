@@ -53,7 +53,7 @@ public abstract class Action implements SwitchTreeItem {
     }
 
     protected PositionedSoundInstance createSoundInstance(SoundEvent sound, float pitch) {
-        return new PositionedSoundInstance(sound.id(),
+        return new PositionedSoundInstance(sound.getId(),
                 SoundCategory.MASTER,
                 1.0F,
                 pitch,

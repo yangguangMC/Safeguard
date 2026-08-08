@@ -73,9 +73,14 @@ public class Utils {
     }
 
     public static double computeRelativeYaw(Vec3d cameraPos, float yaw, Vec3d targetPos) {
-        Vec3d vec3d = cameraPos.subtract(targetPos).rotateYClockwise();
+        // 1.20.6: rotateYClockwise()
+        Vec3d vec3d = rotateYClockwise(cameraPos.subtract(targetPos));
         float f = (float) MathHelper.atan2(vec3d.getZ(), vec3d.getX()) * (180.0F / (float) Math.PI);
         return MathHelper.subtractAngles(yaw, f);
+    }
+
+    private static Vec3d rotateYClockwise(Vec3d vec3d) {
+        return new Vec3d(-vec3d.getZ(), vec3d.getY(), vec3d.getX());
     }
 
     public static String directionFromRelativeYaw(double relativeYaw) {
@@ -127,7 +132,8 @@ public class Utils {
         BlockPos pos = ((BlockHitResult) client.crosshairTarget).getBlockPos();
         if (!predicate.test(pos)) return false;
         if (client.options.attackKey.isPressed()) return true;
-        ItemStack item = player.getActiveOrMainHandStack();
+        // 1.20.6: getActiveOrMainHandStack()
+        ItemStack item = player.isUsingItem() ? player.getActiveItem() : player.getMainHandStack();
         // 1.20.6: Use Item.isSuitableFor() instead of DataComponentTypes.TOOL
         return item.isSuitableFor(world.getBlockState(pos));
     }
@@ -135,7 +141,8 @@ public class Utils {
     public static Text getInventoryPosIndicator(int slot) {
         if (slot < 0)
             throw new IndexOutOfBoundsException("%d out of [0-%d]".formatted(slot, PlayerInventory.OFF_HAND_SLOT));
-        if (slot < PlayerInventory.HOTBAR_SIZE) return Text.translatable("gui.safeguard.slot.hotbar", slot + 1);
+        // 1.20.6: PlayerInventory.HOTBAR_SIZE is private
+        if (slot < 9) return Text.translatable("gui.safeguard.slot.hotbar", slot + 1);
         else if (slot < PlayerInventory.MAIN_SIZE) return Text.translatable("gui.safeguard.slot.inventory");
         else if (slot == PlayerInventory.OFF_HAND_SLOT) return Text.translatable("gui.safeguard.slot.offhand");
         else if (slot == PlayerInventory.MAIN_SIZE) return Text.translatable("gui.safeguard.slot.armor.head");

@@ -1,18 +1,19 @@
 package top.yangguangmc.safeguard.util;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.*;
+import net.minecraft.client.render.RenderLayer;
+import net.minecraft.client.render.VertexConsumer;
+import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
-import top.yangguangmc.safeguard.ModContext;
 import top.yangguangmc.safeguard.protection.event.GameRendererCloseEvent;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -27,7 +28,7 @@ public class FilledThroughWallsRenderer {
     private boolean closed = false;
 
     public void init() {
-        WorldRenderEvents.BEFORE_TRANSLUCENT.register(this::extractAndDraw);
+        WorldRenderEvents.AFTER_ENTITIES.register(this::draw);
         GameRendererCloseEvent.CALLBACK.register(this::close);
     }
 
@@ -44,19 +45,19 @@ public class FilledThroughWallsRenderer {
         taggedStates.remove(tag);
     }
 
-    private void extractAndDraw(WorldRenderContext context) {
+    private void draw(WorldRenderContext context) {
         if (closed || taggedStates.isEmpty() || taggedStates.values().stream().allMatch(List::isEmpty)) return;
 
-        MatrixStack matrices = context.matrixStack();
+        MatrixStack matrices = Objects.requireNonNull(context.matrixStack());
         Vec3d camera = MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
 
         matrices.push();
         matrices.translate(-camera.x, -camera.y, -camera.z);
 
         Matrix4f positionMatrix = matrices.peek().getPositionMatrix();
-        VertexConsumerProvider.Immediate immediate = context.consumers();
+        VertexConsumerProvider vertexConsumerProvider = context.consumers();
         // Use a translucent vertex consumer that supports translucency and no depth test
-        VertexConsumer vertexConsumer = context.consumers().getBuffer(RenderLayer.getTranslucent());
+        VertexConsumer vertexConsumer = Objects.requireNonNull(vertexConsumerProvider).getBuffer(LAYER);
 
         for (List<BoxRenderState> list : taggedStates.values()) {
             for (BoxRenderState state : list) {
@@ -88,8 +89,8 @@ public class FilledThroughWallsRenderer {
     };
 
     private void renderFilledBox(Matrix4f matrix, VertexConsumer vertexConsumer,
-                                  float minX, float minY, float minZ, float maxX, float maxY, float maxZ,
-                                  float red, float green, float blue, float alpha) {
+                                 float minX, float minY, float minZ, float maxX, float maxY, float maxZ,
+                                 float red, float green, float blue, float alpha) {
         // 8 corners
         float[][] corners = {
                 {minX, minY, minZ}, // 0
@@ -103,8 +104,8 @@ public class FilledThroughWallsRenderer {
         };
 
         // 6 faces × 4 vertices = 24 vertices
-        for (int i = 0; i < VERTEX_ORDER.length; i++) {
-            float[] corner = corners[VERTEX_ORDER[i]];
+        for (int j : VERTEX_ORDER) {
+            float[] corner = corners[j];
             vertexConsumer.vertex(matrix, corner[0], corner[1], corner[2]).color(red, green, blue, alpha).next();
         }
     }

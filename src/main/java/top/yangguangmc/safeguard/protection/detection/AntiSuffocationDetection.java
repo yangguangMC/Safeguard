@@ -2,7 +2,7 @@ package top.yangguangmc.safeguard.protection.detection;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Falling;
+import net.minecraft.block.LandingBlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.world.ClientWorld;
@@ -92,7 +92,7 @@ public class AntiSuffocationDetection extends Detection {
         Text name = Text.empty();
         for (BlockPos pos = startPos; count < maxFallingScanCount + 1 && !world.isOutOfHeightLimit(pos); pos = pos.up()) {
             Block block = world.getBlockState(pos).getBlock();
-            if (block instanceof Falling) {
+            if (block instanceof LandingBlock) {
                 count++;
                 if (name.getString().isBlank()) name = block.getName();
             }
@@ -115,16 +115,18 @@ public class AntiSuffocationDetection extends Detection {
         float f = player.getWidth() * SUFFOCATION_BOX_WIDTH_FACTOR;
         Box box = Box.of(player.getEyePos(), f, SUFFOCATION_BOX_HEIGHT, f);
         return BlockPos.stream(box).filter(pos -> {
-            BlockState state = world.getBlockState(pos);
-            return !state.isAir()
-                    && state.shouldSuffocate(world, pos)
-                    && VoxelShapes.matchesAnywhere(state.getCollisionShape(world, pos).offset(pos), VoxelShapes.cuboid(box), BooleanBiFunction.AND);
+            BlockState blockState = world.getBlockState(pos);
+            return !blockState.isAir()
+                    && blockState.shouldSuffocate(world, pos)
+                    && VoxelShapes.matchesAnywhere(
+                    blockState.getCollisionShape(world, pos).offset(pos.getX(), pos.getY(), pos.getZ()), VoxelShapes.cuboid(box), BooleanBiFunction.AND
+            );
         }).findAny().map(pos -> world.getBlockState(pos).getBlock().getName()).orElse(null);
     }
 
     private boolean hasFallingBlockNearTarget(ClientWorld world, BlockPos targetPos) {
         for (BlockPos pos = targetPos; pos.getY() <= targetPos.getY() + 2; pos = pos.up()) {
-            if (world.getBlockState(pos).getBlock() instanceof Falling) return true;
+            if (world.getBlockState(pos).getBlock() instanceof LandingBlock) return true;
         }
         return false;
     }

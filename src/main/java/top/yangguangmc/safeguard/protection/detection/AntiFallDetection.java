@@ -124,7 +124,7 @@ public class AntiFallDetection extends Detection {
             if (placementSchedule != -1) LOGGER.debug("[MLG Action] Schedule: {}", placementSchedule);
             if (placementSchedule >= 0) {
                 if (placementSchedule <= 10) {
-                    List<ItemStack> hotbar = player.getInventory().getMainStacks().stream().limit(9).toList();
+                    List<ItemStack> hotbar = player.getInventory().main.stream().limit(9).toList();
                     int slot = 8;
                     // 1.20.6: ultrawarm() instead of EnvironmentAttributes
                     boolean isNether = world.getDimension().ultrawarm();
@@ -136,7 +136,7 @@ public class AntiFallDetection extends Detection {
                             break;
                         }
                     }
-                    player.getInventory().setSelectedSlot(slot);
+                    player.getInventory().selectedSlot = slot;
                     player.setPitch(Math.min(player.getPitch() + 22.5F, 90.0F));
                 }
                 if (placementSchedule == 0) {
@@ -152,7 +152,7 @@ public class AntiFallDetection extends Detection {
             // 1.20.6: ultrawarm() instead of EnvironmentAttributes
             boolean isNether = world.getDimension().ultrawarm();
             if (player.isOnGround() || player.fallDistance < minFallDistance || player.hasStatusEffect(StatusEffects.SLOW_FALLING)
-                    || player.isGliding() || player.getInventory().getMainStacks().stream().limit(9).map(ItemStack::getItem)
+                    || player.isFallFlying() || player.getInventory().main.stream().limit(9).map(ItemStack::getItem)
                     .noneMatch(isNether
                             ? MLG_ITEMS_NETHER::contains : MLG_ITEMS_NORMAL::contains)) {
                 placementSchedule = -1;
