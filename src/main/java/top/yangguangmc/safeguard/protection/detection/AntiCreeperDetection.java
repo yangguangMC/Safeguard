@@ -2,21 +2,19 @@ package top.yangguangmc.safeguard.protection.detection;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.render.Camera;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.CreeperEntity;
 import net.minecraft.sound.SoundEvents;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-import top.yangguangmc.safeguard.ModContext;
-import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
-import top.yangguangmc.safeguard.protection.action.PauseAction;
-import top.yangguangmc.safeguard.protection.action.PlaySoundAction;
-import top.yangguangmc.safeguard.protection.action.QuitAction;
+import net.minecraft.text.Text;
+import top.yangguangmc.safeguard.protection.action.*;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
+import top.yangguangmc.safeguard.util.Utils;
 
 public class AntiCreeperDetection extends Detection {
-    private final double distance = 8;
+    @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
+    private int distance = 12;
 
     public AntiCreeperDetection() {
         super("combat/anti_creeper",
@@ -24,21 +22,14 @@ public class AntiCreeperDetection extends Detection {
                 new PlaySoundAction(SoundEvents.BLOCK_NOTE_BLOCK_HARP, 1.414214F, 3),
                 new PauseAction(),
                 new QuitAction());
-    }
-
-    @Override
-    public void init(ModContext ctx) {
-        super.init(ctx);
-        ClientPlayerTickEvents.START_TICK.register((client, world, player) -> {
-            if (getStateNode().isEffectivelyEnabled()) onStartTick(client, world, player);
-        });
+        listen(ClientPlayerTickEvents.GATED_START_TICK, this::onStartTick);
     }
 
     private void onStartTick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
         double minD = Double.POSITIVE_INFINITY;
         CreeperEntity e = null;
         for (Entity entity : world.getEntities()) {
-            if (entity instanceof CreeperEntity c) {
+            if (entity instanceof CreeperEntity c && !c.isDead()) {
                 double d = player.squaredDistanceTo(entity);
                 if (d < minD) {
                     minD = d;
@@ -46,28 +37,31 @@ public class AntiCreeperDetection extends Detection {
                 }
             }
         }
-        if (e != null) {
-            if (minD <= distance * distance) {
-                double d2 = Math.sqrt(minD);
-                if (e.getVelocity().lengthSquared() >= 0.0001) {
-                    ActionBarTitleAction action = getBoundAction(new Identifier(ModContext.MOD_ID, "passive/hud/action_bar_title"));
-                    if (isActionEffectivelyEnabled(action)) action.updateTitle(client, d2, style -> {
-                        if (d2 <= 1 / 2.0 * distance) return style.withColor(Formatting.RED).withBold(true);
-                        else if (d2 <= 3 / 4.0 * distance) return style.withColor(Formatting.GOLD);
-                        else return style.withColor(Formatting.YELLOW);
-                    });
-                }
-                PlaySoundAction action2 = getBoundAction(new Identifier(ModContext.MOD_ID, "passive/other/play_sound"));
-                if (isActionEffectivelyEnabled(action2)) {
-                    action2.tick(client);
-                    action2.setPlaying(e.getClientFuseTime(client.getTickDelta()) > 0);
-                }
-                if (d2 <= 2 / 3.0 * distance) {
-                    QuitAction action3 = getBoundAction(new Identifier(ModContext.MOD_ID, "active/afk/quit"));
-                    if (isActionEffectivelyEnabled(action3)) action3.quit(client, world, getName());
-                    PauseAction action4 = getBoundAction(new Identifier(ModContext.MOD_ID, "active/afk/pause"));
-                    if (isActionEffectivelyEnabled(action4)) action4.pause(client, getName());
-                }
+        if (e != null && minD <= distance * distance) {
+            double d2 = Math.sqrt(minD);
+            // 1.20.6: getClientFuseTime uses simple tick delta
+            float fuseTime = e.getClientFuseTime(client.getTickDelta());
+            Camera camera = client.gameRenderer.getCamera();
+            String directionIndicator = Utils.getDirectionIndicator(client, world, e, camera);
+
+            DangerLevel level;
+            if (fuseTime > 0) level = DangerLevel.CRITICAL;
+            else if (d2 <= 1 / 3.0 * distance) level = DangerLevel.HIGH;
+            else if (d2 <= 1 / 2.0 * distance) level = DangerLevel.MEDIUM;
+            else level = DangerLevel.LOW;
+
+            tryExecuteAction(ActionBarTitleAction.class, action ->
+                    action.updateTitle(level,
+                            Text.translatable("detection.safeguard.combat.anti_creeper.warning",
+                                    String.format("%.1f", d2), String.format("%.0f%%", fuseTime * 100), directionIndicator),
+                            client));
+            tryExecuteAction(PlaySoundAction.class, action -> {
+                action.tick(client);
+                action.setPlaying(fuseTime > 0);
+            });
+            if (d2 <= 2 / 3.0 * distance) {
+                tryExecuteAction(QuitAction.class, action -> action.quit(client));
+                tryExecuteAction(PauseAction.class, action -> action.pause(client));
             }
         }
     }

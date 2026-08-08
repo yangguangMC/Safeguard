@@ -2,18 +2,25 @@
   "schemaVersion": 1,
   "id": "safeguard",
   "version": "${version}",
-  "name": "Safe Guard",
-  "description": "A client-side mod that helps you avoid possible dangers in survival mode.",
+  "name": "Safeguard",
+  "description": "A client-side helper that watches your back in Minecraft survival.",
   "authors": [
     "yangguangMC"
   ],
-  "contact": {},
+  "contact": {
+    "homepage": "https://modrinth.com/project/safeguard_mod",
+    "sources": "https://github.com/yangguangMC/Safeguard",
+    "issues": "https://github.com/yangguangMC/Safeguard/issues"
+  },
   "license": "MIT",
   "icon": "assets/safeguard/icon.png",
   "environment": "client",
   "entrypoints": {
     "client": [
-      "top.yangguangmc.safeguard.SafeGuard"
+      "top.yangguangmc.safeguard.Safeguard"
+    ],
+    "modmenu": [
+      "top.yangguangmc.safeguard.compat.SafeguardModMenuApiImpl"
     ]
   },
   "mixins": [
@@ -22,6 +29,7 @@
   "depends": {
     "fabricloader": ">=${loader_version}",
     "fabric": "*",
-    "minecraft": "${minecraft_version}"
+    "minecraft": "${minecraft_version}",
+    "yet_another_config_lib_v3": ">=${yacl_version}"
   }
 }
