@@ -20,6 +20,7 @@ public class ProtectionManager {
     private ModContext ctx;
 
     public ProtectionManager() {
+        // active/afk 分类默认关闭，方便用户挂机时一键批量切换
         predefineActionCategory(new CategoryDefinition("active/afk", false));
     }
 
@@ -48,10 +49,18 @@ public class ProtectionManager {
         detection.applyActiveState(detectionNode.isEffectivelyEnabled());
     }
 
+    /**
+     * 预定义一个检测项分类。
+     * 通过预定义分类的方式，可以实现自定义默认启用状态。
+     */
     public void predefineDetectionCategory(CategoryDefinition category) {
         detectionRoot.predefineCategory(category.id(), category.defaultEnabled());
     }
 
+    /**
+     * 预定义一个保护动作分类。
+     * 通过预定义分类的方式，可以实现自定义默认启用状态。
+     */
     public void predefineActionCategory(CategoryDefinition category) {
         actionRoot.predefineCategory(category.id(), category.defaultEnabled());
     }

@@ -11,6 +11,9 @@ public class EntityDamagedEvents {
         throw new AssertionError();
     }
 
+    /**
+     * Called when any of the entities in ClientWorld (including ClientPlayerEntity) gets damage.
+     */
     public static final Event<EntityDamagedListener> PRE = EventFactory.createArrayBacked(
             EntityDamagedListener.class,
             listeners -> (victim, source) -> {
@@ -18,6 +21,11 @@ public class EntityDamagedEvents {
             }
     );
 
+    /**
+     * Gated version of {@link #PRE}.
+     * Please note that this gated event <b>will not</b> check
+     * {@link top.yangguangmc.safeguard.protection.GlobalProtectionConditions#shouldProtect(ClientPlayerEntity)}.
+     */
     public static final GatedEvent<EntityDamagedListener> GATED_PRE = new GatedEvent<>(
             PRE,
             active -> (victim, source) -> {

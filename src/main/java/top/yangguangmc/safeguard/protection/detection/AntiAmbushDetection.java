@@ -49,15 +49,19 @@ public class AntiAmbushDetection extends Detection {
                 .filter(entity -> player.squaredDistanceTo(entity) <= checkDistance * checkDistance)
                 .filter(other -> !player.isTeammate(other))
                 .filter(entity -> {
+                    // 规则A: 非玩家且坐在载具中 → 排除（无法发起偷袭）
                     if (!(entity instanceof PlayerEntity) && entity.hasVehicle()) return false;
+                    // 规则B: 非玩家处于洞穴而玩家不处于 → 排除
                     if (!(entity instanceof PlayerEntity)
                             && !world.isSkyVisible(entity.getBlockPos())
                             && world.isSkyVisible(player.getBlockPos())) return false;
+                    // 规则C: 除苦力怕外在背后且正在靠近且速度快于玩家 → 即使视野可见也强制计入
                     Camera camera = client.gameRenderer.getCamera();
                     if (!(entity instanceof CreeperEntity)
                             && Utils.isApproaching(entity, player)
                             && entity.getVelocity().lengthSquared() > player.getVelocity().lengthSquared()
                             && Utils.isBehindPlayer(client, world, entity, camera)) return true;
+                    // 基础规则: 隐身/不可见才计入
                     return (entity.isInvisible() && entity.isInvisibleTo(player)) || !player.canSee(entity);
                 })
                 .sorted(Comparator.comparing(player::squaredDistanceTo))

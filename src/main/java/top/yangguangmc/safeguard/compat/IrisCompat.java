@@ -21,6 +21,7 @@ public final class IrisCompat {
         try {
             loaded = FabricLoader.getInstance().isModLoaded("iris");
         } catch (Exception ignored) {
+            // 如果 FabricLoader 不可用（理论上不会），保持 false
         }
         IRIS_LOADED = loaded;
         if (IRIS_LOADED) {
@@ -32,6 +33,9 @@ public final class IrisCompat {
         throw new AssertionError("工具类不应实例化");
     }
 
+    /**
+     * 判断当前是否安装了 Iris。
+     */
     public static boolean isIrisLoaded() {
         return IRIS_LOADED;
     }

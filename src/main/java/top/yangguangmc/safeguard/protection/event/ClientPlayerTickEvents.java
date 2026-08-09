@@ -13,10 +13,21 @@ public class ClientPlayerTickEvents {
         throw new AssertionError();
     }
 
+    /**
+     * Called at the start of the client player tick.
+     */
     public static final Event<StartTick> START_TICK = EventFactory.createArrayBacked(StartTick.class, callbacks -> (client, world, player) -> {
         for (StartTick event : callbacks) event.onStartTick(client, world, player);
     });
 
+
+    /**
+     * Gated version of {@link #START_TICK} that supports suspending/resuming listeners through owner.
+     * It's recommended for subclasses of {@link top.yangguangmc.safeguard.protection.detection.Detection}
+     * to register listeners through this constant.
+     *
+     * @see GatedEvent
+     */
     public static final GatedEvent<StartTick> GATED_START_TICK = new GatedEvent<>(
             START_TICK,
             active -> (client, world, player) -> {

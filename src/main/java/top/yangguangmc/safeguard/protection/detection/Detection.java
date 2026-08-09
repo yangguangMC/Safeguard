@@ -12,7 +12,7 @@ import java.util.function.Consumer;
 
 public abstract class Detection implements SwitchTreeItem {
     private final Identifier id;
-    private final Map<Action, Boolean> boundActions = new HashMap<>();
+    private final Map<Action, Boolean> boundActions = new HashMap<>();  // 一般地，我们要求单个检测项注册的保护动作的ID要是不能重复的
     private final List<GatedEvent<?>> gatedEvents = new ArrayList<>();
     protected ModContext modContext;
 
@@ -37,7 +37,9 @@ public abstract class Detection implements SwitchTreeItem {
     }
 
     @Override
-    public Identifier getId() { return id; }
+    public Identifier getId() {
+        return id;
+    }
 
     public Collection<Action> getBoundActions() {
         return Collections.unmodifiableSet(boundActions.keySet());
@@ -69,18 +71,39 @@ public abstract class Detection implements SwitchTreeItem {
         return Objects.requireNonNull(modContext.protectionManager().getActionStatesRoot().getNode(action.getId())).isEffectivelyEnabled() && boundActions.get(action);
     }
 
+    /**
+     * 声明此检测项监听某个门控事件。
+     * 当检测项的有效启用状态变更时，基类自动挂起/恢复事件传递。
+     * 通常在构造器或 init() 中调用。
+     *
+     * @param event    门控事件
+     * @param listener 监听器实例（通常为方法引用，如 {@code this::onStartTick}）
+     * @param <T>      监听器类型
+     */
     @SuppressWarnings("SameParameterValue")
     protected <T> void listen(GatedEvent<T> event, T listener) {
         gatedEvents.add(event);
         event.listen(this, listener);
+        // 初始挂起，等待 ProtectionManager 调用 applyActiveState() 激活
         event.suspend(this);
     }
 
+    /**
+     * 尝试执行一个保护动作。
+     * 自动检查双重开关（树开关 + 绑定开关），仅当两者均通过时才执行。
+     *
+     * @param actionClass 动作的类型
+     * @param executor    要执行的逻辑（接受 Action 实例作为参数）
+     * @param <T>         动作的具体类型
+     */
     protected <T extends Action> void tryExecuteAction(Class<T> actionClass, Consumer<T> executor) {
         T action = getBoundAction(actionClass);
         if (isActionEffectivelyEnabled(action)) executor.accept(action);
     }
 
+    /**
+     * 由 ProtectionManager 调用，更新所有门控事件的挂起/恢复状态。
+     */
     public void applyActiveState(boolean active) {
         for (GatedEvent<?> event : gatedEvents) {
             if (active) event.resume(this);

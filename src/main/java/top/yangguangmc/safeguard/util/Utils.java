@@ -44,7 +44,13 @@ public class Utils {
     }
 
     /**
-     * 1.20.6: Uses client.getTickDelta() instead of EntityTickProgress/RenderTickCounter chain.
+     * 获取实体相对于玩家的方位指示字符串（含水平+垂直方向），带帧间插值。
+     *
+     * @param client Minecraft 客户端实例
+     * @param world  当前客户端世界
+     * @param target 目标实体
+     * @param camera 玩家相机
+     * @return 方向指示文本，如 "N"、"NE↑"、"SW↓"
      */
     public static String getDirectionIndicator(MinecraftClient client, ClientWorld world, Entity target, Camera camera) {
         // 1.20.6: getCameraPosVec uses simple tickDelta
@@ -52,6 +58,13 @@ public class Utils {
         return getDirectionIndicator(camera, targetPos);
     }
 
+    /**
+     * 根据相机状态与目标世界坐标返回方位指示字符串（含水平+垂直方向）。
+     *
+     * @param camera    玩家相机
+     * @param targetPos 目标世界坐标
+     * @return 方向指示文本，如 "N"、"NE↑"、"SW↓"
+     */
     public static String getDirectionIndicator(Camera camera, Vec3d targetPos) {
         Vec3d cameraPos = camera.getPos();  // 1.20.6: getPos() not getCameraPos()
         double relativeYaw = computeRelativeYaw(cameraPos, camera.getYaw(), targetPos); // 1.20.6: getYaw() not getCameraYaw()
@@ -72,6 +85,14 @@ public class Utils {
         return horizontal;
     }
 
+    /**
+     * 核心公式：计算从相机看向目标位置的相对偏航角。
+     *
+     * @param cameraPos 相机世界坐标
+     * @param yaw       相机偏航角（度）
+     * @param targetPos 目标世界坐标
+     * @return 相对偏航角，范围 [-180, 180]
+     */
     public static double computeRelativeYaw(Vec3d cameraPos, float yaw, Vec3d targetPos) {
         // 1.20.6: rotateYClockwise()
         Vec3d vec3d = rotateYClockwise(cameraPos.subtract(targetPos));
@@ -83,6 +104,12 @@ public class Utils {
         return new Vec3d(-vec3d.getZ(), vec3d.getY(), vec3d.getX());
     }
 
+    /**
+     * 将相对偏航角映射为水平方向指示字符串。
+     *
+     * @param relativeYaw 相对偏航角
+     * @return N/NE/E/SE/S/SW/W/NW 之一
+     */
     public static String directionFromRelativeYaw(double relativeYaw) {
         if (relativeYaw < -180 || relativeYaw > 180) throw new AssertionError();
         if (relativeYaw >= -157.5 && relativeYaw < -112.5)
@@ -102,6 +129,28 @@ public class Utils {
         return Text.translatable("gui.safeguard.direction.s").getString();
     }
 
+    /**
+     * 计算相机看向实体的相对偏航角（带帧间插值），委托给 {@link #computeRelativeYaw}。
+     *
+     * @param cameraPos    相机世界坐标
+     * @param yaw          相机偏航角（度）
+     * @param entity       目标实体
+     * @param tickProgress 帧间插值函数
+     * @return 相对偏航角，范围 [-180, 180]
+     */
+    public static double getRelativeYaw(Vec3d cameraPos, float yaw, Entity entity, float tickProgress) {
+        return computeRelativeYaw(cameraPos, yaw, entity.getCameraPosVec(tickProgress));
+    }
+
+    /**
+     * 判断目标实体是否在玩家背后（相对偏航角绝对值 > 90°）。
+     *
+     * @param client Minecraft 客户端实例
+     * @param world  当前客户端世界
+     * @param entity 目标实体
+     * @param camera 玩家相机
+     * @return 在背后返回 {@code true}
+     */
     public static boolean isBehindPlayer(MinecraftClient client, ClientWorld world, Entity entity, Camera camera) {
         // 1.20.6: simplified - use client.getTickDelta() directly
         double relativeYaw = computeRelativeYaw(camera.getPos(), camera.getYaw(),
@@ -109,6 +158,14 @@ public class Utils {
         return Math.abs(relativeYaw) > 90.0;
     }
 
+    /**
+     * 判断目标实体是否正在朝玩家靠近。
+     * 即移动速度不为 0，且加上速度后的末位置比初位置更靠近玩家。
+     *
+     * @param entity 目标实体
+     * @param player 玩家
+     * @return 正在靠近返回 {@code true}
+     */
     public static boolean isApproaching(LivingEntity entity, ClientPlayerEntity player) {
         Vec3d velocity = entity.getVelocity();
         if (velocity.lengthSquared() == 0) return false;
@@ -116,6 +173,12 @@ public class Utils {
         return futurePos.squaredDistanceTo(player.getPos()) < entity.squaredDistanceTo(player);
     }
 
+    /**
+     * 模拟按下一次按键（持续 8 tick 后自动松开）。
+     * 使用 Accessor Mixin 读取绑定键码，避免直接依赖 KeyBinding 内部 API。
+     *
+     * @param keyBinding 要模拟的按键绑定
+     */
     public static void simulatePress(KeyBinding keyBinding) {
         InputUtil.Key key = ((KeyBindingAccessor) keyBinding).safeguard$getBoundKey();
         KeyBinding.setKeyPressed(key, true);
@@ -124,7 +187,18 @@ public class Utils {
     }
 
     /**
-     * 1.20.6: Uses Item.isSuitableFor() instead of DataComponentTypes.TOOL
+     * 判断玩家当前是否有破坏/挖掘方块的意图。
+     * 满足以下任一条件返回 {@code true}：
+     * <ul>
+     *   <li>玩家正在按攻击键且准星指向符合谓词的方块</li>
+     *   <li>玩家手持正确工具且准星指向符合谓词的可挖掘方块</li>
+     * </ul>
+     *
+     * @param client    Minecraft 客户端实例
+     * @param world     当前客户端世界
+     * @param player    玩家
+     * @param predicate 对目标方块的额外条件（如判断是否为特定方块类型）
+     * @return 有挖掘意图返回 {@code true}
      */
     public static boolean hasDestroyIntention(MinecraftClient client, ClientWorld world, ClientPlayerEntity player, Predicate<BlockPos> predicate) {
         if (client.crosshairTarget == null || client.crosshairTarget.getType() != HitResult.Type.BLOCK) return false;
@@ -138,6 +212,14 @@ public class Utils {
         return item.isSuitableFor(world.getBlockState(pos));
     }
 
+    /**
+     * 根据背包槽位索引返回该槽位所在区域的翻译文本指示。
+     * 若槽位不在有效范围 [0, 40] 内，抛出 {@link IndexOutOfBoundsException}。
+     *
+     * @param slot 背包槽位索引
+     * @return 对应区域的翻译文本
+     * @throws IndexOutOfBoundsException 若 {@code slot} 不在 [0, 40] 内
+     */
     public static Text getInventoryPosIndicator(int slot) {
         if (slot < 0)
             throw new IndexOutOfBoundsException("%d out of [0-%d]".formatted(slot, PlayerInventory.OFF_HAND_SLOT));

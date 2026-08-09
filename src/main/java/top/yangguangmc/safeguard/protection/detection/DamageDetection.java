@@ -2,7 +2,6 @@ package top.yangguangmc.safeguard.protection.detection;
 
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.world.ClientWorld;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import top.yangguangmc.safeguard.protection.GlobalProtectionConditions;

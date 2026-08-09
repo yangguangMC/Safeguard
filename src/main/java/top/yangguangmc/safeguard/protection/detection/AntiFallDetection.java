@@ -31,8 +31,8 @@ public class AntiFallDetection extends Detection {
     }
 
     private void onStartTick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
-        // 1.20.6: player.supportingBlockPos doesn't exist → use player.getBlockPos().down()
-        if (player.getPitch() > 0 && Utils.hasDestroyIntention(client, world, player, pos -> pos.equals(player.getBlockPos().down()))) {
+        // 防挖掘坠落
+        if (player.getPitch() > 0 && Utils.hasDestroyIntention(client, world, player, pos -> pos.equals(player.supportingBlockPos.orElse(null)))) {
             List<SafeResult> result = checkSafety(8, ((BlockHitResult) Objects.requireNonNull(client.crosshairTarget)).getBlockPos(), world, player);
             result.removeIf(r -> r.unsafety() <= 0);
             if (!result.isEmpty()) {
@@ -47,16 +47,18 @@ public class AntiFallDetection extends Detection {
                                 message.append(Text.translatable("detection.safeguard.environment.anti_fall.warning_secondary",
                                         result2.name(), result2.posBelow())));
                 int dangerOrdinal = DangerLevel.LOW.ordinal();
-                if (worst.posBelow < 3) dangerOrdinal--;
+                if (worst.posBelow < 3) dangerOrdinal--;    // ordinal++ == danger--
                 if (worst.unsafety() > 2) dangerOrdinal--;
                 DangerLevel level = DangerLevel.values()[Math.max(dangerOrdinal, DangerLevel.HIGH.ordinal())];
                 tryExecuteAction(ActionBarTitleAction.class, action -> action.updateTitle(level, message, client));
             }
         }
+        // 已坠落保护
         if (!player.isOnGround() && player.fallDistance > 1.5 && checkSafety(5, player.getBlockPos(), world, player).stream().allMatch(result -> result.unsafety() > 0)) {
             tryExecuteAction(PauseAction.class, action -> action.pause(client));
             tryExecuteAction(QuitAction.class, action -> action.quit(client));
         }
+        // MLG
         tryExecuteAction(MLGAction.class, action -> action.tick(client, world, player));
     }
 
@@ -122,14 +124,14 @@ public class AntiFallDetection extends Detection {
 
         public void tick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
             if (placementSchedule != -1) LOGGER.debug("[MLG Action] Schedule: {}", placementSchedule);
+            // 若已经计划好位置了
             if (placementSchedule >= 0) {
                 if (placementSchedule <= 10) {
                     List<ItemStack> hotbar = player.getInventory().main.stream().limit(9).toList();
                     int slot = 8;
-                    // 1.20.6: ultrawarm() instead of EnvironmentAttributes
-                    boolean isNether = world.getDimension().ultrawarm();
                     for (int i = 0; i < hotbar.size(); i++) {
-                        if (isNether
+                        // 1.20.6: ultrawarm() instead of EnvironmentAttributes
+                        if (world.getDimension().ultrawarm()
                                 ? MLG_ITEMS_NETHER.contains(hotbar.get(i).getItem())
                                 : MLG_ITEMS_NORMAL.contains(hotbar.get(i).getItem())) {
                             slot = i;
@@ -149,15 +151,16 @@ public class AntiFallDetection extends Detection {
                 placementSchedule--;
                 return;
             }
-            // 1.20.6: ultrawarm() instead of EnvironmentAttributes
-            boolean isNether = world.getDimension().ultrawarm();
+
             if (player.isOnGround() || player.fallDistance < minFallDistance || player.hasStatusEffect(StatusEffects.SLOW_FALLING)
                     || player.isFallFlying() || player.getInventory().main.stream().limit(9).map(ItemStack::getItem)
-                    .noneMatch(isNether
+                    // 1.20.6: ultrawarm() instead of EnvironmentAttributes
+                    .noneMatch(world.getDimension().ultrawarm()
                             ? MLG_ITEMS_NETHER::contains : MLG_ITEMS_NORMAL::contains)) {
                 placementSchedule = -1;
                 return;
             }
+            // 开始进行位置计划
             BlockPos blockPos = player.getBlockPos();
             while (world.getBlockState(blockPos).isAir() && !world.isOutOfHeightLimit(blockPos))
                 blockPos = blockPos.down();
@@ -180,7 +183,7 @@ public class AntiFallDetection extends Detection {
                 velocityY = (velocityY - player.getFinalGravity()) * 0.98;
                 double distance = posY - targetY;
                 if (distance <= player.getBlockInteractionRange() || (distance > lastDistance && velocityY < 0)) {
-                    i -= Math.abs(velocityY) < 1.85 ? 1 : 2;
+                    i -= Math.abs(velocityY) < 1.85 ? 1 : 2; // 不知道是响应延迟还是模拟误差，必须根据速度提前 1 ~ 2 刻以防摔死
                     LOGGER.debug("[MLG Action] Scheduled water placement at {} ticks later. TargetY: {}, endPlayerY: {}, endDistance: {}, endVelocityY: {}",
                             i, targetY, posY, distance, velocityY);
                     placementSchedule = i;

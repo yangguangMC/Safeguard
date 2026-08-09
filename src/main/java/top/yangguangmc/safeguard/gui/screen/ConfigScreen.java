@@ -42,6 +42,8 @@ public class ConfigScreen {
                 .generateScreen(parent);
     }
 
+    // ==================== Detection Category ====================
+
     private static ConfigCategory buildDetectionCategory(SwitchTreeNode root) {
         ConfigCategory.Builder category = ConfigCategory.createBuilder()
                 .name(Text.translatable("category.safeguard.detections"));
@@ -52,6 +54,8 @@ public class ConfigScreen {
         }
         return category.build();
     }
+
+    // ==================== Action Category ====================
 
     private static ConfigCategory buildActionCategory(SwitchTreeNode root) {
         ConfigCategory.Builder category = ConfigCategory.createBuilder()
@@ -64,6 +68,8 @@ public class ConfigScreen {
         return category.build();
     }
 
+    // ==================== Links Category ====================
+
     private static ConfigCategory buildLinksCategory(SwitchTreeNode detectionRoot) {
         ConfigCategory.Builder category = ConfigCategory.createBuilder()
                 .name(Text.translatable("category.safeguard.links"));
@@ -75,6 +81,9 @@ public class ConfigScreen {
         return category.build();
     }
 
+    /**
+     * 每个检测项一个 OptionGroup，组名即为检测项名，其下陈列与其绑定的保护动作
+     */
     private static OptionGroup buildLinkGroup(Detection detection) {
         return OptionGroup.createBuilder()
                 .name(ctx.protectionManager().getDetectionName(detection.getId()))
@@ -98,6 +107,13 @@ public class ConfigScreen {
                 .build();
     }
 
+    // ==================== Recursive Build Logic ====================
+
+    /**
+     * 为根的直接子枝干节点创建一个 OptionGroup。
+     * OptionGroup 的名称即为该枝干节点的翻译名，默认展开。
+     * 组内包含枝干自身开关及其所有后代节点。
+     */
     private static OptionGroup buildGroupForBranch(SwitchTreeNode branch, Function<Identifier, Text> nameProvider) {
         OptionGroup.Builder group = OptionGroup.createBuilder()
                 .name(nameProvider.apply(branch.getId()))
@@ -107,6 +123,10 @@ public class ConfigScreen {
         return group.build();
     }
 
+    /**
+     * 递归将枝干节点的所有子节点展开到同一个 OptionGroup 中。
+     * 叶节点直接作为 Option；更深层枝干先以 LabelOption 分隔，再插入自身开关，最后递归。
+     */
     private static void recurseChildren(SwitchTreeNode branch, OptionGroup.Builder group,
                                         Function<Identifier, Text> nameProvider) {
         for (SwitchTreeNode child : sortChildren(branch.getChildren())) {
@@ -121,6 +141,11 @@ public class ConfigScreen {
         }
     }
 
+    // ==================== Option Factory Methods ====================
+
+    /**
+     * 枝干节点开关：金色名称突出其为分类控制节点。缩进 = level * 4 空格
+     */
     private static Option<Boolean> createBranchOption(SwitchTreeNode node, Function<Identifier, Text> nameProvider, int level) {
         return Option.<Boolean>createBuilder()
                 .name(Text.literal("    ".repeat(level))
@@ -136,6 +161,9 @@ public class ConfigScreen {
                 .build();
     }
 
+    /**
+     * 叶节点开关：缩进 = level * 4 空格，视觉上与父枝干区分
+     */
     private static Option<Boolean> createLeafOption(SwitchTreeNode node, Function<Identifier, Text> nameProvider, int level) {
         return Option.<Boolean>createBuilder()
                 .name(Text.literal("    ".repeat(level)).append(nameProvider.apply(node.getId())))
@@ -149,6 +177,9 @@ public class ConfigScreen {
                 .build();
     }
 
+    /**
+     * 更深层枝干的分隔标签：青色装饰线，缩进 = level * 4 空格
+     */
     private static LabelOption createBranchLabel(SwitchTreeNode node, Function<Identifier, Text> nameProvider, int level) {
         return LabelOption.create(
                 Text.literal("    ".repeat(level) + "── ")
@@ -158,6 +189,11 @@ public class ConfigScreen {
         );
     }
 
+    // ==================== Utility ====================
+
+    /**
+     * 按节点路径末尾名称排序，确保同层级条目顺序一致
+     */
     private static List<SwitchTreeNode> sortChildren(Collection<SwitchTreeNode> children) {
         List<SwitchTreeNode> sorted = new ArrayList<>(children);
         sorted.sort(Comparator.comparing(SwitchTreeNode::getIdName));
