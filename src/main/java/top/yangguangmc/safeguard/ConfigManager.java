@@ -146,14 +146,21 @@ public class ConfigManager {
     private void loadDetectionTree(JsonObject json, String namespace, String parentPath) {
         for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
             String key = entry.getKey();
-            if (!(entry.getValue() instanceof JsonObject nodeObj)) continue;
+            if (!(entry.getValue() instanceof JsonObject nodeObj)) {
+                LOGGER.warn("Value of level 0 detection root {} is not a JsonObject, skipping.", key);
+                continue;
+            }
 
             Identifier id;
             String ns = namespace;
             String newPath;
 
             if (parentPath.isEmpty()) {
-                id = Identifier.of(key);
+                id = Identifier.tryParse(key);
+                if (id == null) {
+                    LOGGER.warn("Level 0 detection root {} is not a valid Identifier, skipping.", key);
+                    continue;
+                }
                 ns = id.getNamespace();
                 newPath = id.getPath();
             } else {
@@ -192,14 +199,21 @@ public class ConfigManager {
     private void loadActionTree(JsonObject json, String namespace, String parentPath) {
         for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
             String key = entry.getKey();
-            if (!(entry.getValue() instanceof JsonObject nodeObj)) continue;
+            if (!(entry.getValue() instanceof JsonObject nodeObj)) {
+                LOGGER.warn("Value of level 0 action root {} is not a JsonObject, skipping.", key);
+                continue;
+            }
 
             Identifier id;
             String ns = namespace;
             String newPath;
 
             if (parentPath.isEmpty()) {
-                id = Identifier.of(key);
+                id = Identifier.tryParse(key);
+                if (id == null) {
+                    LOGGER.warn("Level 0 action root {} is not a valid Identifier, skipping.", key);
+                    continue;
+                }
                 ns = id.getNamespace();
                 newPath = id.getPath();
             } else {
