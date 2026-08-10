@@ -1,6 +1,6 @@
 package top.yangguangmc.safeguard.protection;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 import top.yangguangmc.safeguard.ModContext;
 
 /**
@@ -25,6 +25,6 @@ public record CategoryDefinition(Identifier id, boolean defaultEnabled) {
      * @param defaultEnabled 默认是否启用
      */
     public CategoryDefinition(String path, boolean defaultEnabled) {
-        this(Identifier.of(ModContext.MOD_ID, path), defaultEnabled);
+        this(Identifier.fromNamespaceAndPath(ModContext.MOD_ID, path), defaultEnabled);
     }
 }

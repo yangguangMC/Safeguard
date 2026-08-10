@@ -1,15 +1,15 @@
 package top.yangguangmc.safeguard.protection.detection;
 
-import net.minecraft.block.Blocks;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.attribute.EnvironmentAttributes;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
 import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
 import top.yangguangmc.safeguard.protection.action.BlockOutlineAction;
 import top.yangguangmc.safeguard.protection.action.DangerLevel;
@@ -42,7 +42,7 @@ public class LavaDetection extends Detection {
         if (!active) modContext.filledThroughWallsRenderer().clearByTag(getId().toString());
     }
 
-    private void onStartTick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
+    private void onStartTick(Minecraft client, ClientLevel world, LocalPlayer player) {
         tickCounter++;
         if (tickCounter % checkInterval != 0) return;
 
@@ -51,18 +51,18 @@ public class LavaDetection extends Detection {
             return;
         }
 
-        boolean isNether = world.getEnvironmentAttributes().getAttributeValue(EnvironmentAttributes.FAST_LAVA_GAMEPLAY);
+        boolean isNether = world.environmentAttributes().getDimensionValue(EnvironmentAttributes.FAST_LAVA);
         int range = isNether ? checkRangeInNether : checkRange;
 
-        BlockPos playerPos = player.getBlockPos();
+        BlockPos playerPos = player.blockPosition();
         List<BlockPos> lavaPositions = new ArrayList<>();
 
         for (int dx = -range; dx <= range; dx++)
             for (int dy = -range; dy <= range; dy++)
                 for (int dz = -range; dz <= range; dz++) {
-                    BlockPos pos = playerPos.add(dx, dy, dz);
-                    if (world.getBlockState(pos).isOf(Blocks.LAVA))
-                        lavaPositions.add(pos.toImmutable());
+                    BlockPos pos = playerPos.offset(dx, dy, dz);
+                    if (world.getBlockState(pos).is(Blocks.LAVA))
+                        lavaPositions.add(pos.immutable());
                 }
 
         if (lavaPositions.isEmpty()) {
@@ -70,15 +70,15 @@ public class LavaDetection extends Detection {
             return;
         }
 
-        Vec3d eyePos = player.getEyePos();
+        Vec3 eyePos = player.getEyePosition();
         BlockPos nearestPos = lavaPositions.stream()
-                .min(Comparator.comparingDouble(pos -> Vec3d.ofCenter(pos).squaredDistanceTo(eyePos)))
+                .min(Comparator.comparingDouble(pos -> Vec3.atCenterOf(pos).distanceToSqr(eyePos)))
                 .orElseThrow();
 
-        Camera camera = client.gameRenderer.getCamera();
-        double distance = Math.sqrt(Vec3d.ofCenter(nearestPos).squaredDistanceTo(player.getEyePos()));
-        String direction = Utils.getDirectionIndicator(camera, Vec3d.ofCenter(nearestPos));
-        MutableText message = Text.translatable("detection.safeguard.environment.lava.warning", String.format("%.0f", distance), direction);
+        Camera camera = client.gameRenderer.getMainCamera();
+        double distance = Math.sqrt(Vec3.atCenterOf(nearestPos).distanceToSqr(player.getEyePosition()));
+        String direction = Utils.getDirectionIndicator(camera, Vec3.atCenterOf(nearestPos));
+        MutableComponent message = Component.translatable("detection.safeguard.environment.lava.warning", String.format("%.0f", distance), direction);
 
         tryExecuteAction(ActionBarTitleAction.class,
                 action -> action.updateTitle(DangerLevel.MEDIUM, message, client));

@@ -1,41 +1,41 @@
 package top.yangguangmc.safeguard.util;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.ToolComponent;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.waypoint.EntityTickProgress;
-import top.yangguangmc.safeguard.injection.mixin.KeyBindingAccessor;
+import net.minecraft.client.Camera;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.Tool;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.waypoints.PartialTickSupplier;
+import top.yangguangmc.safeguard.injection.mixin.KeyMappingAccessor;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
 
 public class Utils {
-    private static final Map<KeyBinding, Integer> SIMULATE_RELEASE_TICKS = new HashMap<>();
+    private static final Map<KeyMapping, Integer> SIMULATE_RELEASE_TICKS = new HashMap<>();
 
     static {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            for (KeyBinding keyBinding : SIMULATE_RELEASE_TICKS.keySet()) {
+            for (KeyMapping keyBinding : SIMULATE_RELEASE_TICKS.keySet()) {
                 int ticks = SIMULATE_RELEASE_TICKS.get(keyBinding) - 1;
                 if (ticks > 0) SIMULATE_RELEASE_TICKS.put(keyBinding, ticks);
                 else {
-                    keyBinding.setPressed(false);
+                    keyBinding.setDown(false);
                     SIMULATE_RELEASE_TICKS.remove(keyBinding);
                 }
             }
@@ -53,12 +53,12 @@ public class Utils {
      * @param world  当前客户端世界
      * @param target 目标实体
      * @param camera 玩家相机
-     * @return 方向指示文本，如 "N"、"NE↑"、"SW↓"
+     * @return 方向指示文本，如 "↑"、"↓"、"↖ 上方"
      */
-    public static String getDirectionIndicator(MinecraftClient client, ClientWorld world, Entity target, Camera camera) {
-        EntityTickProgress tickProgress = e -> client.getRenderTickCounter()
-                .getTickProgress(!world.getTickManager().shouldSkipTick(e));
-        Vec3d targetPos = target.getCameraPosVec(tickProgress.getTickProgress(target));
+    public static String getDirectionIndicator(Minecraft client, ClientLevel world, Entity target, Camera camera) {
+        PartialTickSupplier tickProgress = e -> client.getDeltaTracker()
+                .getGameTimeDeltaPartialTick(!world.tickRateManager().isEntityFrozen(e));
+        Vec3 targetPos = target.getEyePosition(tickProgress.apply(target));
         return getDirectionIndicator(camera, targetPos);
     }
 
@@ -67,25 +67,25 @@ public class Utils {
      *
      * @param camera    玩家相机
      * @param targetPos 目标世界坐标
-     * @return 方向指示文本，如 "N"、"NE↑"、"SW↓"
+     * @return 方向指示文本，如 "↑"、"↓"、"↖ 上方"
      */
-    public static String getDirectionIndicator(Camera camera, Vec3d targetPos) {
-        Vec3d cameraPos = camera.getCameraPos();
-        double relativeYaw = computeRelativeYaw(cameraPos, camera.getCameraYaw(), targetPos);
+    public static String getDirectionIndicator(Camera camera, Vec3 targetPos) {
+        Vec3 cameraPos = camera.position();
+        double relativeYaw = computeRelativeYaw(cameraPos, camera.yaw(), targetPos);
         String horizontal = directionFromRelativeYaw(relativeYaw);
 
-        double dx = targetPos.getX() - cameraPos.getX();
-        double dy = targetPos.getY() - cameraPos.getY();
-        double dz = targetPos.getZ() - cameraPos.getZ();
+        double dx = targetPos.x() - cameraPos.x();
+        double dy = targetPos.y() - cameraPos.y();
+        double dz = targetPos.z() - cameraPos.z();
         double horizontalDist = Math.sqrt(dx * dx + dz * dz);
         if (horizontalDist < 1e-6) return horizontal;
 
         double pitchToTarget = -Math.toDegrees(Math.atan2(dy, horizontalDist));
-        double relativePitch = pitchToTarget - camera.getPitch();
+        double relativePitch = pitchToTarget - camera.xRot();
         if (relativePitch > 30.0)
-            return horizontal + " " + Text.translatable("gui.safeguard.direction.below").getString();
+            return horizontal + " " + Component.translatable("gui.safeguard.direction.below").getString();
         if (relativePitch < -30.0)
-            return horizontal + " " + Text.translatable("gui.safeguard.direction.above").getString();
+            return horizontal + " " + Component.translatable("gui.safeguard.direction.above").getString();
         return horizontal;
     }
 
@@ -97,35 +97,35 @@ public class Utils {
      * @param targetPos 目标世界坐标
      * @return 相对偏航角，范围 [-180, 180]
      */
-    public static double computeRelativeYaw(Vec3d cameraPos, float yaw, Vec3d targetPos) {
-        Vec3d vec3d = cameraPos.subtract(targetPos).rotateYClockwise();
-        float f = (float) MathHelper.atan2(vec3d.getZ(), vec3d.getX()) * (180.0F / (float) Math.PI);
-        return MathHelper.subtractAngles(yaw, f);
+    public static double computeRelativeYaw(Vec3 cameraPos, float yaw, Vec3 targetPos) {
+        Vec3 vec3d = cameraPos.subtract(targetPos).rotateClockwise90();
+        float f = (float) Mth.atan2(vec3d.z(), vec3d.x()) * (180.0F / (float) Math.PI);
+        return Mth.degreesDifference(yaw, f);
     }
 
     /**
      * 将相对偏航角映射为水平方向指示字符串。
      *
      * @param relativeYaw 相对偏航角
-     * @return N/NE/E/SE/S/SW/W/NW 之一
+     * @return ↑/↗/→/↘/↓/↙/←/↖ 之一
      */
     public static String directionFromRelativeYaw(double relativeYaw) {
         if (relativeYaw < -180 || relativeYaw > 180) throw new AssertionError();
         if (relativeYaw >= -157.5 && relativeYaw < -112.5)
-            return Text.translatable("gui.safeguard.direction.sw").getString();
+            return Component.translatable("gui.safeguard.direction.sw").getString();
         if (relativeYaw >= -112.5 && relativeYaw < -67.5)
-            return Text.translatable("gui.safeguard.direction.w").getString();
+            return Component.translatable("gui.safeguard.direction.w").getString();
         if (relativeYaw >= -67.5 && relativeYaw < -22.5)
-            return Text.translatable("gui.safeguard.direction.nw").getString();
+            return Component.translatable("gui.safeguard.direction.nw").getString();
         if (relativeYaw >= -22.5 && relativeYaw < 22.5)
-            return Text.translatable("gui.safeguard.direction.n").getString();
+            return Component.translatable("gui.safeguard.direction.n").getString();
         if (relativeYaw >= 22.5 && relativeYaw < 67.5)
-            return Text.translatable("gui.safeguard.direction.ne").getString();
+            return Component.translatable("gui.safeguard.direction.ne").getString();
         if (relativeYaw >= 67.5 && relativeYaw < 112.5)
-            return Text.translatable("gui.safeguard.direction.e").getString();
+            return Component.translatable("gui.safeguard.direction.e").getString();
         if (relativeYaw >= 112.5 && relativeYaw < 157.5)
-            return Text.translatable("gui.safeguard.direction.se").getString();
-        return Text.translatable("gui.safeguard.direction.s").getString();  // relativeYaw <= -157.5 || relativeYaw >= 157.5
+            return Component.translatable("gui.safeguard.direction.se").getString();
+        return Component.translatable("gui.safeguard.direction.s").getString();  // relativeYaw <= -157.5 || relativeYaw >= 157.5
     }
 
     /**
@@ -137,8 +137,8 @@ public class Utils {
      * @param tickProgress 帧间插值函数
      * @return 相对偏航角，范围 [-180, 180]
      */
-    public static double getRelativeYaw(Vec3d cameraPos, float yaw, Entity entity, EntityTickProgress tickProgress) {
-        return computeRelativeYaw(cameraPos, yaw, entity.getCameraPosVec(tickProgress.getTickProgress(entity)));
+    public static double getRelativeYaw(Vec3 cameraPos, float yaw, Entity entity, PartialTickSupplier tickProgress) {
+        return computeRelativeYaw(cameraPos, yaw, entity.getEyePosition(tickProgress.apply(entity)));
     }
 
     /**
@@ -150,11 +150,11 @@ public class Utils {
      * @param camera 玩家相机
      * @return 在背后返回 {@code true}
      */
-    public static boolean isBehindPlayer(MinecraftClient client, ClientWorld world, Entity entity, Camera camera) {
-        EntityTickProgress tickProgress = e -> client.getRenderTickCounter()
-                .getTickProgress(!world.getTickManager().shouldSkipTick(e));
-        double relativeYaw = computeRelativeYaw(camera.getCameraPos(), camera.getCameraYaw(),
-                entity.getCameraPosVec(tickProgress.getTickProgress(entity)));
+    public static boolean isBehindPlayer(Minecraft client, ClientLevel world, Entity entity, Camera camera) {
+        PartialTickSupplier tickProgress = e -> client.getDeltaTracker()
+                .getGameTimeDeltaPartialTick(!world.tickRateManager().isEntityFrozen(e));
+        double relativeYaw = computeRelativeYaw(camera.position(), camera.yaw(),
+                entity.getEyePosition(tickProgress.apply(entity)));
         return Math.abs(relativeYaw) > 90.0;
     }
 
@@ -166,11 +166,11 @@ public class Utils {
      * @param player 玩家
      * @return 正在靠近返回 {@code true}
      */
-    public static boolean isApproaching(LivingEntity entity, ClientPlayerEntity player) {
-        Vec3d velocity = entity.getVelocity();
-        if (velocity.lengthSquared() == 0) return false;
-        Vec3d futurePos = entity.getEntityPos().add(velocity);
-        return futurePos.squaredDistanceTo(player.getEntityPos()) < entity.squaredDistanceTo(player);
+    public static boolean isApproaching(LivingEntity entity, LocalPlayer player) {
+        Vec3 velocity = entity.getDeltaMovement();
+        if (velocity.lengthSqr() == 0) return false;
+        Vec3 futurePos = entity.position().add(velocity);
+        return futurePos.distanceToSqr(player.position()) < entity.distanceToSqr(player);
     }
 
     /**
@@ -179,10 +179,10 @@ public class Utils {
      *
      * @param keyBinding 要模拟的按键绑定
      */
-    public static void simulatePress(KeyBinding keyBinding) {
-        InputUtil.Key key = ((KeyBindingAccessor) keyBinding).safeguard$getBoundKey();
-        KeyBinding.setKeyPressed(key, true);
-        KeyBinding.onKeyPressed(key);
+    public static void simulatePress(KeyMapping keyBinding) {
+        InputConstants.Key key = ((KeyMappingAccessor) keyBinding).safeguard$getKey();
+        KeyMapping.set(key, true);
+        KeyMapping.click(key);
         SIMULATE_RELEASE_TICKS.put(keyBinding, 8);
     }
 
@@ -200,14 +200,14 @@ public class Utils {
      * @param predicate 对目标方块的额外条件（如判断是否为特定方块类型）
      * @return 有挖掘意图返回 {@code true}
      */
-    public static boolean hasDestroyIntention(MinecraftClient client, ClientWorld world, ClientPlayerEntity player, Predicate<BlockPos> predicate) {
-        if (client.crosshairTarget == null || client.crosshairTarget.getType() != HitResult.Type.BLOCK) return false;
-        if (client.options.useKey.isPressed()) return false;
-        BlockPos pos = ((BlockHitResult) client.crosshairTarget).getBlockPos();
+    public static boolean hasDestroyIntention(Minecraft client, ClientLevel world, LocalPlayer player, Predicate<BlockPos> predicate) {
+        if (client.hitResult == null || client.hitResult.getType() != HitResult.Type.BLOCK) return false;
+        if (client.options.keyUse.isDown()) return false;
+        BlockPos pos = ((BlockHitResult) client.hitResult).getBlockPos();
         if (!predicate.test(pos)) return false;
-        if (client.options.attackKey.isPressed()) return true;
-        ItemStack item = player.getActiveOrMainHandStack();
-        ToolComponent component = item.get(DataComponentTypes.TOOL);
+        if (client.options.keyAttack.isDown()) return true;
+        ItemStack item = player.getActiveItem();
+        Tool component = item.get(DataComponents.TOOL);
         return component != null && component.isCorrectForDrops(world.getBlockState(pos));
     }
 
@@ -219,16 +219,16 @@ public class Utils {
      * @return 对应区域的翻译文本
      * @throws IndexOutOfBoundsException 若 {@code slot} 不在 [0, 40] 内
      */
-    public static Text getInventoryPosIndicator(int slot) {
+    public static Component getInventoryPosIndicator(int slot) {
         if (slot < 0)
-            throw new IndexOutOfBoundsException("%d out of [0-%d]".formatted(slot, PlayerInventory.OFF_HAND_SLOT));
-        if (slot < PlayerInventory.HOTBAR_SIZE) return Text.translatable("gui.safeguard.slot.hotbar", slot + 1);
-        else if (slot < PlayerInventory.MAIN_SIZE) return Text.translatable("gui.safeguard.slot.inventory");
-        else if (slot == PlayerInventory.OFF_HAND_SLOT) return Text.translatable("gui.safeguard.slot.offhand");
-        else if (slot == PlayerInventory.MAIN_SIZE) return Text.translatable("gui.safeguard.slot.armor.head");
-        else if (slot == PlayerInventory.MAIN_SIZE + 1) return Text.translatable("gui.safeguard.slot.armor.chest");
-        else if (slot == PlayerInventory.MAIN_SIZE + 2) return Text.translatable("gui.safeguard.slot.armor.legs");
-        else if (slot == PlayerInventory.MAIN_SIZE + 3) return Text.translatable("gui.safeguard.slot.armor.feet");
-        else throw new IndexOutOfBoundsException("%d out of [0-%d]".formatted(slot, PlayerInventory.OFF_HAND_SLOT));
+            throw new IndexOutOfBoundsException("%d out of [0-%d]".formatted(slot, Inventory.SLOT_OFFHAND));
+        if (slot < Inventory.SELECTION_SIZE) return Component.translatable("gui.safeguard.slot.hotbar", slot + 1);
+        else if (slot < Inventory.INVENTORY_SIZE) return Component.translatable("gui.safeguard.slot.inventory");
+        else if (slot == Inventory.SLOT_OFFHAND) return Component.translatable("gui.safeguard.slot.offhand");
+        else if (slot == Inventory.INVENTORY_SIZE) return Component.translatable("gui.safeguard.slot.armor.head");
+        else if (slot == Inventory.INVENTORY_SIZE + 1) return Component.translatable("gui.safeguard.slot.armor.chest");
+        else if (slot == Inventory.INVENTORY_SIZE + 2) return Component.translatable("gui.safeguard.slot.armor.legs");
+        else if (slot == Inventory.INVENTORY_SIZE + 3) return Component.translatable("gui.safeguard.slot.armor.feet");
+        else throw new IndexOutOfBoundsException("%d out of [0-%d]".formatted(slot, Inventory.SLOT_OFFHAND));
     }
 }

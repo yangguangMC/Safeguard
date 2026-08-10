@@ -1,7 +1,7 @@
 package top.yangguangmc.safeguard.protection;
 
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yangguangmc.safeguard.ModContext;
@@ -73,15 +73,15 @@ public class ProtectionManager {
         return detectionRoot.unmodifiableView();
     }
 
-    public Text getDetectionName(Identifier id) {
-        return Text.translatable("detection.%s.%s".formatted(id.getNamespace(), id.getPath().replace("/", ".")));
+    public Component getDetectionName(Identifier id) {
+        return Component.translatable("detection.%s.%s".formatted(id.getNamespace(), id.getPath().replace("/", ".")));
     }
 
     public SwitchTreeNode getActionStatesRoot() {
         return actionRoot.unmodifiableView();
     }
 
-    public Text getActonName(Identifier id) {
-        return Text.translatable("action.%s.%s".formatted(id.getNamespace(), id.getPath().replace("/", ".")));
+    public Component getActonName(Identifier id) {
+        return Component.translatable("action.%s.%s".formatted(id.getNamespace(), id.getPath().replace("/", ".")));
     }
 }

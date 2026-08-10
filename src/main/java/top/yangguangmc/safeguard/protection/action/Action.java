@@ -1,11 +1,11 @@
 package top.yangguangmc.safeguard.protection.action;
 
-import net.minecraft.client.sound.PositionedSoundInstance;
-import net.minecraft.client.sound.SoundInstance;
-import net.minecraft.registry.entry.RegistryEntry;
-import net.minecraft.sound.SoundCategory;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.util.Identifier;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.client.resources.sounds.SoundInstance;
+import net.minecraft.core.Holder;
+import net.minecraft.resources.Identifier;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 import top.yangguangmc.safeguard.ModContext;
 import top.yangguangmc.safeguard.protection.SwitchTreeItem;
 import top.yangguangmc.safeguard.protection.SwitchTreeNode;
@@ -23,7 +23,7 @@ public abstract class Action implements SwitchTreeItem {
     }
 
     public Action(String path) {
-        this(Identifier.of(ModContext.MOD_ID, path));
+        this(Identifier.fromNamespaceAndPath(ModContext.MOD_ID, path));
     }
 
     @Override
@@ -48,19 +48,19 @@ public abstract class Action implements SwitchTreeItem {
         return Objects.requireNonNull(modContext.protectionManager().getActionStatesRoot().getNode(getId()));
     }
 
-    protected PositionedSoundInstance createSoundInstance(RegistryEntry<SoundEvent> sound, float pitch) {
+    protected SimpleSoundInstance createSoundInstance(Holder<SoundEvent> sound, float pitch) {
         return createSoundInstance(sound.value(), pitch);
     }
 
-    protected PositionedSoundInstance createSoundInstance(SoundEvent sound, float pitch) {
-        return new PositionedSoundInstance(sound.id(),
-                SoundCategory.MASTER,
+    protected SimpleSoundInstance createSoundInstance(SoundEvent sound, float pitch) {
+        return new SimpleSoundInstance(sound.location(),
+                SoundSource.MASTER,
                 1.0F,
                 pitch,
-                SoundInstance.createRandom(),
+                SoundInstance.createUnseededRandom(),
                 false,
                 0,
-                SoundInstance.AttenuationType.NONE,
+                SoundInstance.Attenuation.NONE,
                 0.0F,
                 0.0F,
                 0.0F,

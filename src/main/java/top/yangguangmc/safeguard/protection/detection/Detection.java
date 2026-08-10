@@ -1,6 +1,6 @@
 package top.yangguangmc.safeguard.protection.detection;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 import top.yangguangmc.safeguard.ModContext;
 import top.yangguangmc.safeguard.protection.SwitchTreeItem;
 import top.yangguangmc.safeguard.protection.SwitchTreeNode;
@@ -28,7 +28,7 @@ public abstract class Detection implements SwitchTreeItem {
     }
 
     protected Detection(String path, Action... actions) {
-        this(Identifier.of(ModContext.MOD_ID, path), actions);
+        this(Identifier.fromNamespaceAndPath(ModContext.MOD_ID, path), actions);
     }
 
     public void init(ModContext ctx) {

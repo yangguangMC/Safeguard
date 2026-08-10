@@ -1,7 +1,7 @@
 package top.yangguangmc.safeguard.protection.action;
 
-import net.minecraft.text.Style;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Style;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,30 +17,30 @@ public enum DangerLevel {
     /**
      * 致命危险 — 即将受到致命伤害（苦力怕引信已激活、已坠落、正在窒息）。
      */
-    CRITICAL(Formatting.RED, true, "danger.safeguard.level.critical"),
+    CRITICAL(ChatFormatting.RED, true, "danger.safeguard.level.critical"),
     /**
      * 高风险 — 存在明确但非立即致命的威胁（苦力怕近距离、弹射物飞向玩家、着火无灭火物品）。
      */
-    HIGH(Formatting.RED, false, "danger.safeguard.level.high"),
+    HIGH(ChatFormatting.RED, false, "danger.safeguard.level.high"),
     /**
      * 中等风险 — 需要留意但不紧急（怪物偷袭、岩浆接近、着火有灭火方案）。
      */
-    MEDIUM(Formatting.GOLD, false, "danger.safeguard.level.medium"),
+    MEDIUM(ChatFormatting.GOLD, false, "danger.safeguard.level.medium"),
     /**
      * 低风险 — 轻微威胁（饥饿值低、苦力怕在远处、挖掘意图检测到坠落方块）。
      */
-    LOW(Formatting.YELLOW, false, "danger.safeguard.level.low"),
+    LOW(ChatFormatting.YELLOW, false, "danger.safeguard.level.low"),
     /**
      * 纯信息 — 不构成威胁，仅为参考（背包食物推荐），无前缀。
      */
-    INFO(Formatting.GRAY, false, null);
+    INFO(ChatFormatting.GRAY, false, null);
 
-    private final Formatting color;
+    private final ChatFormatting color;
     private final boolean bold;
     @Nullable
     private final String prefixKey;
 
-    DangerLevel(Formatting color, boolean bold, @Nullable String prefixKey) {
+    DangerLevel(ChatFormatting color, boolean bold, @Nullable String prefixKey) {
         this.color = color;
         this.bold = bold;
         this.prefixKey = prefixKey;
