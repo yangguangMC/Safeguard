@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.isxander.yacl3.platform.YACLPlatform;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yangguangmc.safeguard.protection.SwitchTreeNode;
@@ -165,7 +165,7 @@ public class ConfigManager {
                 newPath = id.getPath();
             } else {
                 newPath = parentPath + "/" + key;
-                id = Identifier.of(namespace, newPath);
+                id = Identifier.fromNamespaceAndPath(namespace, newPath);
             }
 
             SwitchTreeNode node = ctx.protectionManager().getDetectionStatesRoot().getNode(id);
@@ -179,7 +179,7 @@ public class ConfigManager {
                         Detection detection = ctx.protectionManager().getDetection(id);
                         JsonObject bindings = nodeObj.getAsJsonObject("actionBindings");
                         for (Map.Entry<String, JsonElement> be : bindings.entrySet()) {
-                            Identifier actionId = Identifier.of(be.getKey());
+                            Identifier actionId = Identifier.parse(be.getKey());
                             detection.setBindingEnabled(actionId, be.getValue().getAsBoolean());
                         }
                     } catch (Exception e) {
@@ -218,7 +218,7 @@ public class ConfigManager {
                 newPath = id.getPath();
             } else {
                 newPath = parentPath + "/" + key;
-                id = Identifier.of(namespace, newPath);
+                id = Identifier.fromNamespaceAndPath(namespace, newPath);
             }
 
             SwitchTreeNode node = ctx.protectionManager().getActionStatesRoot().getNode(id);

@@ -1,9 +1,9 @@
 package top.yangguangmc.safeguard.protection.detection;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.damagesource.DamageSource;
 import top.yangguangmc.safeguard.protection.GlobalProtectionConditions;
 import top.yangguangmc.safeguard.protection.action.PauseAction;
 import top.yangguangmc.safeguard.protection.action.QuitAction;
@@ -16,9 +16,9 @@ public class DamageDetection extends Detection {
     }
 
     private void onEntityDamaged(LivingEntity entity, DamageSource source) {
-        if (!(entity instanceof ClientPlayerEntity player)) return;
+        if (!(entity instanceof LocalPlayer player)) return;
         if (!GlobalProtectionConditions.shouldProtect(player)) return;
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         tryExecuteAction(PauseAction.class, action -> action.pause(client));
         tryExecuteAction(QuitAction.class, action -> action.quit(client));
     }

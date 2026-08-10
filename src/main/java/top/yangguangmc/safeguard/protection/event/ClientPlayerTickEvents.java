@@ -2,9 +2,9 @@ package top.yangguangmc.safeguard.protection.event;
 
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.world.ClientWorld;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.multiplayer.ClientLevel;
 import top.yangguangmc.safeguard.protection.GlobalProtectionConditions;
 import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
 
@@ -40,6 +40,6 @@ public class ClientPlayerTickEvents {
 
     @FunctionalInterface
     public interface StartTick {
-        void onStartTick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player);
+        void onStartTick(Minecraft client, ClientLevel world, LocalPlayer player);
     }
 }

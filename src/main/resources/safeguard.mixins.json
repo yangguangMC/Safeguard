@@ -4,11 +4,11 @@
   "package": "top.yangguangmc.safeguard.injection.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "ClientPlayerEntityMixin",
+    "LocalPlayerMixin",
     "EntityRendererMixin",
     "GameRendererMixin",
-    "InGameHudMixin",
-    "KeyBindingAccessor",
+    "GuiMixin",
+    "KeyMappingAccessor",
     "LivingEntityMixin"
   ],
   "injectors": {

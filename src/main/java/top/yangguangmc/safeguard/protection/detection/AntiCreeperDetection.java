@@ -1,13 +1,13 @@
 package top.yangguangmc.safeguard.protection.detection;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.mob.CreeperEntity;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.Camera;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
 import top.yangguangmc.safeguard.protection.action.*;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
 import top.yangguangmc.safeguard.util.Utils;
@@ -19,18 +19,18 @@ public class AntiCreeperDetection extends Detection {
     public AntiCreeperDetection() {
         super("combat/anti_creeper",
                 new ActionBarTitleAction(),
-                new PlaySoundAction(SoundEvents.BLOCK_NOTE_BLOCK_HARP, 1.414214F, 3),
+                new PlaySoundAction(SoundEvents.NOTE_BLOCK_HARP, 1.414214F, 3),
                 new PauseAction(),
                 new QuitAction());
         listen(ClientPlayerTickEvents.GATED_START_TICK, this::onStartTick);
     }
 
-    private void onStartTick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
+    private void onStartTick(Minecraft client, ClientLevel world, LocalPlayer player) {
         double minD = Double.POSITIVE_INFINITY;
-        CreeperEntity e = null;
-        for (Entity entity : world.getEntities()) {
-            if (entity instanceof CreeperEntity c && !c.isDead()) {
-                double d = player.squaredDistanceTo(entity);
+        Creeper e = null;
+        for (Entity entity : world.entitiesForRendering()) {
+            if (entity instanceof Creeper c && !c.isDeadOrDying()) {
+                double d = player.distanceToSqr(entity);
                 if (d < minD) {
                     minD = d;
                     e = c;
@@ -39,8 +39,8 @@ public class AntiCreeperDetection extends Detection {
         }
         if (e != null && minD <= distance * distance) {
             double d2 = Math.sqrt(minD);
-            float fuseTime = e.getLerpedFuseTime(client.getRenderTickCounter().getTickProgress(world.getTickManager().shouldSkipTick(e)));
-            Camera camera = client.gameRenderer.getCamera();
+            float fuseTime = e.getSwelling(client.getDeltaTracker().getGameTimeDeltaPartialTick(world.tickRateManager().isEntityFrozen(e)));
+            Camera camera = client.gameRenderer.getMainCamera();
             String directionIndicator = Utils.getDirectionIndicator(client, world, e, camera);
 
             DangerLevel level;
@@ -51,7 +51,7 @@ public class AntiCreeperDetection extends Detection {
 
             tryExecuteAction(ActionBarTitleAction.class, action ->
                     action.updateTitle(level,
-                            Text.translatable("detection.safeguard.combat.anti_creeper.warning",
+                            Component.translatable("detection.safeguard.combat.anti_creeper.warning",
                                     String.format("%.1f", d2), String.format("%.0f%%", fuseTime * 100), directionIndicator),
                             client));
             tryExecuteAction(PlaySoundAction.class, action -> {

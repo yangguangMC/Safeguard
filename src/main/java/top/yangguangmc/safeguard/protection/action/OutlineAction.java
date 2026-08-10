@@ -1,7 +1,7 @@
 package top.yangguangmc.safeguard.protection.action;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,8 +34,8 @@ public class OutlineAction extends Action {
     }
 
     public void outline(Entity entity, int ticks, int color) {
-        OUTLINE_TICKS.put(entity.getUuid(), ticks);
-        OUTLINE_COLOR.put(entity.getUuid(), color);
+        OUTLINE_TICKS.put(entity.getUUID(), ticks);
+        OUTLINE_COLOR.put(entity.getUUID(), color);
     }
 
     public static int getOutline(UUID uuid) {

@@ -1,6 +1,6 @@
 package top.yangguangmc.safeguard.protection;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -279,7 +279,7 @@ public class SwitchTreeNode {
         int lastSlash = path.lastIndexOf('/');
         if (lastSlash == -1) return null;
         String parentPath = path.substring(0, lastSlash);
-        return Identifier.of(id.getNamespace(), parentPath);
+        return Identifier.fromNamespaceAndPath(id.getNamespace(), parentPath);
     }
 
     /**

@@ -1,6 +1,6 @@
 package top.yangguangmc.safeguard.protection.action;
 
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
 import top.yangguangmc.safeguard.ModContext;
 
 import java.util.Collection;

@@ -38,7 +38,7 @@ import java.util.function.Supplier;
  *
  * @param <T> Fabric 事件的监听器类型（函数式接口）
  * @implNote 在 gateFactory 中，如果事件参数包含 {@code ClientPlayerEntity}，
- * 应调用 {@link top.yangguangmc.safeguard.protection.GlobalProtectionConditions#shouldProtect(net.minecraft.client.network.ClientPlayerEntity)}
+ * 应调用 {@link top.yangguangmc.safeguard.protection.GlobalProtectionConditions#shouldProtect(net.minecraft.client.player.LocalPlayer)}
  * 进行全局前置条件检查，以确保玩家不需要保护时不触发任何检测项。
  */
 public class GatedEvent<T> {
