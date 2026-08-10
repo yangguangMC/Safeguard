@@ -1,15 +1,15 @@
 package top.yangguangmc.safeguard.protection.detection;
 
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Component;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.attribute.EnvironmentAttributes;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
 import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
 import top.yangguangmc.safeguard.protection.action.BlockOutlineAction;
 import top.yangguangmc.safeguard.protection.action.DangerLevel;

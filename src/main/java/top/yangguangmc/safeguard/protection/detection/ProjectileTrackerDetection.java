@@ -1,13 +1,13 @@
 package top.yangguangmc.safeguard.protection.detection;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.projectile.FireworkRocketEntity;
 import net.minecraft.world.entity.projectile.Projectile;
-import net.minecraft.network.chat.Component;
-import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
 import top.yangguangmc.safeguard.protection.action.DangerLevel;
@@ -25,6 +25,7 @@ public class ProjectileTrackerDetection extends Detection {
         float relativeAngle = Float.POSITIVE_INFINITY;
         for (Entity entity : world.entitiesForRendering()) {
             if (entity instanceof Projectile proj) {
+                //noinspection DataFlowIssue
                 if (player.equals(proj.getOwner())) continue;
                 Vec3 arrowPos = proj.position();
                 Vec3 velocity = proj.getDeltaMovement();

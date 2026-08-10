@@ -1,21 +1,21 @@
 package top.yangguangmc.safeguard.protection.detection;
 
 import com.google.common.collect.ImmutableSet;
-import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.attribute.EnvironmentAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yangguangmc.safeguard.ModContext;
@@ -33,6 +33,7 @@ public class AntiFallDetection extends Detection {
 
     private void onStartTick(Minecraft client, ClientLevel world, LocalPlayer player) {
         // 防挖掘坠落
+        //noinspection DataFlowIssue
         if (player.getXRot() > 0 && Utils.hasDestroyIntention(client, world, player, pos -> pos.equals(player.mainSupportingBlockPos.orElse(null)))) {
             List<SafeResult> result = checkSafety(8, ((BlockHitResult) Objects.requireNonNull(client.hitResult)).getBlockPos(), world, player);
             result.removeIf(r -> r.unsafety() <= 0);

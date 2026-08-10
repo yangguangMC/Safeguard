@@ -3,8 +3,8 @@ package top.yangguangmc.safeguard.protection.event;
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
 import top.yangguangmc.safeguard.protection.GlobalProtectionConditions;
 import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
 

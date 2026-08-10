@@ -1,19 +1,19 @@
 package top.yangguangmc.safeguard.protection.detection;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.alchemy.PotionContents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.world.attribute.EnvironmentAttributes;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
-import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.attribute.EnvironmentAttributes;
 import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
 import top.yangguangmc.safeguard.protection.action.DangerLevel;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;

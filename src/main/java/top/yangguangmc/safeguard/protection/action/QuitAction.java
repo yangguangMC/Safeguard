@@ -2,10 +2,11 @@ package top.yangguangmc.safeguard.protection.action;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.toasts.SystemToast;
+import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.multiplayer.ClientLevel;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.sounds.SoundEvents;
 import top.yangguangmc.safeguard.ModContext;
 
 import java.text.SimpleDateFormat;
@@ -29,7 +30,7 @@ public class QuitAction extends Action {
                 )
         ));
         client.schedule(() -> {
-            client.getReportingContext().draftReportHandled(client, null, () -> client.disconnectFromWorld(ClientLevel.DEFAULT_QUIT_MESSAGE), true);
+            client.getReportingContext().draftReportHandled(client, new PauseScreen(true), () -> client.disconnectFromWorld(ClientLevel.DEFAULT_QUIT_MESSAGE), true);
             client.getToastManager().addToast(new SystemToast(ModContext.SAFEGUARD_QUIT, Component.translatable("messages.safeguard.name"),
                     parentName.copy().append(Component.translatable("action.safeguard.active.afk.quit.title"))));
         });

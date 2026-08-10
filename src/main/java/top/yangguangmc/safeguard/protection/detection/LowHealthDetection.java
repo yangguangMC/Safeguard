@@ -1,8 +1,8 @@
 package top.yangguangmc.safeguard.protection.detection;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 import top.yangguangmc.safeguard.protection.action.PauseAction;
 import top.yangguangmc.safeguard.protection.action.QuitAction;

@@ -1,23 +1,23 @@
 package top.yangguangmc.safeguard.util;
 
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.client.KeyMapping;
-import net.minecraft.client.Camera;
 import com.mojang.blaze3d.platform.InputConstants;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.minecraft.client.Camera;
+import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.component.DataComponents;
-import net.minecraft.world.item.component.Tool;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.component.Tool;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
-import net.minecraft.core.BlockPos;
-import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.waypoints.PartialTickSupplier;
 import top.yangguangmc.safeguard.injection.mixin.KeyMappingAccessor;
@@ -53,7 +53,7 @@ public class Utils {
      * @param world  当前客户端世界
      * @param target 目标实体
      * @param camera 玩家相机
-     * @return 方向指示文本，如 "N"、"NE↑"、"SW↓"
+     * @return 方向指示文本，如 "↑"、"↓"、"↖ 上方"
      */
     public static String getDirectionIndicator(Minecraft client, ClientLevel world, Entity target, Camera camera) {
         PartialTickSupplier tickProgress = e -> client.getDeltaTracker()
@@ -67,7 +67,7 @@ public class Utils {
      *
      * @param camera    玩家相机
      * @param targetPos 目标世界坐标
-     * @return 方向指示文本，如 "N"、"NE↑"、"SW↓"
+     * @return 方向指示文本，如 "↑"、"↓"、"↖ 上方"
      */
     public static String getDirectionIndicator(Camera camera, Vec3 targetPos) {
         Vec3 cameraPos = camera.position();

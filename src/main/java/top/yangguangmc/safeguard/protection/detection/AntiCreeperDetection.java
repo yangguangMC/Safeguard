@@ -1,13 +1,13 @@
 package top.yangguangmc.safeguard.protection.detection;
 
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.monster.Creeper;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.network.chat.Component;
 import top.yangguangmc.safeguard.protection.action.*;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
 import top.yangguangmc.safeguard.util.Utils;

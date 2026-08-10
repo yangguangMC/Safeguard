@@ -3,7 +3,8 @@ package top.yangguangmc.safeguard.protection.action;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.world.entity.Entity;
 
-import java.util.*;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class OutlineAction extends Action {

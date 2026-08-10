@@ -1,7 +1,7 @@
 package top.yangguangmc.safeguard.protection.action;
 
-import net.minecraft.network.chat.Style;
 import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Style;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

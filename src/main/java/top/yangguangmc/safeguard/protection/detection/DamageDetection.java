@@ -2,8 +2,8 @@ package top.yangguangmc.safeguard.protection.detection;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.LivingEntity;
 import top.yangguangmc.safeguard.protection.GlobalProtectionConditions;
 import top.yangguangmc.safeguard.protection.action.PauseAction;
 import top.yangguangmc.safeguard.protection.action.QuitAction;
