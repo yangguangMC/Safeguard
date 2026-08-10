@@ -1,7 +1,7 @@
 package top.yangguangmc.safeguard.protection.action;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.entity.Entity;
+import net.minecraft.world.entity.Entity;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,7 +13,7 @@ public class OutlineAction extends Action {
     static {
         ClientTickEvents.END_WORLD_TICK.register(world -> {
             for (int id : OUTLINE_TICKS.keySet()) {
-                if (world.getEntityById(id) == null) {
+                if (world.getEntity(id) == null) {
                     OUTLINE_TICKS.remove(id);
                     OUTLINE_COLOR.remove(id);
                     continue;

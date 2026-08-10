@@ -1,8 +1,8 @@
 package top.yangguangmc.safeguard.protection.action;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -28,10 +28,10 @@ public class ActionBarTitleAction extends Action {
      * 同一 tick 内当前已显示的消息文本（原始，未套用样式）
      */
     @SuppressWarnings("unused")
-    private static Text currentRawMessage;
+    private static Component currentRawMessage;
 
     static {
-        currentRawMessage = Text.empty();
+        currentRawMessage = Component.empty();
     }
 
     public ActionBarTitleAction() {
@@ -49,12 +49,12 @@ public class ActionBarTitleAction extends Action {
      * @param rawText 纯文本内容（不含颜色、加粗等样式），将由本方法套用 {@link DangerLevel#style()}
      * @param client  Minecraft 客户端实例，用于调用 {@code inGameHud.setOverlayMessage()}
      */
-    public void updateTitle(@NotNull DangerLevel level, @NotNull Text rawText, @NotNull MinecraftClient client) {
+    public void updateTitle(@NotNull DangerLevel level, @NotNull Component rawText, @NotNull Minecraft client) {
         if (level.compareTo(currentLevel) > 0) return;  // 新消息危险等级不够高，忽略
         currentLevel = level;
         currentRawMessage = rawText;
-        Text displayText = wrapWithPrefix(level, rawText);
-        client.inGameHud.setOverlayMessage(displayText.copy().styled(style -> applyStyle(style, level.style())), false);
+        Component displayText = wrapWithPrefix(level, rawText);
+        client.gui.setOverlayMessage(displayText.copy().withStyle(style -> applyStyle(style, level.style())), false);
     }
 
     /**
@@ -68,10 +68,10 @@ public class ActionBarTitleAction extends Action {
      * @param rawText 原始消息文本
      * @return 带前缀的完整消息，或原消息（若无前缀键）
      */
-    private static Text wrapWithPrefix(DangerLevel level, Text rawText) {
+    private static Component wrapWithPrefix(DangerLevel level, Component rawText) {
         String prefixKey = level.getPrefixKey();
         if (prefixKey == null) return rawText;
-        return Text.translatable(prefixKey, rawText);
+        return Component.translatable(prefixKey, rawText);
     }
 
     /**
@@ -93,6 +93,6 @@ public class ActionBarTitleAction extends Action {
      */
     public static void resetForTick() {
         currentLevel = DangerLevel.LOW;
-        currentRawMessage = Text.empty();
+        currentRawMessage = Component.empty();
     }
 }

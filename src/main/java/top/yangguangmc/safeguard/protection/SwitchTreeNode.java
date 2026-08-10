@@ -1,6 +1,6 @@
 package top.yangguangmc.safeguard.protection;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -10,32 +10,32 @@ import java.util.stream.Collectors;
 
 /**
  * 树状开关容器。
- * 每个节点有一个唯一的 {@link Identifier}、一个启用状态、一个默认启用状态，
+ * 每个节点有一个唯一的 {@link ResourceLocation}、一个启用状态、一个默认启用状态，
  * 并可检查"有效启用"（自身及所有祖先均启用）。
  * <p>
  * 使用静态方法 {@link #buildTree(Collection)} 从一组标识符批量构建树；
- * 使用实例方法 {@link #addOrGetNode(Identifier)} 在已有树上动态添加节点。
+ * 使用实例方法 {@link #addOrGetNode(ResourceLocation)} 在已有树上动态添加节点。
  * </p>
  * <p>
  * 这个类不是线程安全的。
  * </p>
  */
 public class SwitchTreeNode {
-    private final Identifier id;
+    private final ResourceLocation id;
     private final boolean defaultEnabled;
     private boolean enabled;
     private SwitchTreeNode parent;
-    private final Map<Identifier, SwitchTreeNode> children = new LinkedHashMap<>();
+    private final Map<ResourceLocation, SwitchTreeNode> children = new LinkedHashMap<>();
     // 所有节点持有引用，用于全局 O(1) 查找
-    private final Map<Identifier, SwitchTreeNode> nodeMap;
+    private final Map<ResourceLocation, SwitchTreeNode> nodeMap;
     private final List<Consumer<Boolean>> effectiveStateListeners = new ArrayList<>();
     private Unmodifiable unmodifiableView;
 
-    private SwitchTreeNode(Identifier id, Map<Identifier, SwitchTreeNode> nodeMap) {
+    private SwitchTreeNode(ResourceLocation id, Map<ResourceLocation, SwitchTreeNode> nodeMap) {
         this(id, nodeMap, true);
     }
 
-    private SwitchTreeNode(Identifier id, Map<Identifier, SwitchTreeNode> nodeMap, boolean defaultEnabled) {
+    private SwitchTreeNode(ResourceLocation id, Map<ResourceLocation, SwitchTreeNode> nodeMap, boolean defaultEnabled) {
         this.id = id;
         this.defaultEnabled = defaultEnabled;
         this.enabled = defaultEnabled;
@@ -47,7 +47,7 @@ public class SwitchTreeNode {
      * 获取当前节点的ID。
      * 如果当前节点是根节点，将返回{@code null}。
      */
-    public Identifier getId() {
+    public ResourceLocation getId() {
         return id;
     }
 
@@ -98,7 +98,7 @@ public class SwitchTreeNode {
      * 若不存在，返回{@code null}。
      * </p>
      */
-    public SwitchTreeNode getChild(Identifier id) {
+    public SwitchTreeNode getChild(ResourceLocation id) {
         return children.get(id);
     }
 
@@ -120,7 +120,7 @@ public class SwitchTreeNode {
      * 由于缓存了整树的状态，此方法的时间复杂度为 O(1)。
      * </p>
      */
-    public SwitchTreeNode getNode(Identifier id) {
+    public SwitchTreeNode getNode(ResourceLocation id) {
         if (nodeMap != null) return nodeMap.get(id);
         SwitchTreeNode root = this;
         while (root.parent != null) root = root.parent;
@@ -132,7 +132,7 @@ public class SwitchTreeNode {
      * 这是有深度的，集合将包括子节点的子节点的ID。
      * 可从任意节点调用，非根节点将自动先找到根节点。
      */
-    public Collection<Identifier> getNodeIds() {
+    public Collection<ResourceLocation> getNodeIds() {
         if (nodeMap != null) return Collections.unmodifiableCollection(nodeMap.keySet());
         SwitchTreeNode root = this;
         while (root.parent != null) root = root.parent;
@@ -196,7 +196,7 @@ public class SwitchTreeNode {
      * 在树中创建或获取节点，然后返回。
      * 新节点默认启用。
      */
-    public SwitchTreeNode addOrGetNode(@NotNull Identifier id) {
+    public SwitchTreeNode addOrGetNode(@NotNull ResourceLocation id) {
         return addOrGetNode(id, true);
     }
 
@@ -205,7 +205,7 @@ public class SwitchTreeNode {
      *
      * @param defaultEnabled 指定该节点的默认启用状态。
      */
-    public SwitchTreeNode addOrGetNode(@NotNull Identifier id, boolean defaultEnabled) {
+    public SwitchTreeNode addOrGetNode(@NotNull ResourceLocation id, boolean defaultEnabled) {
         SwitchTreeNode root = this;
         while (root.parent != null) root = root.parent;
         if (root.nodeMap == null) throw new IllegalStateException("Root node missing internal node map");
@@ -216,7 +216,7 @@ public class SwitchTreeNode {
      * 预定义一个分类节点及其默认启用状态。
      */
     @SuppressWarnings("UnusedReturnValue")
-    public SwitchTreeNode predefineCategory(@NotNull Identifier id, boolean defaultEnabled) {
+    public SwitchTreeNode predefineCategory(@NotNull ResourceLocation id, boolean defaultEnabled) {
         return addOrGetNode(id, defaultEnabled);
     }
 
@@ -260,45 +260,45 @@ public class SwitchTreeNode {
     /**
      * 根据一组标识符构建树，然后返回其根节点。
      */
-    public static SwitchTreeNode buildTree(Collection<Identifier> identifiers) {
-        Map<Identifier, SwitchTreeNode> nodeMap = new HashMap<>();
+    public static SwitchTreeNode buildTree(Collection<ResourceLocation> identifiers) {
+        Map<ResourceLocation, SwitchTreeNode> nodeMap = new HashMap<>();
         SwitchTreeNode root = new SwitchTreeNode(null, nodeMap);
-        for (Identifier id : identifiers) createNodeAndAncestors(id, root, nodeMap);
+        for (ResourceLocation id : identifiers) createNodeAndAncestors(id, root, nodeMap);
         return root;
     }
 
-    public static SwitchTreeNode buildTree(Identifier... identifiers) {
+    public static SwitchTreeNode buildTree(ResourceLocation... identifiers) {
         return buildTree(Arrays.asList(identifiers));
     }
 
     /**
      * 根据路径中最后一个 / 推导父 ID，若无则返回 null。
      */
-    private static @Nullable Identifier getParentIdentifier(Identifier id) {
+    private static @Nullable ResourceLocation getParentIdentifier(ResourceLocation id) {
         String path = id.getPath();
         int lastSlash = path.lastIndexOf('/');
         if (lastSlash == -1) return null;
         String parentPath = path.substring(0, lastSlash);
-        return Identifier.of(id.getNamespace(), parentPath);
+        return ResourceLocation.tryBuild(id.getNamespace(), parentPath);
     }
 
     /**
      * 递归创建节点及所有必需的祖先，并挂载到正确父节点下。
      */
     @SuppressWarnings("UnusedReturnValue")
-    private static SwitchTreeNode createNodeAndAncestors(Identifier id,
+    private static SwitchTreeNode createNodeAndAncestors(ResourceLocation id,
                                                          SwitchTreeNode root,
-                                                         Map<Identifier, SwitchTreeNode> nodeMap) {
+                                                         Map<ResourceLocation, SwitchTreeNode> nodeMap) {
         return createNodeAndAncestors(id, root, nodeMap, true);
     }
 
-    private static SwitchTreeNode createNodeAndAncestors(Identifier id,
+    private static SwitchTreeNode createNodeAndAncestors(ResourceLocation id,
                                                          SwitchTreeNode root,
-                                                         Map<Identifier, SwitchTreeNode> nodeMap,
+                                                         Map<ResourceLocation, SwitchTreeNode> nodeMap,
                                                          boolean defaultEnabled) {
         if (nodeMap.containsKey(id)) return nodeMap.get(id);
         // 确保祖先存在（祖先始终默认为 true，避免副作用）
-        Identifier parentId = getParentIdentifier(id);
+        ResourceLocation parentId = getParentIdentifier(id);
         SwitchTreeNode parentNode = (parentId == null) ? root
                 : createNodeAndAncestors(parentId, root, nodeMap, true);
         // 创建目标节点，使用指定的 defaultEnabled
@@ -319,7 +319,7 @@ public class SwitchTreeNode {
         }
 
         @Override
-        public SwitchTreeNode getChild(Identifier id) {
+        public SwitchTreeNode getChild(ResourceLocation id) {
             SwitchTreeNode child = SwitchTreeNode.this.getChild(id);
             return child == null ? null : child.unmodifiableView();
         }
@@ -330,13 +330,13 @@ public class SwitchTreeNode {
         }
 
         @Override
-        public SwitchTreeNode getNode(Identifier id) {
+        public SwitchTreeNode getNode(ResourceLocation id) {
             SwitchTreeNode node = SwitchTreeNode.this.getNode(id);
             return node == null ? null : node.unmodifiableView();
         }
 
         @Override
-        public Collection<Identifier> getNodeIds() {
+        public Collection<ResourceLocation> getNodeIds() {
             return SwitchTreeNode.this.getNodeIds();
         }
 
@@ -371,17 +371,17 @@ public class SwitchTreeNode {
         }
 
         @Override
-        public SwitchTreeNode addOrGetNode(@NotNull Identifier id) {
+        public SwitchTreeNode addOrGetNode(@NotNull ResourceLocation id) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public SwitchTreeNode addOrGetNode(@NotNull Identifier id, boolean defaultEnabled) {
+        public SwitchTreeNode addOrGetNode(@NotNull ResourceLocation id, boolean defaultEnabled) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public SwitchTreeNode predefineCategory(@NotNull Identifier id, boolean defaultEnabled) {
+        public SwitchTreeNode predefineCategory(@NotNull ResourceLocation id, boolean defaultEnabled) {
             throw new UnsupportedOperationException();
         }
 

@@ -1,6 +1,6 @@
 package top.yangguangmc.safeguard.protection.detection;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import top.yangguangmc.safeguard.ModContext;
 import top.yangguangmc.safeguard.protection.SwitchTreeItem;
 import top.yangguangmc.safeguard.protection.SwitchTreeNode;
@@ -11,14 +11,14 @@ import java.util.*;
 import java.util.function.Consumer;
 
 public abstract class Detection implements SwitchTreeItem {
-    private final Identifier id;
+    private final ResourceLocation id;
     private final Map<Action, Boolean> boundActions = new HashMap<>();  // 一般地，我们要求单个检测项注册的保护动作的ID要是不能重复的
     private final List<GatedEvent<?>> gatedEvents = new ArrayList<>();
     protected ModContext modContext;
 
-    public Detection(Identifier id, Action... actions) {
+    public Detection(ResourceLocation id, Action... actions) {
         this.id = id;
-        Set<Identifier> set = new HashSet<>();
+        Set<ResourceLocation> set = new HashSet<>();
         if (!Arrays.stream(actions).map(Action::getId).allMatch(set::add))
             throw new IllegalArgumentException("Action IDs duplicated");
         for (Action action : actions) {
@@ -28,7 +28,7 @@ public abstract class Detection implements SwitchTreeItem {
     }
 
     protected Detection(String path, Action... actions) {
-        this(Identifier.of(ModContext.MOD_ID, path), actions);
+        this(ResourceLocation.tryBuild(ModContext.MOD_ID, path), actions);
     }
 
     public void init(ModContext ctx) {
@@ -37,7 +37,7 @@ public abstract class Detection implements SwitchTreeItem {
     }
 
     @Override
-    public Identifier getId() {
+    public ResourceLocation getId() {
         return id;
     }
 
@@ -45,11 +45,11 @@ public abstract class Detection implements SwitchTreeItem {
         return Collections.unmodifiableSet(boundActions.keySet());
     }
 
-    public boolean isBindingEnabled(Identifier actionId) {
+    public boolean isBindingEnabled(ResourceLocation actionId) {
         return boundActions.get(getBoundAction(actionId));
     }
 
-    public void setBindingEnabled(Identifier actionId, boolean enabled) {
+    public void setBindingEnabled(ResourceLocation actionId, boolean enabled) {
         boundActions.put(getBoundAction(actionId), enabled);
     }
 
@@ -58,7 +58,7 @@ public abstract class Detection implements SwitchTreeItem {
     }
 
     @SuppressWarnings("unchecked")
-    protected <T extends Action> T getBoundAction(Identifier id) {
+    protected <T extends Action> T getBoundAction(ResourceLocation id) {
         return (T) boundActions.keySet().stream().filter(action -> action.getId().equals(id)).findAny().orElseThrow();
     }
 

@@ -1,20 +1,20 @@
 package top.yangguangmc.safeguard.protection.detection;
 
 import com.google.common.collect.ImmutableSet;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Items;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yangguangmc.safeguard.ModContext;
@@ -30,21 +30,21 @@ public class AntiFallDetection extends Detection {
         listen(ClientPlayerTickEvents.GATED_START_TICK, this::onStartTick);
     }
 
-    private void onStartTick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
+    private void onStartTick(Minecraft client, ClientLevel world, LocalPlayer player) {
         // 防挖掘坠落
-        if (player.getPitch() > 0 && Utils.hasDestroyIntention(client, world, player, pos -> pos.equals(player.supportingBlockPos.orElse(null)))) {
-            List<SafeResult> result = checkSafety(8, ((BlockHitResult) Objects.requireNonNull(client.crosshairTarget)).getBlockPos(), world, player);
+        if (player.getXRot() > 0 && Utils.hasDestroyIntention(client, world, player, pos -> pos.equals(player.mainSupportingBlockPos.orElse(null)))) {
+            List<SafeResult> result = checkSafety(8, ((BlockHitResult) Objects.requireNonNull(client.hitResult)).getBlockPos(), world, player);
             result.removeIf(r -> r.unsafety() <= 0);
             if (!result.isEmpty()) {
                 SafeResult worst = result.stream().max(Comparator.comparing(SafeResult::unsafety)).get();
-                MutableText message = Text.empty();
-                message.append(Text.translatable("detection.safeguard.environment.anti_fall.warning",
+                MutableComponent message = Component.empty();
+                message.append(Component.translatable("detection.safeguard.environment.anti_fall.warning",
                         worst.name(), worst.posBelow()));
                 result.stream()
                         .min(Comparator.comparing(SafeResult::posBelow))
                         .filter(o -> !worst.equals(o))
                         .ifPresent(result2 ->
-                                message.append(Text.translatable("detection.safeguard.environment.anti_fall.warning_secondary",
+                                message.append(Component.translatable("detection.safeguard.environment.anti_fall.warning_secondary",
                                         result2.name(), result2.posBelow())));
                 int dangerOrdinal = DangerLevel.LOW.ordinal();
                 if (worst.posBelow < 3) dangerOrdinal--;    // ordinal++ == danger--
@@ -54,7 +54,7 @@ public class AntiFallDetection extends Detection {
             }
         }
         // 已坠落保护
-        if (!player.isOnGround() && player.fallDistance > 1.5 && checkSafety(5, player.getBlockPos(), world, player).stream().allMatch(result -> result.unsafety() > 0)) {
+        if (!player.onGround() && player.fallDistance > 1.5 && checkSafety(5, player.blockPosition(), world, player).stream().allMatch(result -> result.unsafety() > 0)) {
             tryExecuteAction(PauseAction.class, action -> action.pause(client));
             tryExecuteAction(QuitAction.class, action -> action.quit(client));
         }
@@ -62,28 +62,28 @@ public class AntiFallDetection extends Detection {
         tryExecuteAction(MLGAction.class, action -> action.tick(client, world, player));
     }
 
-    private List<SafeResult> checkSafety(int checkHeight, BlockPos pos, ClientWorld world, ClientPlayerEntity player) {
+    private List<SafeResult> checkSafety(int checkHeight, BlockPos pos, ClientLevel world, LocalPlayer player) {
         List<SafeResult> results = new ArrayList<>();
         for (int i = 1; i <= checkHeight; i++) {
-            BlockState state = world.getBlockState(pos.down(i));
-            if (!state.hasSolidTopSurface(world, pos, player)) {
+            BlockState state = world.getBlockState(pos.below(i));
+            if (!state.entityCanStandOn(world, pos, player)) {
                 if (state.isAir()) {
-                    results.add(new SafeResult(Text.translatable("detection.safeguard.environment.anti_fall.cliff"), i, 2));
+                    results.add(new SafeResult(Component.translatable("detection.safeguard.environment.anti_fall.cliff"), i, 2));
                     continue;
-                } else if (state.isOf(Blocks.WATER)) {
+                } else if (state.is(Blocks.WATER)) {
                     results.add(new SafeResult(Blocks.WATER.getName(), i, 1));
                     continue;
-                } else if (state.isOf(Blocks.LAVA)) {
+                } else if (state.is(Blocks.LAVA)) {
                     results.add(new SafeResult(Blocks.LAVA.getName(), i, 3));
                     continue;
                 }
             }
-            results.add(new SafeResult(Text.translatable("detection.safeguard.environment.anti_fall.solid"), i, 0));
+            results.add(new SafeResult(Component.translatable("detection.safeguard.environment.anti_fall.solid"), i, 0));
         }
         return results;
     }
 
-    private record SafeResult(Text name, int posBelow, int unsafety) {
+    private record SafeResult(Component name, int posBelow, int unsafety) {
     }
 
     private static class MLGAction extends Action {
@@ -122,29 +122,29 @@ public class AntiFallDetection extends Detection {
             return false;
         }
 
-        public void tick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
+        public void tick(Minecraft client, ClientLevel world, LocalPlayer player) {
             if (placementSchedule != -1) LOGGER.debug("[MLG Action] Schedule: {}", placementSchedule);
             // 若已经计划好位置了
             if (placementSchedule >= 0) {
                 if (placementSchedule <= 10) {
-                    List<ItemStack> hotbar = player.getInventory().main.stream().limit(9).toList();
+                    List<ItemStack> hotbar = player.getInventory().items.stream().limit(9).toList();
                     int slot = 8;
                     for (int i = 0; i < hotbar.size(); i++) {
                         // 1.20.6: ultrawarm() instead of EnvironmentAttributes
-                        if (world.getDimension().ultrawarm()
+                        if (world.dimensionType().ultraWarm()
                                 ? MLG_ITEMS_NETHER.contains(hotbar.get(i).getItem())
                                 : MLG_ITEMS_NORMAL.contains(hotbar.get(i).getItem())) {
                             slot = i;
                             break;
                         }
                     }
-                    player.getInventory().selectedSlot = slot;
-                    player.setPitch(Math.min(player.getPitch() + 22.5F, 90.0F));
+                    player.getInventory().selected = slot;
+                    player.setXRot(Math.min(player.getXRot() + 22.5F, 90.0F));
                 }
                 if (placementSchedule == 0) {
                     LOGGER.debug("[MLG Action] Simulated use.");
-                    client.getSoundManager().play(createSoundInstance(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F));
-                    Utils.simulatePress(client.options.useKey);
+                    client.getSoundManager().play(createSoundInstance(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F));
+                    Utils.simulatePress(client.options.keyUse);
                     placementSchedule = -1;
                     return;
                 }
@@ -152,23 +152,23 @@ public class AntiFallDetection extends Detection {
                 return;
             }
 
-            if (player.isOnGround() || player.fallDistance < minFallDistance || player.hasStatusEffect(StatusEffects.SLOW_FALLING)
-                    || player.isFallFlying() || player.getInventory().main.stream().limit(9).map(ItemStack::getItem)
+            if (player.onGround() || player.fallDistance < minFallDistance || player.hasEffect(MobEffects.SLOW_FALLING)
+                    || player.isFallFlying() || player.getInventory().items.stream().limit(9).map(ItemStack::getItem)
                     // 1.20.6: ultrawarm() instead of EnvironmentAttributes
-                    .noneMatch(world.getDimension().ultrawarm()
+                    .noneMatch(world.dimensionType().ultraWarm()
                             ? MLG_ITEMS_NETHER::contains : MLG_ITEMS_NORMAL::contains)) {
                 placementSchedule = -1;
                 return;
             }
             // 开始进行位置计划
-            BlockPos blockPos = player.getBlockPos();
-            while (world.getBlockState(blockPos).isAir() && !world.isOutOfHeightLimit(blockPos))
-                blockPos = blockPos.down();
-            if (world.getBlockState(blockPos).isAir() || world.getBlockState(blockPos).isOf(Blocks.WATER)) {
+            BlockPos blockPos = player.blockPosition();
+            while (world.getBlockState(blockPos).isAir() && !world.isOutsideBuildHeight(blockPos))
+                blockPos = blockPos.below();
+            if (world.getBlockState(blockPos).isAir() || world.getBlockState(blockPos).is(Blocks.WATER)) {
                 placementSchedule = -1;
                 return;
             }
-            blockPos = blockPos.up();
+            blockPos = blockPos.above();
             if (player.getY() - blockPos.getY() < minHeight) {
                 placementSchedule = -1;
                 return;
@@ -176,13 +176,13 @@ public class AntiFallDetection extends Detection {
             LOGGER.debug("[MLG Action] Start placement reasoning. CurrentY: {}, groundY: {}", player.getY(), blockPos.getY());
             double posY = player.getEyeY();
             double targetY = blockPos.getY();
-            double velocityY = player.getVelocity().y;
+            double velocityY = player.getDeltaMovement().y;
             double lastDistance = posY - targetY;
             for (int i = 1; ; i++) {
                 posY = posY + velocityY;
-                velocityY = (velocityY - player.getFinalGravity()) * 0.98;
+                velocityY = (velocityY - player.getGravity()) * 0.98;
                 double distance = posY - targetY;
-                if (distance <= player.getBlockInteractionRange() || (distance > lastDistance && velocityY < 0)) {
+                if (distance <= player.blockInteractionRange() || (distance > lastDistance && velocityY < 0)) {
                     i -= Math.abs(velocityY) < 1.85 ? 1 : 2; // 不知道是响应延迟还是模拟误差，必须根据速度提前 1 ~ 2 刻以防摔死
                     LOGGER.debug("[MLG Action] Scheduled water placement at {} ticks later. TargetY: {}, endPlayerY: {}, endDistance: {}, endVelocityY: {}",
                             i, targetY, posY, distance, velocityY);

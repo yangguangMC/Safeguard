@@ -1,8 +1,8 @@
 package top.yangguangmc.safeguard.protection;
 
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.effect.StatusEffectInstance;
-import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,7 +23,7 @@ import java.util.function.Predicate;
  */
 public final class GlobalProtectionConditions {
 
-    private static final List<Predicate<ClientPlayerEntity>> CONDITIONS = new ArrayList<>();
+    private static final List<Predicate<LocalPlayer>> CONDITIONS = new ArrayList<>();
 
     static {
         // 创造/旁观模式 → 不可能受伤，不需要保护
@@ -32,7 +32,7 @@ public final class GlobalProtectionConditions {
         addCondition(player -> !player.isInvulnerable());
         // 抗性提升 255 (amplifier >= 254) → 高版本玩法数据包常用，完全免疫伤害，不需要保护
         addCondition(player -> {
-            StatusEffectInstance effect = player.getStatusEffect(StatusEffects.RESISTANCE);
+            MobEffectInstance effect = player.getEffect(MobEffects.DAMAGE_RESISTANCE);
             return effect == null || effect.getAmplifier() < 254;
         });
     }
@@ -47,7 +47,7 @@ public final class GlobalProtectionConditions {
      *
      * @param condition 返回 {@code true} 表示该条件允许保护继续进行
      */
-    public static void addCondition(Predicate<ClientPlayerEntity> condition) {
+    public static void addCondition(Predicate<LocalPlayer> condition) {
         CONDITIONS.add(condition);
     }
 
@@ -58,8 +58,8 @@ public final class GlobalProtectionConditions {
      * @param player 客户端玩家实例
      * @return {@code true} 当所有全局条件均满足
      */
-    public static boolean shouldProtect(ClientPlayerEntity player) {
-        for (Predicate<ClientPlayerEntity> condition : CONDITIONS) {
+    public static boolean shouldProtect(LocalPlayer player) {
+        for (Predicate<LocalPlayer> condition : CONDITIONS) {
             if (!condition.test(player)) return false;
         }
         return true;

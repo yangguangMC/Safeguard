@@ -5,7 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.isxander.yacl3.platform.YACLPlatform;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import top.yangguangmc.safeguard.protection.SwitchTreeNode;
@@ -151,12 +151,12 @@ public class ConfigManager {
                 continue;
             }
 
-            Identifier id;
+            ResourceLocation id;
             String ns = namespace;
             String newPath;
 
             if (parentPath.isEmpty()) {
-                id = Identifier.tryParse(key);
+                id = ResourceLocation.tryParse(key);
                 if (id == null) {
                     LOGGER.warn("Level 0 detection root {} is not a valid Identifier, skipping.", key);
                     continue;
@@ -165,7 +165,7 @@ public class ConfigManager {
                 newPath = id.getPath();
             } else {
                 newPath = parentPath + "/" + key;
-                id = Identifier.of(namespace, newPath);
+                id = ResourceLocation.tryBuild(namespace, newPath);
             }
 
             SwitchTreeNode node = ctx.protectionManager().getDetectionStatesRoot().getNode(id);
@@ -179,7 +179,7 @@ public class ConfigManager {
                         Detection detection = ctx.protectionManager().getDetection(id);
                         JsonObject bindings = nodeObj.getAsJsonObject("actionBindings");
                         for (Map.Entry<String, JsonElement> be : bindings.entrySet()) {
-                            Identifier actionId = Identifier.tryParse(be.getKey());
+                            ResourceLocation actionId = ResourceLocation.tryParse(be.getKey());
                             detection.setBindingEnabled(actionId, be.getValue().getAsBoolean());
                         }
                     } catch (Exception e) {
@@ -204,12 +204,12 @@ public class ConfigManager {
                 continue;
             }
 
-            Identifier id;
+            ResourceLocation id;
             String ns = namespace;
             String newPath;
 
             if (parentPath.isEmpty()) {
-                id = Identifier.tryParse(key);
+                id = ResourceLocation.tryParse(key);
                 if (id == null) {
                     LOGGER.warn("Level 0 action root {} is not a valid Identifier, skipping.", key);
                     continue;
@@ -218,7 +218,7 @@ public class ConfigManager {
                 newPath = id.getPath();
             } else {
                 newPath = parentPath + "/" + key;
-                id = Identifier.of(namespace, newPath);
+                id = ResourceLocation.tryBuild(namespace, newPath);
             }
 
             SwitchTreeNode node = ctx.protectionManager().getActionStatesRoot().getNode(id);

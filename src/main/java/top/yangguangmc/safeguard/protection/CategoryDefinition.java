@@ -1,6 +1,6 @@
 package top.yangguangmc.safeguard.protection;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
 import top.yangguangmc.safeguard.ModContext;
 
 /**
@@ -16,7 +16,7 @@ import top.yangguangmc.safeguard.ModContext;
  * @param id             分类的 Identifier
  * @param defaultEnabled 默认是否启用
  */
-public record CategoryDefinition(Identifier id, boolean defaultEnabled) {
+public record CategoryDefinition(ResourceLocation id, boolean defaultEnabled) {
 
     /**
      * 使用 safeguard 命名空间的便捷构造。
@@ -25,6 +25,6 @@ public record CategoryDefinition(Identifier id, boolean defaultEnabled) {
      * @param defaultEnabled 默认是否启用
      */
     public CategoryDefinition(String path, boolean defaultEnabled) {
-        this(Identifier.of(ModContext.MOD_ID, path), defaultEnabled);
+        this(ResourceLocation.tryBuild(ModContext.MOD_ID, path), defaultEnabled);
     }
 }

@@ -2,9 +2,9 @@ package top.yangguangmc.safeguard.protection.event;
 
 import net.fabricmc.fabric.api.event.Event;
 import net.fabricmc.fabric.api.event.EventFactory;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.LivingEntity;
 
 public class EntityDamagedEvents {
     private EntityDamagedEvents() {
@@ -24,7 +24,7 @@ public class EntityDamagedEvents {
     /**
      * Gated version of {@link #PRE}.
      * Please note that this gated event <b>will not</b> check
-     * {@link top.yangguangmc.safeguard.protection.GlobalProtectionConditions#shouldProtect(ClientPlayerEntity)}.
+     * {@link top.yangguangmc.safeguard.protection.GlobalProtectionConditions#shouldProtect(LocalPlayer)}.
      */
     public static final GatedEvent<EntityDamagedListener> GATED_PRE = new GatedEvent<>(
             PRE,

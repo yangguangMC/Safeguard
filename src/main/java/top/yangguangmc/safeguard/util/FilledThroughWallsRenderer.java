@@ -1,12 +1,14 @@
 package top.yangguangmc.safeguard.util;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.*;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.*;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.render.BufferBuilder;
+import net.minecraft.client.render.VertexFormat;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 import top.yangguangmc.safeguard.protection.event.GameRendererCloseEvent;
 
@@ -46,24 +48,24 @@ public class FilledThroughWallsRenderer {
     private void draw(WorldRenderContext context) {
         if (closed || taggedStates.isEmpty() || taggedStates.values().stream().allMatch(List::isEmpty)) return;
 
-        MatrixStack matrices = Objects.requireNonNull(context.matrixStack());
-        Vec3d camera = MinecraftClient.getInstance().gameRenderer.getCamera().getPos();
+        PoseStack matrices = Objects.requireNonNull(context.matrixStack());
+        Vec3 camera = Minecraft.getInstance().gameRenderer.getMainCamera().getPosition();
 
-        matrices.push();
+        matrices.pushPose();
         matrices.translate(-camera.x, -camera.y, -camera.z);
 
-        Matrix4f positionMatrix = matrices.peek().getPositionMatrix();
+        Matrix4f positionMatrix = matrices.last().pose();
 
         // 1.20.6: Use Tessellator with POSITION_COLOR format directly.
         // RenderLayer.getTranslucent() has a complex vertex format (position, color,
         // texture, normal, overlay, light) which we can't satisfy with just box data.
-        Tessellator tessellator = Tessellator.getInstance();
-        BufferBuilder buffer = tessellator.getBuffer();
+        Tesselator tessellator = Tesselator.getInstance();
+        BufferBuilder buffer = tessellator.getBuilder();
 
         RenderSystem.enableBlend();
         RenderSystem.disableDepthTest();
-        RenderSystem.setShader(GameRenderer::getPositionColorProgram);
-        buffer.begin(VertexFormat.DrawMode.QUADS, VertexFormats.POSITION_COLOR);
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        buffer.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
         for (List<BoxRenderState> list : taggedStates.values()) {
             for (BoxRenderState state : list) {
@@ -75,11 +77,11 @@ public class FilledThroughWallsRenderer {
             }
         }
 
-        tessellator.draw();
+        tessellator.end();
         RenderSystem.enableDepthTest();
         RenderSystem.disableBlend();
 
-        matrices.pop();
+        matrices.popPose();
     }
 
     // 8 corners of a box
@@ -111,7 +113,7 @@ public class FilledThroughWallsRenderer {
             for (int v = 0; v < 12; v += 3) {
                 float[] c = corner((int) face[v], (int) face[v + 1], (int) face[v + 2],
                         minX, minY, minZ, maxX, maxY, maxZ);
-                buffer.vertex(matrix, c[0], c[1], c[2]).color(red, green, blue, alpha).next();
+                buffer.vertex(matrix, c[0], c[1], c[2]).color(red, green, blue, alpha).endVertex();
             }
         }
     }

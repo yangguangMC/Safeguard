@@ -1,9 +1,9 @@
 package top.yangguangmc.safeguard.protection.detection;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.util.Mth;
 import top.yangguangmc.safeguard.protection.action.PauseAction;
 import top.yangguangmc.safeguard.protection.action.QuitAction;
 import top.yangguangmc.safeguard.protection.action.RedVignetteAction;
@@ -20,10 +20,10 @@ public class LowHealthDetection extends Detection {
         listen(ClientPlayerTickEvents.GATED_START_TICK, this::onStartTick);
     }
 
-    private void onStartTick(MinecraftClient client, ClientWorld world, ClientPlayerEntity player) {
+    private void onStartTick(Minecraft client, ClientLevel world, LocalPlayer player) {
         float killLine = 4;
-        float maxHealthThreshold = MathHelper.clamp(player.getMaxHealth() * maxRateThreshold, 10, 20);
-        float minHealthThreshold = MathHelper.clamp(player.getMaxHealth() * minRateThreshold, killLine, 10);
+        float maxHealthThreshold = Mth.clamp(player.getMaxHealth() * maxRateThreshold, 10, 20);
+        float minHealthThreshold = Mth.clamp(player.getMaxHealth() * minRateThreshold, killLine, 10);
         float delta;
         if (player.getHealth() < minHealthThreshold) delta = 1F;
         else if (player.getHealth() > maxHealthThreshold) delta = 0F;
