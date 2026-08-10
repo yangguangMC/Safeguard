@@ -94,7 +94,7 @@ public class AntiSuffocationDetection extends Detection {
     }
 
     /**
-     * 向上扫描受重力影响的对象（Falling 方块 + FallingBlockEntity），返回合并结果。
+     * 向上扫描受重力影响的对象（{@link Fallable} 方块 + {@link FallingBlockEntity}），返回合并结果。
      *
      * @param world    当前客户端世界
      * @param player   玩家
@@ -173,7 +173,7 @@ public class AntiSuffocationDetection extends Detection {
     /**
      * 判断目标方块上方 2 格内是否存在 {@link Fallable} 类型的方块。
      * <p>
-     * 同样不依赖 {@link BlockPos#betweenClosedStream(BlockPos, BlockPos)} 以避开 Mutable 复用陷阱。
+     * 同样不依赖 {@link BlockPos#betweenClosedStream(BlockPos, BlockPos)} 以避开 {@link BlockPos.MutableBlockPos} 复用陷阱。
      */
     private boolean hasFallingBlockNearTarget(ClientLevel world, BlockPos targetPos) {
         for (BlockPos pos = targetPos; pos.getY() <= targetPos.getY() + 2; pos = pos.above()) {

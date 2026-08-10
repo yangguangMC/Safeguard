@@ -107,7 +107,7 @@ public class Utils {
      * 将相对偏航角映射为水平方向指示字符串。
      *
      * @param relativeYaw 相对偏航角
-     * @return N/NE/E/SE/S/SW/W/NW 之一
+     * @return ↑/↗/→/↘/↓/↙/←/↖ 之一
      */
     public static String directionFromRelativeYaw(double relativeYaw) {
         if (relativeYaw < -180 || relativeYaw > 180) throw new AssertionError();

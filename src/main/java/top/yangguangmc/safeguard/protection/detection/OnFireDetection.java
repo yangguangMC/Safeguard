@@ -97,7 +97,7 @@ public class OnFireDetection extends Detection {
     /**
      * 灭火/防火策略定义。
      *
-     * @param displayName     策略展示名（现已使用 Text.translatable() 国际化）
+     * @param displayName     策略展示名（现已使用 {@link Component#translatable(String)} 国际化）
      * @param inventorySearch 背包搜索函数，返回找到的物品所在槽位索引，-1 表示未找到
      * @param dimensionCheck  维度有效性检查
      */
