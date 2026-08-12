@@ -12,7 +12,6 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 import top.yangguangmc.safeguard.protection.GlobalProtectionConditions;
 import top.yangguangmc.safeguard.protection.action.RedVignetteAction;
 
@@ -31,7 +30,7 @@ public abstract class GuiMixin {
     @Shadow
     public float vignetteBrightness;
 
-    @Inject(method = "renderVignette", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blit(Lnet/minecraft/resources/ResourceLocation;IIIFFIIII)V", shift = At.Shift.BEFORE), locals = LocalCapture.CAPTURE_FAILHARD)
+    @Inject(method = "renderVignette", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blit(Lnet/minecraft/resources/ResourceLocation;IIIFFIIII)V", shift = At.Shift.BEFORE))
     private void modifyVignetteColor(GuiGraphics context, Entity entity, CallbackInfo ci) {
         if (!GlobalProtectionConditions.shouldProtect(Minecraft.getInstance().player)) return;
 
