@@ -50,7 +50,7 @@ public class Utils {
      * @param world  当前客户端世界
      * @param target 目标实体
      * @param camera 玩家相机
-     * @return 方向指示文本，如 "N"、"NE↑"、"SW↓"
+     * @return 方向指示文本，如 "↑"、"↓"、"↖ 上方"
      */
     public static String getDirectionIndicator(Minecraft client, ClientLevel world, Entity target, Camera camera) {
         // 1.20.6: getCameraPosVec uses simple tickDelta
@@ -63,7 +63,7 @@ public class Utils {
      *
      * @param camera    玩家相机
      * @param targetPos 目标世界坐标
-     * @return 方向指示文本，如 "N"、"NE↑"、"SW↓"
+     * @return 方向指示文本，如 "↑"、"↓"、"↖ 上方"
      */
     public static String getDirectionIndicator(Camera camera, Vec3 targetPos) {
         Vec3 cameraPos = camera.getPosition();  // 1.20.6: getPos() not getCameraPos()
@@ -108,7 +108,7 @@ public class Utils {
      * 将相对偏航角映射为水平方向指示字符串。
      *
      * @param relativeYaw 相对偏航角
-     * @return N/NE/E/SE/S/SW/W/NW 之一
+     * @return ↑/↗/→/↘/↓/↙/←/↖ 之一
      */
     public static String directionFromRelativeYaw(double relativeYaw) {
         if (relativeYaw < -180 || relativeYaw > 180) throw new AssertionError();

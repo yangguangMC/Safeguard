@@ -11,7 +11,7 @@ import java.util.function.Predicate;
 /**
  * 全局保护前置条件管理器。
  * <p>
- * 维护一组 {@link Predicate}{@code <ClientPlayerEntity>}，
+ * 维护一组 {@link Predicate}<{@link LocalPlayer}>，
  * 只有当<b>所有条件均满足</b>时，检测项才被允许工作。
  * 这些条件是"运行时"的——它们随玩家状态（游戏模式、药水效果等）动态变化，
  * 与用户可配置的持久化开关（{@link SwitchTreeNode}）是正交的。

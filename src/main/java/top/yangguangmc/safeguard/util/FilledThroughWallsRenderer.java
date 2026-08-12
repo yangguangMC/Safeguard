@@ -5,8 +5,6 @@ import com.mojang.blaze3d.vertex.*;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.render.BufferBuilder;
-import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
@@ -88,17 +86,17 @@ public class FilledThroughWallsRenderer {
     private static final float[][] FACES = {
             // Each face: 4 vertices in counter-clockwise winding order
             // Front face (+Z)
-            {0, 0, 1,  1, 0, 1,  1, 1, 1,  0, 1, 1},
+            {0, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1},
             // Back face (-Z)
-            {1, 0, 0,  0, 0, 0,  0, 1, 0,  1, 1, 0},
+            {1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0},
             // Left face (-X)
-            {0, 0, 0,  0, 0, 1,  0, 1, 1,  0, 1, 0},
+            {0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 0},
             // Right face (+X)
-            {1, 0, 1,  1, 0, 0,  1, 1, 0,  1, 1, 1},
+            {1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 1},
             // Top face (+Y)
-            {0, 1, 1,  1, 1, 1,  1, 1, 0,  0, 1, 0},
+            {0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 0},
             // Bottom face (-Y)
-            {0, 0, 0,  1, 0, 0,  1, 0, 1,  0, 0, 1},
+            {0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1},
     };
 
     // Map face corner indices (0=min, 1=max) to actual coordinates
