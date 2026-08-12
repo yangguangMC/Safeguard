@@ -1,9 +1,9 @@
 package top.yangguangmc.safeguard.protection;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 public interface SwitchTreeItem {
-    Identifier getId();
+    ResourceLocation getId();
 
     default boolean defaultEnabled() {
         return true;

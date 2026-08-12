@@ -1,15 +1,15 @@
 package top.yangguangmc.safeguard.protection.action;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.MessageScreen;
-import net.minecraft.client.gui.screen.TitleScreen;
-import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
-import net.minecraft.client.network.ServerInfo;
-import net.minecraft.client.realms.gui.screen.RealmsMainScreen;
-import net.minecraft.client.toast.SystemToast;
-import net.minecraft.sound.SoundEvents;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import com.mojang.realmsclient.RealmsMainScreen;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.toasts.SystemToast;
+import net.minecraft.client.gui.screens.GenericMessageScreen;
+import net.minecraft.client.gui.screens.TitleScreen;
+import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import top.yangguangmc.safeguard.ModContext;
 
 import java.text.SimpleDateFormat;
@@ -26,30 +26,30 @@ public class QuitAction extends Action {
         return false;
     }
 
-    public void quit(MinecraftClient client) {
-        Text parentName = modContext.protectionManager().getDetectionName(getParent().getId());
-        client.inGameHud.getChatHud().addMessage(Text.translatable("messages.safeguard.prefix").append(
-                Text.translatable("action.safeguard.active.afk.quit.chat_message", parentName,
+    public void quit(Minecraft client) {
+        Component parentName = modContext.protectionManager().getDetectionName(getParent().getId());
+        client.gui.getChat().addMessage(Component.translatable("messages.safeguard.prefix").append(
+                Component.translatable("action.safeguard.active.afk.quit.chat_message", parentName,
                         new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime())
                 )
         ));
-        client.send(() -> {
-            client.getAbuseReportContext().tryShowDraftScreen(client, client.currentScreen, () -> {
-                boolean singleplayer = client.isInSingleplayer();
-                ServerInfo serverInfo = client.getCurrentServerEntry();
-                Objects.requireNonNull(client.world).disconnect();
-                if (singleplayer) client.disconnect(new MessageScreen(Text.translatable("menu.savingLevel")));
+        client.tell(() -> {
+            client.getReportingContext().draftReportHandled(client, client.screen, () -> {
+                boolean singleplayer = client.isLocalServer();
+                ServerData serverInfo = client.getCurrentServer();
+                Objects.requireNonNull(client.level).disconnect();
+                if (singleplayer) client.disconnect(new GenericMessageScreen(Component.translatable("menu.savingLevel")));
                 else client.disconnect();
                 TitleScreen titleScreen = new TitleScreen();
                 if (singleplayer) client.setScreen(titleScreen);
                 else if (serverInfo != null && serverInfo.isRealm())
                     client.setScreen(new RealmsMainScreen(titleScreen));
-                else client.setScreen(new MultiplayerScreen(titleScreen));
+                else client.setScreen(new JoinMultiplayerScreen(titleScreen));
             }, true);
-            client.getToastManager().add(new SystemToast(ModContext.SAFEGUARD_QUIT, Text.translatable("messages.safeguard.name"),
-                    parentName.copy().append(Text.translatable("action.safeguard.active.afk.quit.title"))));
+            client.getToasts().addToast(new SystemToast(ModContext.SAFEGUARD_QUIT, Component.translatable("messages.safeguard.name"),
+                    parentName.copy().append(Component.translatable("action.safeguard.active.afk.quit.title"))));
         });
-        client.getSoundManager().play(createSoundInstance(SoundEvents.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0F));
-        modContext.protectionManager().getActionStatesRoot().getNode(Identifier.of(ModContext.MOD_ID, "active/afk")).setEnabled(false);
+        client.getSoundManager().play(createSoundInstance(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F));
+        modContext.protectionManager().getActionStatesRoot().getNode(ResourceLocation.tryBuild(ModContext.MOD_ID, "active/afk")).setEnabled(false);
     }
 }
