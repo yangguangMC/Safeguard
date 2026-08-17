@@ -23,7 +23,7 @@ public class PauseAction extends Action {
             return;
         }
         Component parentName = modContext.protectionManager().getDetectionName(getParent().getId());
-        client.gui.getChat().addMessage(Component.translatable("messages.safeguard.prefix").append(
+        client.gui.getChat().addClientSystemMessage(Component.translatable("messages.safeguard.prefix").append(
                 Component.translatable("action.safeguard.active.afk.pause.chat_message", parentName,
                         new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime())
                 )

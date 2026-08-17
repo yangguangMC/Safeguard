@@ -5,13 +5,13 @@ import net.minecraft.client.gui.Gui;
 import net.minecraft.util.ARGB;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import top.yangguangmc.safeguard.protection.GlobalProtectionConditions;
 import top.yangguangmc.safeguard.protection.action.RedVignetteAction;
 
 @Mixin(Gui.class)
 public class GuiMixin {
-    @ModifyVariable(method = "renderVignette", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blit(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIFFIIIII)V", shift = At.Shift.BEFORE), ordinal = 0)
+    @ModifyArg(method = "extractVignette", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blit(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIFFIIIII)V"), index = 10)
     private int modifyVignetteColor(int color) {
         if (!GlobalProtectionConditions.shouldProtect(Minecraft.getInstance().player)) return color;
         float progress = RedVignetteAction.getProgress();

@@ -12,7 +12,7 @@ public class OutlineAction extends Action {
     private static final Map<UUID, Integer> OUTLINE_COLOR = new ConcurrentHashMap<>();
 
     static {
-        ClientTickEvents.END_WORLD_TICK.register(world -> {
+        ClientTickEvents.END_LEVEL_TICK.register(world -> {
             for (UUID uuid : OUTLINE_TICKS.keySet()) {
                 if (world.getEntity(uuid) == null) {
                     OUTLINE_TICKS.remove(uuid);

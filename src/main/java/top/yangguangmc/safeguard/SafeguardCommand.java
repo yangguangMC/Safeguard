@@ -3,8 +3,8 @@ package top.yangguangmc.safeguard;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.BoolArgumentType;
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -27,19 +27,19 @@ public class SafeguardCommand {
 
     public static void register(CommandDispatcher<FabricClientCommandSource> dispatcher, CommandBuildContext registryAccess) {
         dispatcher.register(
-                ClientCommandManager.literal(ModContext.MOD_ID)
+                ClientCommands.literal(ModContext.MOD_ID)
                         .then(
-                                ClientCommandManager.literal("screen")
+                                ClientCommands.literal("screen")
                                         .executes(context -> {
                                             Minecraft client = context.getSource().getClient();
                                             client.schedule(() -> client.setScreen(ConfigScreen.create(client.screen)));
                                             return Command.SINGLE_SUCCESS;
                                         })
                         ).then(
-                                ClientCommandManager.literal("detection")
+                                ClientCommands.literal("detection")
                                         .then(
-                                                ClientCommandManager.argument("id", IdentifierArgument.id())
-                                                        .suggests((context, builder) -> SharedSuggestionProvider.suggestResource(ctx.protectionManager().getDetectionStatesRoot().getNodeIds(), builder))
+                                                ClientCommands.argument("id", IdentifierArgument.id())
+                                                        .suggests((_, builder) -> SharedSuggestionProvider.suggestResource(ctx.protectionManager().getDetectionStatesRoot().getNodeIds(), builder))
                                                         .executes(context -> {
                                                             Identifier id = context.getArgument("id", Identifier.class);
                                                             SwitchTreeNode detection = ctx.protectionManager().getDetectionStatesRoot().getNode(id);
@@ -51,7 +51,7 @@ public class SafeguardCommand {
                                                                 return 0;
                                                             }
                                                         }).then(
-                                                                ClientCommandManager.argument("state", BoolArgumentType.bool())
+                                                                ClientCommands.argument("state", BoolArgumentType.bool())
                                                                         .executes(context -> {
                                                                             Identifier id = context.getArgument("id", Identifier.class);
                                                                             boolean state = BoolArgumentType.getBool(context, "state");
@@ -68,10 +68,10 @@ public class SafeguardCommand {
                                                         )
                                         )
                         ).then(
-                                ClientCommandManager.literal("action")
+                                ClientCommands.literal("action")
                                         .then(
-                                                ClientCommandManager.argument("id", IdentifierArgument.id())
-                                                        .suggests((context, builder) -> SharedSuggestionProvider.suggestResource(ctx.protectionManager().getActionStatesRoot().getNodeIds(), builder))
+                                                ClientCommands.argument("id", IdentifierArgument.id())
+                                                        .suggests((_, builder) -> SharedSuggestionProvider.suggestResource(ctx.protectionManager().getActionStatesRoot().getNodeIds(), builder))
                                                         .executes(context -> {
                                                             Identifier id = context.getArgument("id", Identifier.class);
                                                             SwitchTreeNode action = ctx.protectionManager().getActionStatesRoot().getNode(id);
@@ -83,7 +83,7 @@ public class SafeguardCommand {
                                                                 return 0;
                                                             }
                                                         }).then(
-                                                                ClientCommandManager.argument("state", BoolArgumentType.bool())
+                                                                ClientCommands.argument("state", BoolArgumentType.bool())
                                                                         .executes(context -> {
                                                                             Identifier id = context.getArgument("id", Identifier.class);
                                                                             boolean state = BoolArgumentType.getBool(context, "state");

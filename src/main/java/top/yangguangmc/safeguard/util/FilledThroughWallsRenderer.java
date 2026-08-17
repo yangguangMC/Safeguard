@@ -2,15 +2,13 @@ package top.yangguangmc.safeguard.util;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.platform.DepthTestFunction;
 import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MappableRingBuffer;
 import net.minecraft.client.renderer.RenderPipelines;
@@ -30,21 +28,22 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class FilledThroughWallsRenderer {
+    /**
+     * 填充面管线：基于 {@code DEBUG_FILLED_SNIPPET}（{@code POSITION_COLOR} + {@code QUADS} 模式 + 半透明混合）。
+     * 深度测试与深度写入均关闭（{@code Optional.empty()}），实现穿墙透视效果。
+     */
     public static final RenderPipeline FILLED_THROUGH_WALLS = RenderPipelines.register(RenderPipeline.builder(RenderPipelines.DEBUG_FILLED_SNIPPET)
             .withLocation(Identifier.fromNamespaceAndPath(ModContext.MOD_ID, "pipeline/filled_through_walls"))
-            .withBlend(BlendFunction.TRANSLUCENT)
             .withCull(false)
-            .withDepthWrite(false)
-            .withColorWrite(true)
-            .withDepthTestFunction(DepthTestFunction.NO_DEPTH_TEST)
+            .withDepthStencilState(Optional.empty())
             .build()
     );
-    private static final ByteBufferBuilder ALLOCATOR = new ByteBufferBuilder(RenderType.SMALL_BUFFER_SIZE);   // RenderType.SMALL_BUFFER_SIZE
+    private static final ByteBufferBuilder ALLOCATOR = new ByteBufferBuilder(RenderType.SMALL_BUFFER_SIZE);
     private BufferBuilder buffer;
     private final Map<String, List<BoxRenderState>> taggedStates = new ConcurrentHashMap<>();
 
     public void init() {
-        WorldRenderEvents.BEFORE_TRANSLUCENT.register(this::extractAndDraw);
+        LevelRenderEvents.BEFORE_TRANSLUCENT_TERRAIN.register(this::extractAndDraw);
         GameRendererCloseEvent.CALLBACK.register(this::close);
     }
 
@@ -66,7 +65,7 @@ public class FilledThroughWallsRenderer {
         taggedStates.remove(tag);
     }
 
-    private void extractAndDraw(WorldRenderContext context) {
+    private void extractAndDraw(LevelRenderContext context) {
         if (taggedStates.isEmpty() || taggedStates.values().stream().allMatch(List::isEmpty)) return;
         // 提取
         renderBox(context);
@@ -76,9 +75,9 @@ public class FilledThroughWallsRenderer {
 
     // --------------- 提取阶段 ---------------
 
-    private void renderBox(WorldRenderContext context) {
-        PoseStack matrices = context.matrices();
-        Vec3 camera = context.worldState().cameraRenderState.pos;
+    private void renderBox(LevelRenderContext context) {
+        PoseStack matrices = context.poseStack();
+        Vec3 camera = context.levelState().cameraRenderState.pos;
 
         matrices.pushPose();
         matrices.translate(-camera.x, -camera.y, -camera.z);
@@ -173,17 +172,18 @@ public class FilledThroughWallsRenderer {
                 vertexBuffer.close();
             }
 
-            vertexBuffer = new MappableRingBuffer(() -> ModContext.MOD_ID + " example render pipeline", GpuBuffer.USAGE_VERTEX | GpuBuffer.USAGE_MAP_WRITE, vertexBufferSize);
+            vertexBuffer = new MappableRingBuffer(() -> ModContext.MOD_ID + " filled through walls", GpuBuffer.USAGE_VERTEX | GpuBuffer.USAGE_MAP_WRITE, vertexBufferSize);
         }
 
         // Copy vertex data into the vertex buffer
+        GpuBuffer currentBuffer = vertexBuffer.currentBuffer();
         CommandEncoder commandEncoder = RenderSystem.getDevice().createCommandEncoder();
 
-        try (GpuBuffer.MappedView mappedView = commandEncoder.mapBuffer(vertexBuffer.currentBuffer().slice(0, builtBuffer.vertexBuffer().remaining()), false, true)) {
+        try (GpuBuffer.MappedView mappedView = commandEncoder.mapBuffer(currentBuffer.slice(0, builtBuffer.vertexBuffer().remaining()), false, true)) {
             MemoryUtil.memCopy(builtBuffer.vertexBuffer(), mappedView.data());
         }
 
-        return vertexBuffer.currentBuffer();
+        return currentBuffer;
     }
 
     private static void draw(Minecraft client, RenderPipeline pipeline, MeshData builtBuffer, MeshData.DrawState drawParameters, GpuBuffer vertices, VertexFormat format) {
@@ -206,10 +206,9 @@ public class FilledThroughWallsRenderer {
         // Actually execute the draw
         GpuBufferSlice dynamicTransforms = RenderSystem.getDynamicUniforms()
                 .writeTransform(RenderSystem.getModelViewMatrix(), COLOR_MODULATOR, MODEL_OFFSET, TEXTURE_MATRIX);
-        assert client.getMainRenderTarget().getColorTextureView() != null;
         try (RenderPass renderPass = RenderSystem.getDevice()
                 .createCommandEncoder()
-                .createRenderPass(() -> ModContext.MOD_ID + " example render pipeline rendering", client.getMainRenderTarget().getColorTextureView(), OptionalInt.empty(), client.getMainRenderTarget().getDepthTextureView(), OptionalDouble.empty())) {
+                .createRenderPass(() -> ModContext.MOD_ID + " filled through walls rendering", Objects.requireNonNull(client.getMainRenderTarget().getColorTextureView()), OptionalInt.empty(), client.getMainRenderTarget().getDepthTextureView(), OptionalDouble.empty())) {
             renderPass.setPipeline(pipeline);
 
             RenderSystem.bindDefaultUniforms(renderPass);
@@ -223,8 +222,7 @@ public class FilledThroughWallsRenderer {
             renderPass.setIndexBuffer(indices, indexType);
 
             // The base vertex is the starting index when we copied the data into the vertex buffer divided by vertex size
-            //noinspection ConstantValue
-            renderPass.drawIndexed(0 / format.getVertexSize(), 0, drawParameters.indexCount(), 1);
+            renderPass.drawIndexed(0, 0, drawParameters.indexCount(), 1);
         }
 
         builtBuffer.close();
