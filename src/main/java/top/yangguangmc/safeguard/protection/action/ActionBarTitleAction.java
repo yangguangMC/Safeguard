@@ -54,7 +54,7 @@ public class ActionBarTitleAction extends Action {
         currentLevel = level;
         currentRawMessage = rawText;
         Component displayText = wrapWithPrefix(level, rawText);
-        client.gui.setOverlayMessage(displayText.copy().withStyle(style -> applyStyle(style, level.style())), false);
+        client.gui.hud.setOverlayMessage(displayText.copy().withStyle(style -> applyStyle(style, level.style())), false);
     }
 
     /**

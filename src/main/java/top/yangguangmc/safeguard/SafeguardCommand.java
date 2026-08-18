@@ -32,7 +32,7 @@ public class SafeguardCommand {
                                 ClientCommands.literal("screen")
                                         .executes(context -> {
                                             Minecraft client = context.getSource().getClient();
-                                            client.schedule(() -> client.setScreen(ConfigScreen.create(client.screen)));
+                                            client.schedule(() -> client.gui.setScreen(ConfigScreen.create(client.gui.screen())));
                                             return Command.SINGLE_SUCCESS;
                                         })
                         ).then(

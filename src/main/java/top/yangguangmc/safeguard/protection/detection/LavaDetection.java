@@ -75,7 +75,7 @@ public class LavaDetection extends Detection {
                 .min(Comparator.comparingDouble(pos -> Vec3.atCenterOf(pos).distanceToSqr(eyePos)))
                 .orElseThrow();
 
-        Camera camera = client.gameRenderer.getMainCamera();
+        Camera camera = client.gameRenderer.mainCamera();
         double distance = Math.sqrt(Vec3.atCenterOf(nearestPos).distanceToSqr(player.getEyePosition()));
         String direction = Utils.getDirectionIndicator(camera, Vec3.atCenterOf(nearestPos));
         MutableComponent message = Component.translatable("detection.safeguard.environment.lava.warning", String.format("%.0f", distance), direction);

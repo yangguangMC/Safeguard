@@ -24,14 +24,14 @@ public class QuitAction extends Action {
 
     public void quit(Minecraft client) {
         Component parentName = modContext.protectionManager().getDetectionName(getParent().getId());
-        client.gui.getChat().addClientSystemMessage(Component.translatable("messages.safeguard.prefix").append(
+        client.gui.hud.getChat().addClientSystemMessage(Component.translatable("messages.safeguard.prefix").append(
                 Component.translatable("action.safeguard.active.afk.quit.chat_message", parentName,
                         new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(Calendar.getInstance().getTime())
                 )
         ));
         client.schedule(() -> {
             client.getReportingContext().draftReportHandled(client, new PauseScreen(true), () -> client.disconnectFromWorld(ClientLevel.DEFAULT_QUIT_MESSAGE), true);
-            client.getToastManager().addToast(new SystemToast(ModContext.SAFEGUARD_QUIT, Component.translatable("messages.safeguard.name"),
+            client.gui.toastManager().addToast(new SystemToast(ModContext.SAFEGUARD_QUIT, Component.translatable("messages.safeguard.name"),
                     parentName.copy().append(Component.translatable("action.safeguard.active.afk.quit.title"))));
         });
         client.getSoundManager().play(createSoundInstance(SoundEvents.EXPERIENCE_ORB_PICKUP, 1.0F));

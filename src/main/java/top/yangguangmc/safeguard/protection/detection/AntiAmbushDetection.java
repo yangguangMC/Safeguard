@@ -1,14 +1,18 @@
 package top.yangguangmc.safeguard.protection.detection;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.*;
+import net.minecraft.world.entity.monster.Creeper;
+import net.minecraft.world.entity.monster.Ghast;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.monster.Phantom;
+import net.minecraft.world.entity.monster.cubemob.Slime;
 import net.minecraft.world.entity.player.Player;
 import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
 import top.yangguangmc.safeguard.protection.action.DangerLevel;
@@ -56,7 +60,7 @@ public class AntiAmbushDetection extends Detection {
                             && !world.canSeeSky(entity.blockPosition())
                             && world.canSeeSky(player.blockPosition())) return false;
                     // 规则C: 除苦力怕外在背后且正在靠近且速度快于玩家 → 即使视野可见也强制计入
-                    Camera camera = client.gameRenderer.getMainCamera();
+                    Camera camera = client.gameRenderer.mainCamera();
                     if (!(entity instanceof Creeper)
                             && Utils.isApproaching(entity, player)
                             && entity.getDeltaMovement().lengthSqr() > player.getDeltaMovement().lengthSqr()
@@ -73,10 +77,10 @@ public class AntiAmbushDetection extends Detection {
                             Component.translatable("detection.safeguard.combat.anti_ambush.warning",
                                     String.valueOf(entities.size()),
                                     nearest.getDisplayName(),
-                                    Utils.getDirectionIndicator(client, world, nearest, client.gameRenderer.getMainCamera())),
+                                    Utils.getDirectionIndicator(client, world, nearest, client.gameRenderer.mainCamera())),
                             client));
         }
-        @SuppressWarnings("DataFlowIssue") int outlineColor = ChatFormatting.GOLD.getColor();
+        int outlineColor = TextColor.GOLD.getValue();
         for (LivingEntity entity : entities) {
             tryExecuteAction(OutlineAction.class, action -> action.outline(entity, 60, outlineColor));
         }

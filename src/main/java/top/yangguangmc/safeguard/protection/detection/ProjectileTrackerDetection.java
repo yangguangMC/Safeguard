@@ -36,8 +36,8 @@ public class ProjectileTrackerDetection extends Detection {
                 if (proj.getOwner() != null
                         && proj.getOwner().distanceToSqr(player) < 144
                         && Math.abs(Utils.computeRelativeYaw(
-                        client.gameRenderer.getMainCamera().position(),
-                        client.gameRenderer.getMainCamera().yaw(),
+                        client.gameRenderer.mainCamera().position(),
+                        client.gameRenderer.mainCamera().yaw(),
                         proj.position()
                 )) < 15)
                     continue;
@@ -59,12 +59,12 @@ public class ProjectileTrackerDetection extends Detection {
             if (source == null)
                 message = Component.translatable("detection.safeguard.combat.projectile_tracker.warning_unknown",
                         projectile.getDisplayName(),
-                        Utils.getDirectionIndicator(client, world, projectile, client.gameRenderer.getMainCamera()));
+                        Utils.getDirectionIndicator(client, world, projectile, client.gameRenderer.mainCamera()));
             else
                 message = Component.translatable("detection.safeguard.combat.projectile_tracker.warning_known",
                         source.getDisplayName(),
                         projectile.getDisplayName(),
-                        Utils.getDirectionIndicator(client, world, source, client.gameRenderer.getMainCamera()));
+                        Utils.getDirectionIndicator(client, world, source, client.gameRenderer.mainCamera()));
             tryExecuteAction(ActionBarTitleAction.class, action ->
                     action.updateTitle(DangerLevel.HIGH, message, client));
         }

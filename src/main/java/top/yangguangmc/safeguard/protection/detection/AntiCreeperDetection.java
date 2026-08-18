@@ -40,7 +40,7 @@ public class AntiCreeperDetection extends Detection {
         if (e != null && minD <= distance * distance) {
             double d2 = Math.sqrt(minD);
             float fuseTime = e.getSwelling(client.getDeltaTracker().getGameTimeDeltaPartialTick(world.tickRateManager().isEntityFrozen(e)));
-            Camera camera = client.gameRenderer.getMainCamera();
+            Camera camera = client.gameRenderer.mainCamera();
             String directionIndicator = Utils.getDirectionIndicator(client, world, e, camera);
 
             DangerLevel level;
