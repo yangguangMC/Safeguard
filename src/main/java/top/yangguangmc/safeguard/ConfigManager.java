@@ -1,9 +1,6 @@
 package top.yangguangmc.safeguard;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import dev.isxander.yacl3.platform.YACLPlatform;
 import net.minecraft.resources.ResourceLocation;
 import org.slf4j.Logger;
@@ -21,6 +18,9 @@ import java.util.Map;
 
 public class ConfigManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModContext.MOD_ID);
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    public static final String CONFIG_VERSION_KEY = "_version";
+    private static final int CONFIG_VERSION = 1;
     private ModContext ctx;
 
     public void init(ModContext ctx) {
@@ -32,9 +32,9 @@ public class ConfigManager {
             save();
         } catch (Exception e) {
             LOGGER.error("Could not save config file!", e);
-            LOGGER.info("Trying to backup original file and retry saving...");
             try {
-                backupAndRename();
+                LOGGER.info("Trying to backup original file and retry saving...");
+                backup();
                 save();
             } catch (Exception ex) {
                 LOGGER.error("Could not save config file during backup or after retrying!", ex);
@@ -43,7 +43,6 @@ public class ConfigManager {
     }
 
     public void save() throws IOException {
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
         JsonObject json = new JsonObject();
 
         JsonObject detectionJson = new JsonObject();
@@ -54,7 +53,8 @@ public class ConfigManager {
         buildActionTree(actionJson, ctx.protectionManager().getActionStatesRoot(), true);
         json.add("action", actionJson);
 
-        Files.writeString(getConfig(), gson.toJson(json), StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        json.addProperty(CONFIG_VERSION_KEY, CONFIG_VERSION);
+        Files.writeString(getConfig(), GSON.toJson(json), StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         LOGGER.debug("Successfully saved config to '{}'.", getConfig());
     }
 
@@ -73,18 +73,26 @@ public class ConfigManager {
             LOGGER.warn("Config file corrupted, using defaults.", e);
         }
         if (!loaded) {
-            LOGGER.info("Trying to backup original file...");
-            try {
-                backupAndRename();
-            } catch (Exception ex) {
-                LOGGER.error("Failed to backup original config file!", ex);
-            }
+            tryBackup();
         }
     }
 
     public void load() throws IOException {
         String content = Files.readString(getConfig());
-        JsonObject json = new Gson().fromJson(content, JsonObject.class);
+        JsonObject json = GSON.fromJson(content, JsonObject.class);
+        if (json == null) throw new JsonParseException("JsonObject is null or empty.");
+        int version = json.has(CONFIG_VERSION_KEY) ? json.get(CONFIG_VERSION_KEY).getAsInt() : 0;
+        if (version > CONFIG_VERSION) {
+            LOGGER.warn("The version of the config file is higher that coded version! File: {}, code: {}. Config loading can no longer be guaranteed.", version, CONFIG_VERSION);
+            tryBackup();
+        } else if (version < CONFIG_VERSION) {
+            LOGGER.info("Trying to migrate config from version {} to {}.", version, CONFIG_VERSION);
+            tryBackup();
+            for (int v = version; v < CONFIG_VERSION; v++) {
+                //noinspection DataFlowIssue
+                json = migrate(json, v);
+            }
+        }
 
         JsonObject dj = json.getAsJsonObject("detection");
         if (dj != null) loadDetectionTree(dj, "", "");
@@ -94,14 +102,26 @@ public class ConfigManager {
         LOGGER.debug("Successfully loaded config from '{}'.", getConfig());
     }
 
-    private void backupAndRename() throws IOException {
+    public void tryBackup() {
+        LOGGER.info("Trying to backup original file...");
+        try {
+            backup();
+        } catch (Exception ex) {
+            LOGGER.error("Failed to backup original config file!", ex);
+        }
+    }
+
+    public void backup() throws IOException {
         Path config = getConfig();
         if (Files.exists(config)) {
             Path target = YACLPlatform.getConfigDir().resolve(ModContext.MOD_ID + ".json.backup");
-            Files.copy(config, target, StandardCopyOption.REPLACE_EXISTING);
-            Files.delete(config);
-            LOGGER.info("Successfully backed config up at '{}'.", target);
+            Files.move(config, target, StandardCopyOption.REPLACE_EXISTING);
+            LOGGER.info("Successfully backed config up to '{}'.", target);
         }
+    }
+
+    private JsonObject migrate(JsonObject json, @SuppressWarnings("unused") int fromVersion) {
+        return json;
     }
 
     private void buildDetectionTree(JsonObject parent, SwitchTreeNode node, boolean isTopLevel) {
