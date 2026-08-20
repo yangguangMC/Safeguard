@@ -6,6 +6,8 @@ import top.yangguangmc.safeguard.protection.SwitchTreeItem;
 import top.yangguangmc.safeguard.protection.SwitchTreeNode;
 import top.yangguangmc.safeguard.protection.action.Action;
 import top.yangguangmc.safeguard.protection.event.GatedEvent;
+import top.yangguangmc.safeguard.protection.option.ConfigOption;
+import top.yangguangmc.safeguard.protection.option.OptionSet;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -14,6 +16,7 @@ public abstract class Detection implements SwitchTreeItem {
     private final Identifier id;
     private final Map<Action, Boolean> boundActions = new HashMap<>();  // 一般地，我们要求单个检测项注册的保护动作的ID要是不能重复的
     private final List<GatedEvent<?>> gatedEvents = new ArrayList<>();
+    private final OptionSet options = new OptionSet();
     protected ModContext modContext;
 
     public Detection(Identifier id, Action... actions) {
@@ -69,6 +72,21 @@ public abstract class Detection implements SwitchTreeItem {
 
     protected boolean isActionEffectivelyEnabled(Action action) {
         return Objects.requireNonNull(modContext.protectionManager().getActionStatesRoot().getNode(action.getId())).isEffectivelyEnabled() && boundActions.get(action);
+    }
+
+    /**
+     * 注册一个该检测项特有的配置项，通常在构造器中调用。
+     * 注册顺序即为 GUI 中的展示顺序。
+     */
+    protected <O extends ConfigOption<?>> O registerOption(O option) {
+        return options.register(option);
+    }
+
+    /**
+     * 获取该检测项注册的全部配置项（保序）。
+     */
+    public Collection<ConfigOption<?>> getOptions() {
+        return options.options();
     }
 
     /**
