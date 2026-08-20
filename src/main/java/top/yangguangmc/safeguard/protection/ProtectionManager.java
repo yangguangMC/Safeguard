@@ -79,10 +79,11 @@ public class ProtectionManager {
     }
 
     /**
-     * 检测项某个配置项的翻译名，键为 {@code detection.<namespace>.<path>.option.<key>}。
+     * 检测项某个配置项的翻译键，格式为 {@code detection.<namespace>.<path>.option.<key>}。
+     * 若语言文件中存在其 {@code .details} 后缀键，内容将作为补充说明（如性能警告）显示在描述面板中。
      */
-    public Component getDetectionOptionName(ResourceLocation id, String optionKey) {
-        return Component.translatable("detection.%s.%s.option.%s".formatted(id.getNamespace(), id.getPath().replace("/", "."), optionKey));
+    public String getDetectionOptionTranslationKey(ResourceLocation id, String optionKey) {
+        return "detection.%s.%s.option.%s".formatted(id.getNamespace(), id.getPath().replace("/", "."), optionKey);
     }
 
     public SwitchTreeNode getActionStatesRoot() {
@@ -94,10 +95,11 @@ public class ProtectionManager {
     }
 
     /**
-     * 动作某个配置项的翻译名，键为 {@code action.<namespace>.<path>.option.<key>}。
+     * 动作某个配置项的翻译键，格式为 {@code action.<namespace>.<path>.option.<key>}。
+     * 若语言文件中存在其 {@code .details} 后缀键，内容将作为补充说明（如性能警告）显示在描述面板中。
      */
-    public Component getActionOptionName(ResourceLocation id, String optionKey) {
-        return Component.translatable("action.%s.%s.option.%s".formatted(id.getNamespace(), id.getPath().replace("/", "."), optionKey));
+    public String getActionOptionTranslationKey(ResourceLocation id, String optionKey) {
+        return "action.%s.%s.option.%s".formatted(id.getNamespace(), id.getPath().replace("/", "."), optionKey);
     }
 
     /**
