@@ -1,5 +1,6 @@
 package top.yangguangmc.safeguard.protection.detection;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -7,10 +8,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.Creeper;
-import net.minecraft.world.entity.monster.Ghast;
-import net.minecraft.world.entity.monster.Monster;
-import net.minecraft.world.entity.monster.Phantom;
+import net.minecraft.world.entity.monster.*;
 import net.minecraft.world.entity.player.Player;
 import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
 import top.yangguangmc.safeguard.protection.action.DangerLevel;
@@ -23,6 +21,7 @@ import top.yangguangmc.safeguard.util.Utils;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 public class AntiAmbushDetection extends Detection {
     private final IntOption checkInterval = registerOption(IntOption.of("checkInterval", 5).range(1, 40));
@@ -91,7 +90,7 @@ public class AntiAmbushDetection extends Detection {
      */
     private static class AmbushOutlineAction extends OutlineAction {
         private final ConfigOption<Integer> color =
-                registerOption(ColorOption.of("color", TextColor.GOLD.getValue(), false).pairScoped());
+                registerOption(ColorOption.of("color", Objects.requireNonNull(ChatFormatting.GOLD.getColor()), false).pairScoped());
 
         public void outline(Entity entity, int ticks) {
             outline(entity, ticks, color.get());
