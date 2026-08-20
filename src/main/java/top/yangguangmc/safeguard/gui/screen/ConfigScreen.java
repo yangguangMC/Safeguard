@@ -62,13 +62,15 @@ public class ConfigScreen {
 
     /**
      * 某个检测项叶节点自身的配置项（{@code ConfigOption}），直接绑定到该检测项的唯一实例。
+     * 名称缩进比该叶节点的开关多一级（{@code (level + 1) * 4} 个空格）。
      */
-    private static List<Option<?>> detectionLeafOptions(SwitchTreeNode leaf) {
+    private static List<Option<?>> detectionLeafOptions(SwitchTreeNode leaf, int level) {
         Detection detection = ctx.protectionManager().getDetection(leaf.getId());
         List<Option<?>> result = new ArrayList<>();
         for (ConfigOption<?> option : detection.getOptions()) {
-            result.add(buildDirectOption(option, leaf.getId(),
-                    ctx.protectionManager().getDetectionOptionName(leaf.getId(), option.key())));
+            Component name = Component.literal("    ".repeat(level + 1))
+                    .append(ctx.protectionManager().getDetectionOptionName(leaf.getId(), option.key()));
+            result.add(buildDirectOption(option, leaf.getId(), name));
         }
         return result;
     }
@@ -88,19 +90,21 @@ public class ConfigScreen {
 
     /**
      * 某个动作叶节点（ID）的全局配置项（非 pairScoped）。
+     * 名称缩进比该叶节点的开关多一级（{@code (level + 1) * 4} 个空格）。
      * <p>
      * 同一动作 ID 可能对应多个检测项各自 {@code new} 出来的实例，读取取第一个实例的当前值，
      * 写入则扇出到全部实例，保持它们同步（见 {@link #buildActionOption}）。
      * </p>
      */
-    private static List<Option<?>> actionLeafOptions(SwitchTreeNode leaf) {
+    private static List<Option<?>> actionLeafOptions(SwitchTreeNode leaf, int level) {
         List<Action> instances = ctx.protectionManager().getActionInstances(leaf.getId());
         if (instances.isEmpty()) return List.of();
         List<Option<?>> result = new ArrayList<>();
         for (ConfigOption<?> option : instances.getFirst().getOptions()) {
             if (option.isPairScoped()) continue;
-            result.add(buildActionOption(option, instances, leaf.getId(),
-                    ctx.protectionManager().getActionOptionName(leaf.getId(), option.key())));
+            Component name = Component.literal("    ".repeat(level + 1))
+                    .append(ctx.protectionManager().getActionOptionName(leaf.getId(), option.key()));
+            result.add(buildActionOption(option, instances, leaf.getId(), name));
         }
         return result;
     }
@@ -158,12 +162,23 @@ public class ConfigScreen {
     // ==================== Recursive Build Logic ====================
 
     /**
+     * 为某个叶节点提供其专属配置项（{@code ConfigOption}）对应的 YACL {@link Option} 列表。
+     *
+     * @param leaf  叶节点
+     * @param level 叶节点在开关树中的层级（用于名称缩进，配置项比其开关多缩进一级）
+     */
+    @FunctionalInterface
+    private interface LeafOptionsProvider {
+        List<Option<?>> apply(SwitchTreeNode leaf, int level);
+    }
+
+    /**
      * 为根的直接子枝干节点创建一个 OptionGroup。
      * OptionGroup 的名称即为该枝干节点的翻译名，默认展开。
      * 组内包含枝干自身开关及其所有后代节点。
      */
     private static OptionGroup buildGroupForBranch(SwitchTreeNode branch, Function<ResourceLocation, Component> nameProvider,
-                                                   Function<SwitchTreeNode, List<Option<?>>> leafOptionsProvider) {
+                                                   LeafOptionsProvider leafOptionsProvider) {
         OptionGroup.Builder group = OptionGroup.createBuilder()
                 .name(nameProvider.apply(branch.getId()))
                 .collapsed(false);
@@ -181,7 +196,7 @@ public class ConfigScreen {
      */
     private static void recurseChildren(SwitchTreeNode branch, OptionGroup.Builder group,
                                         Function<ResourceLocation, Component> nameProvider,
-                                        Function<SwitchTreeNode, List<Option<?>>> leafOptionsProvider,
+                                        LeafOptionsProvider leafOptionsProvider,
                                         List<Option<Boolean>> ancestorToggles) {
         for (SwitchTreeNode child : sortChildren(branch.getChildren())) {
             int level = child.getLevel();
@@ -189,7 +204,7 @@ public class ConfigScreen {
                 Option<Boolean> leafToggle = createLeafOption(child, nameProvider, level);
                 group.option(leafToggle);
                 List<Option<Boolean>> chain = withAppended(ancestorToggles, leafToggle);
-                for (Option<?> extra : leafOptionsProvider.apply(child)) {
+                for (Option<?> extra : leafOptionsProvider.apply(child, level)) {
                     group.option(extra);
                     wireAvailability(extra, chain);
                 }
