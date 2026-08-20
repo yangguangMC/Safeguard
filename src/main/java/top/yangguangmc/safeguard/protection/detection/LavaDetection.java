@@ -25,8 +25,8 @@ import java.util.List;
 
 public class LavaDetection extends Detection {
     private final IntOption checkInterval = registerOption(IntOption.of("checkInterval", 5).range(1, 40));
-    private final IntOption checkRange = registerOption(IntOption.of("checkRange", 3).range(1, 8));
-    private final IntOption checkRangeInNether = registerOption(IntOption.of("checkRangeInNether", 6).range(1, 16));
+    private final IntOption checkRange = registerOption(IntOption.of("checkRange", 3).range(2, 8));
+    private final IntOption checkRangeInNether = registerOption(IntOption.of("checkRangeInNether", 6).range(2, 16));
     private int tickCounter;
 
     public LavaDetection() {
@@ -44,7 +44,7 @@ public class LavaDetection extends Detection {
         tickCounter++;
         if (tickCounter % checkInterval.get() != 0) return;
 
-        if (!Utils.hasDestroyIntention(client, world, player, pos -> true)) {
+        if (!Utils.hasDestroyIntention(client, world, player, _ -> true)) {
             modContext.filledThroughWallsRenderer().clearByTag(getId().toString());
             return;
         }

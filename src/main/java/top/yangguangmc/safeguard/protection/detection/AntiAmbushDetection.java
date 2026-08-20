@@ -26,7 +26,7 @@ import java.util.List;
 
 public class AntiAmbushDetection extends Detection {
     private final IntOption checkInterval = registerOption(IntOption.of("checkInterval", 5).range(1, 40));
-    private final IntOption checkDistance = registerOption(IntOption.of("checkDistance", 12).range(4, 32));
+    private final IntOption checkDistance = registerOption(IntOption.of("checkDistance", 12).range(4, 64));
     private int tickCounter;
 
     public AntiAmbushDetection() {
