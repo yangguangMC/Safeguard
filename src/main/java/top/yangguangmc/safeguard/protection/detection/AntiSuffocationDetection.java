@@ -20,6 +20,7 @@ import org.jetbrains.annotations.Nullable;
 import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
 import top.yangguangmc.safeguard.protection.action.DangerLevel;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
+import top.yangguangmc.safeguard.protection.option.IntOption;
 import top.yangguangmc.safeguard.util.Utils;
 
 import java.util.List;
@@ -37,8 +38,7 @@ public class AntiSuffocationDetection extends Detection {
     /**
      * 向上扫描受重力影响对象的最大数量
      */
-    @SuppressWarnings("FieldMayBeFinal")
-    private int maxFallingScanCount = 36;
+    private final IntOption maxFallingScanCount = registerOption(IntOption.of("maxFallingScanCount", 36).range(4, 128));
 
     public AntiSuffocationDetection() {
         super("environment/anti_suffocation", new ActionBarTitleAction());
@@ -107,7 +107,7 @@ public class AntiSuffocationDetection extends Detection {
         Component name = blocks.nearestName().getString().isBlank()
                 ? entities.nearestName()
                 : blocks.nearestName();
-        return new FallingScanResult(Math.min(blocks.count() + entities.count(), maxFallingScanCount + 1), name);
+        return new FallingScanResult(Math.min(blocks.count() + entities.count(), maxFallingScanCount.get() + 1), name);
     }
 
     /**
@@ -122,8 +122,9 @@ public class AntiSuffocationDetection extends Detection {
      */
     private FallingScanResult scanFallingBlocks(ClientLevel world, BlockPos startPos) {
         int count = 0;
+        int maxCount = maxFallingScanCount.get();
         Component name = Component.empty();
-        for (BlockPos pos = startPos; count < maxFallingScanCount + 1 && !world.isOutsideBuildHeight(pos); pos = pos.above()) {
+        for (BlockPos pos = startPos; count < maxCount + 1 && !world.isOutsideBuildHeight(pos); pos = pos.above()) {
             Block block = world.getBlockState(pos).getBlock();
             if (block instanceof Fallable) {
                 count++;
@@ -141,10 +142,11 @@ public class AntiSuffocationDetection extends Detection {
      * @return 扫描结果
      */
     private FallingScanResult scanFallingBlockEntities(ClientLevel world, LocalPlayer player) {
+        int maxCount = maxFallingScanCount.get();
         List<Entity> entities = world.getEntities(player,
-                player.getBoundingBox().inflate(0.5).setMinY(player.getEyeY()).setMaxY(player.getEyeY() + maxFallingScanCount),
+                player.getBoundingBox().inflate(0.5).setMinY(player.getEyeY()).setMaxY(player.getEyeY() + maxCount),
                 entity -> entity instanceof FallingBlockEntity);
-        int count = Math.min(entities.size(), maxFallingScanCount + 1);
+        int count = Math.min(entities.size(), maxCount + 1);
         Component name = entities.isEmpty() ? Component.empty() : entities.getFirst().getDisplayName();
         return new FallingScanResult(count, name);
     }
