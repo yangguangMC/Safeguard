@@ -19,16 +19,15 @@ import top.yangguangmc.safeguard.protection.action.DangerLevel;
 import top.yangguangmc.safeguard.protection.action.PauseAction;
 import top.yangguangmc.safeguard.protection.action.QuitAction;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
+import top.yangguangmc.safeguard.protection.option.IntOption;
 import top.yangguangmc.safeguard.util.Utils;
 
 import java.util.Objects;
 import java.util.function.Predicate;
 
 public class LowHungerDetection extends Detection {
-    @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
-    private int findFoodThreshold = 12;
-    @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
-    private int lowHungerThreshold = 6;
+    private final IntOption findFoodThreshold = registerOption(IntOption.of("findFoodThreshold", 12).range(0, 20));
+    private final IntOption lowHungerThreshold = registerOption(IntOption.of("lowHungerThreshold", 6).range(0, 20));
 
     public LowHungerDetection() {
         super("status/low_hunger", new ActionBarTitleAction(), new PauseAction(), new QuitAction());
@@ -37,9 +36,10 @@ public class LowHungerDetection extends Detection {
 
     private void onStartTick(Minecraft client, ClientLevel world, LocalPlayer player) {
         int foodLevel = player.getFoodData().getFoodLevel();
-        if (foodLevel > findFoodThreshold) return;
-        FoodScorer.FoodResult result = FoodScorer.findBestFood(player, lowHungerThreshold);
-        boolean isLow = foodLevel < lowHungerThreshold;
+        if (foodLevel > findFoodThreshold.get()) return;
+        int lowThreshold = lowHungerThreshold.get();
+        FoodScorer.FoodResult result = FoodScorer.findBestFood(player, lowThreshold);
+        boolean isLow = foodLevel < lowThreshold;
         boolean healingPriority = player.getHealth() <= player.getMaxHealth() * FoodScorer.HALF_HEALTH_RATIO;
         // 饥饿极低或血量告急时始终显示；正常饥饿值下仅当背包有多种食物选择时才推荐
         boolean shouldShow = isLow || healingPriority || result.foodCount() > 1;

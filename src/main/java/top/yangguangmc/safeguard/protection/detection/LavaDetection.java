@@ -14,25 +14,24 @@ import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
 import top.yangguangmc.safeguard.protection.action.BlockOutlineAction;
 import top.yangguangmc.safeguard.protection.action.DangerLevel;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
+import top.yangguangmc.safeguard.protection.option.ColorOption;
+import top.yangguangmc.safeguard.protection.option.ConfigOption;
+import top.yangguangmc.safeguard.protection.option.IntOption;
 import top.yangguangmc.safeguard.util.Utils;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
 public class LavaDetection extends Detection {
-    @SuppressWarnings("FieldMayBeFinal")
-    private int highlightColor = 0x66FF4500;
-    @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
-    private int checkInterval = 5;
-    @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
-    private int checkRange = 3;
-    @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
-    private int checkRangeInNether = 6;
+    private final IntOption checkInterval = registerOption(IntOption.of("checkInterval", 5).range(1, 40));
+    private final IntOption checkRange = registerOption(IntOption.of("checkRange", 3).range(2, 8));
+    private final IntOption checkRangeInNether = registerOption(IntOption.of("checkRangeInNether", 6).range(2, 16));
     private int tickCounter;
 
     public LavaDetection() {
-        super("environment/lava", new ActionBarTitleAction(), new BlockOutlineAction());
+        super("environment/lava", new ActionBarTitleAction(), new LavaBlockOutlineAction());
         listen(ClientPlayerTickEvents.GATED_START_TICK, this::onStartTick);
     }
 
@@ -44,15 +43,15 @@ public class LavaDetection extends Detection {
 
     private void onStartTick(Minecraft client, ClientLevel world, LocalPlayer player) {
         tickCounter++;
-        if (tickCounter % checkInterval != 0) return;
+        if (tickCounter % checkInterval.get() != 0) return;
 
-        if (!Utils.hasDestroyIntention(client, world, player, pos -> true)) {
+        if (!Utils.hasDestroyIntention(client, world, player, _ -> true)) {
             modContext.filledThroughWallsRenderer().clearByTag(getId().toString());
             return;
         }
 
         boolean isNether = world.environmentAttributes().getDimensionValue(EnvironmentAttributes.FAST_LAVA);
-        int range = isNether ? checkRangeInNether : checkRange;
+        int range = isNether ? checkRangeInNether.get() : checkRange.get();
 
         BlockPos playerPos = player.blockPosition();
         List<BlockPos> lavaPositions = new ArrayList<>();
@@ -82,7 +81,20 @@ public class LavaDetection extends Detection {
 
         tryExecuteAction(ActionBarTitleAction.class,
                 action -> action.updateTitle(DangerLevel.MEDIUM, message, client));
-        tryExecuteAction(BlockOutlineAction.class,
-                action -> action.outline(lavaPositions, highlightColor));
+        tryExecuteAction(LavaBlockOutlineAction.class,
+                action -> action.outline(lavaPositions));
+    }
+
+    /**
+     * 本检测项专属的方块高亮：颜色默认为半透明橙红色，作为"检测项-动作对专属"配置项可单独调整
+     * （见 {@link BlockOutlineAction} 类文档）。
+     */
+    private static class LavaBlockOutlineAction extends BlockOutlineAction {
+        private final ConfigOption<Integer> color =
+                registerOption(ColorOption.of("color", 0x66FF4500, true).pairScoped());
+
+        public void outline(Collection<BlockPos> positions) {
+            outline(positions, color.get());
+        }
     }
 }
