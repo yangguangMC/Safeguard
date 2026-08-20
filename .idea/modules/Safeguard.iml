@@ -5,6 +5,8 @@
       <excludeFolder url="file://$MODULE_DIR$/../../backup" />
       <excludeFolder url="file://$MODULE_DIR$/../../contexts" />
       <excludeFolder url="file://$MODULE_DIR$/../../run" />
+      <excludeFolder url="file://$MODULE_DIR$/../../.settings" />
+      <excludeFolder url="file://$MODULE_DIR$/../../bin" />
     </content>
   </component>
 </module>

@@ -4,3 +4,9 @@
 /build/
 /contexts/
 /run/
+
+# LSP
+/.settings/
+/bin/
+/.classpath
+/.project
