@@ -44,7 +44,7 @@ public class LavaDetection extends Detection {
         tickCounter++;
         if (tickCounter % checkInterval.get() != 0) return;
 
-        if (!Utils.hasDestroyIntention(client, world, player, _ -> true)) {
+        if (!Utils.hasDestroyIntention(client, world, player, pos -> true)) {
             modContext.filledThroughWallsRenderer().clearByTag(getId().toString());
             return;
         }
