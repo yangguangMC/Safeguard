@@ -26,8 +26,8 @@ import java.util.Objects;
 import java.util.function.Predicate;
 
 public class LowHungerDetection extends Detection {
-    private final IntOption findFoodThreshold = registerOption(IntOption.of("findFoodThreshold", 12).range(1, 20));
-    private final IntOption lowHungerThreshold = registerOption(IntOption.of("lowHungerThreshold", 6).range(1, 20));
+    private final IntOption findFoodThreshold = registerOption(IntOption.of("findFoodThreshold", 12).range(0, 20));
+    private final IntOption lowHungerThreshold = registerOption(IntOption.of("lowHungerThreshold", 6).range(0, 20));
 
     public LowHungerDetection() {
         super("status/low_hunger", new ActionBarTitleAction(), new PauseAction(), new QuitAction());

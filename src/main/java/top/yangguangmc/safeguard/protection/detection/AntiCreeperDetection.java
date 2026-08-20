@@ -14,7 +14,7 @@ import top.yangguangmc.safeguard.protection.option.IntOption;
 import top.yangguangmc.safeguard.util.Utils;
 
 public class AntiCreeperDetection extends Detection {
-    private final IntOption distance = registerOption(IntOption.of("distance", 12).range(2, 32));
+    private final IntOption distance = registerOption(IntOption.of("distance", 12).range(6, 24));
 
     public AntiCreeperDetection() {
         super("combat/anti_creeper",

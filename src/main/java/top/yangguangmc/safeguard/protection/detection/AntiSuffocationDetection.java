@@ -38,7 +38,7 @@ public class AntiSuffocationDetection extends Detection {
     /**
      * 向上扫描受重力影响对象的最大数量
      */
-    private final IntOption maxFallingScanCount = registerOption(IntOption.of("maxFallingScanCount", 36).range(4, 128));
+    private final IntOption maxFallingScanCount = registerOption(IntOption.of("maxFallingScanCount", 36).range(4, 384));
 
     public AntiSuffocationDetection() {
         super("environment/anti_suffocation", new ActionBarTitleAction());
