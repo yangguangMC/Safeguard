@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import top.yangguangmc.safeguard.ModContext;
 import top.yangguangmc.safeguard.protection.action.*;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
+import top.yangguangmc.safeguard.protection.option.DoubleOption;
 import top.yangguangmc.safeguard.util.Utils;
 
 import java.util.*;
@@ -109,10 +110,8 @@ public class AntiFallDetection extends Detection {
                 Items.HONEY_BLOCK,
                 Items.TWISTING_VINES
         );
-        @SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal"})
-        private double minFallDistance = 3;
-        @SuppressWarnings({"FieldCanBeLocal", "FieldMayBeFinal"})
-        private double minHeight = 6;
+        private final DoubleOption minFallDistance = registerOption(DoubleOption.of("minFallDistance", 3).range(1, 10));
+        private final DoubleOption minHeight = registerOption(DoubleOption.of("minHeight", 6).range(2, 20));
         private int placementSchedule = -1;
 
         public MLGAction() {
@@ -152,7 +151,7 @@ public class AntiFallDetection extends Detection {
                 placementSchedule--;
                 return;
             }
-            if (player.onGround() || player.fallDistance < minFallDistance || player.hasEffect(MobEffects.SLOW_FALLING)
+            if (player.onGround() || player.fallDistance < minFallDistance.get() || player.hasEffect(MobEffects.SLOW_FALLING)
                     || player.isFallFlying() || player.getInventory().getNonEquipmentItems().stream().limit(9).map(ItemStack::getItem)
                     .noneMatch(world.environmentAttributes().getDimensionValue(EnvironmentAttributes.WATER_EVAPORATES)
                             ? MLG_ITEMS_NETHER::contains : MLG_ITEMS_NORMAL::contains)) {
@@ -168,7 +167,7 @@ public class AntiFallDetection extends Detection {
                 return;
             }
             blockPos = blockPos.above();
-            if (player.getY() - blockPos.getY() < minHeight) {
+            if (player.getY() - blockPos.getY() < minHeight.get()) {
                 placementSchedule = -1;
                 return;
             }
