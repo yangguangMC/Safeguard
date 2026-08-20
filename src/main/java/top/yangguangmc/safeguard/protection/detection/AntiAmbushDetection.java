@@ -14,29 +14,32 @@ import top.yangguangmc.safeguard.protection.action.ActionBarTitleAction;
 import top.yangguangmc.safeguard.protection.action.DangerLevel;
 import top.yangguangmc.safeguard.protection.action.OutlineAction;
 import top.yangguangmc.safeguard.protection.event.ClientPlayerTickEvents;
+import top.yangguangmc.safeguard.protection.option.ColorOption;
+import top.yangguangmc.safeguard.protection.option.ConfigOption;
+import top.yangguangmc.safeguard.protection.option.IntOption;
 import top.yangguangmc.safeguard.util.Utils;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 public class AntiAmbushDetection extends Detection {
-    @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
-    private int checkInterval = 5;
-    @SuppressWarnings({"FieldMayBeFinal", "FieldCanBeLocal"})
-    private int checkDistance = 12;
+    private final IntOption checkInterval = registerOption(IntOption.of("checkInterval", 5).range(1, 40));
+    private final IntOption checkDistance = registerOption(IntOption.of("checkDistance", 12).range(4, 64));
     private int tickCounter;
 
     public AntiAmbushDetection() {
-        super("combat/anti_ambush", new ActionBarTitleAction(), new OutlineAction());
+        super("combat/anti_ambush", new ActionBarTitleAction(), new AmbushOutlineAction());
         listen(ClientPlayerTickEvents.GATED_START_TICK, this::onStartTick);
     }
 
     private void onStartTick(Minecraft client, ClientLevel world, LocalPlayer player) {
         tickCounter++;
-        if (tickCounter % checkInterval != 0) return;
+        if (tickCounter % checkInterval.get() != 0) return;
+        int distance = checkDistance.get();
         List<LivingEntity> entities = world.getEntities(
                         player,
-                        player.getBoundingBox().inflate(checkDistance),
+                        player.getBoundingBox().inflate(distance),
                         entity -> entity.isAlive() && (
                                 entity instanceof Monster
                                         || entity instanceof Player
@@ -46,7 +49,7 @@ public class AntiAmbushDetection extends Detection {
                         )
                 ).stream()
                 .map(entity -> (LivingEntity) entity)
-                .filter(entity -> player.distanceToSqr(entity) <= checkDistance * checkDistance)
+                .filter(entity -> player.distanceToSqr(entity) <= (double) distance * distance)
                 .filter(other -> !player.isAlliedTo(other))
                 .filter(entity -> {
                     // 规则A: 非玩家且坐在载具中 → 排除（无法发起偷袭）
@@ -76,9 +79,21 @@ public class AntiAmbushDetection extends Detection {
                                     Utils.getDirectionIndicator(client, world, nearest, client.gameRenderer.getMainCamera())),
                             client));
         }
-        @SuppressWarnings("DataFlowIssue") int outlineColor = ChatFormatting.GOLD.getColor();
         for (LivingEntity entity : entities) {
-            tryExecuteAction(OutlineAction.class, action -> action.outline(entity, 60, outlineColor));
+            tryExecuteAction(AmbushOutlineAction.class, action -> action.outline(entity, 60));
+        }
+    }
+
+    /**
+     * 本检测项专属的描边高亮：颜色默认为金色，作为"检测项-动作对专属"配置项可单独调整
+     * （见 {@link OutlineAction} 类文档）。
+     */
+    private static class AmbushOutlineAction extends OutlineAction {
+        private final ConfigOption<Integer> color =
+                registerOption(ColorOption.of("color", Objects.requireNonNull(ChatFormatting.GOLD.getColor()), false).pairScoped());
+
+        public void outline(Entity entity, int ticks) {
+            outline(entity, ticks, color.get());
         }
     }
 }

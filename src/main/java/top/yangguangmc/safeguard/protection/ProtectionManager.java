@@ -10,6 +10,7 @@ import top.yangguangmc.safeguard.protection.detection.*;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ProtectionManager {
@@ -77,11 +78,42 @@ public class ProtectionManager {
         return Component.translatable("detection.%s.%s".formatted(id.getNamespace(), id.getPath().replace("/", ".")));
     }
 
+    /**
+     * 检测项某个配置项的翻译键，格式为 {@code detection.<namespace>.<path>.option.<key>}。
+     * 若语言文件中存在其 {@code .details} 后缀键，内容将作为补充说明（如性能警告）显示在描述面板中。
+     */
+    public String getDetectionOptionTranslationKey(ResourceLocation id, String optionKey) {
+        return "detection.%s.%s.option.%s".formatted(id.getNamespace(), id.getPath().replace("/", "."), optionKey);
+    }
+
     public SwitchTreeNode getActionStatesRoot() {
         return actionRoot.unmodifiableView();
     }
 
     public Component getActonName(ResourceLocation id) {
         return Component.translatable("action.%s.%s".formatted(id.getNamespace(), id.getPath().replace("/", ".")));
+    }
+
+    /**
+     * 动作某个配置项的翻译键，格式为 {@code action.<namespace>.<path>.option.<key>}。
+     * 若语言文件中存在其 {@code .details} 后缀键，内容将作为补充说明（如性能警告）显示在描述面板中。
+     */
+    public String getActionOptionTranslationKey(ResourceLocation id, String optionKey) {
+        return "action.%s.%s.option.%s".formatted(id.getNamespace(), id.getPath().replace("/", "."), optionKey);
+    }
+
+    /**
+     * 按动作 ID 查找所有已注册的动作实例。
+     * <p>
+     * 由于同一动作类可能被多个检测项各自 {@code new} 一份实例（但共享同一动作 ID 和开关树节点），
+     * 动作的"全局配置项"需要在这些实例间保持一致——本方法供 {@code ConfigManager}/{@code ConfigScreen}
+     * 用于扇出读写。
+     * </p>
+     */
+    public List<Action> getActionInstances(ResourceLocation id) {
+        return protections.values().stream()
+                .flatMap(Collection::stream)
+                .filter(action -> action.getId().equals(id))
+                .toList();
     }
 }
