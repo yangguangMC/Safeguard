@@ -8,13 +8,17 @@ import org.slf4j.LoggerFactory;
 import top.yangguangmc.safeguard.protection.SwitchTreeNode;
 import top.yangguangmc.safeguard.protection.action.Action;
 import top.yangguangmc.safeguard.protection.detection.Detection;
+import top.yangguangmc.safeguard.protection.option.ConfigOption;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class ConfigManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(ModContext.MOD_ID);
@@ -94,11 +98,13 @@ public class ConfigManager {
             }
         }
 
-        JsonObject dj = json.getAsJsonObject("detection");
-        if (dj != null) loadDetectionTree(dj, "", "");
-
+        // 先加载动作树（全局配置项），再加载检测项树（检测项自身配置项 + 成对覆盖配置项），
+        // 使得成对配置项在与全局配置项同名时能够生效（覆盖语义）。
         JsonObject aj = json.getAsJsonObject("action");
         if (aj != null) loadActionTree(aj, "", "");
+
+        JsonObject dj = json.getAsJsonObject("detection");
+        if (dj != null) loadDetectionTree(dj, "", "");
         LOGGER.debug("Successfully loaded config from '{}'.", getConfig());
     }
 
@@ -132,11 +138,34 @@ public class ConfigManager {
 
             if (child.isLeaf()) {
                 Detection detection = ctx.protectionManager().getDetection(child.getId());
+
+                if (!detection.getOptions().isEmpty()) {
+                    JsonObject options = new JsonObject();
+                    for (ConfigOption<?> option : detection.getOptions()) {
+                        options.add(option.key(), toJsonTyped(option));
+                    }
+                    childObj.add("options", options);
+                }
+
                 JsonObject bindings = new JsonObject();
                 for (Action action : detection.getBoundActions()) {
                     bindings.addProperty(action.getId().toString(), detection.isBindingEnabled(action.getId()));
                 }
                 childObj.add("actionBindings", bindings);
+
+                JsonObject actionOptions = new JsonObject();
+                for (Action action : detection.getBoundActions()) {
+                    Collection<ConfigOption<?>> pairOptions = action.getOptions().stream()
+                            .filter(ConfigOption::isPairScoped)
+                            .toList();
+                    if (pairOptions.isEmpty()) continue;
+                    JsonObject actionOptionsObj = new JsonObject();
+                    for (ConfigOption<?> option : pairOptions) {
+                        actionOptionsObj.add(option.key(), toJsonTyped(option));
+                    }
+                    actionOptions.add(action.getId().toString(), actionOptionsObj);
+                }
+                if (!actionOptions.entrySet().isEmpty()) childObj.add("actionOptions", actionOptions);
             } else {
                 JsonObject childrenObj = new JsonObject();
                 buildDetectionTree(childrenObj, child, false);
@@ -153,13 +182,46 @@ public class ConfigManager {
             JsonObject childObj = new JsonObject();
             childObj.addProperty("enabled", child.isEnabled());
 
-            if (!child.isLeaf()) {
+            if (child.isLeaf()) {
+                List<Action> instances = ctx.protectionManager().getActionInstances(child.getId());
+                if (!instances.isEmpty()) {
+                    Collection<ConfigOption<?>> globalOptions = instances.getFirst().getOptions().stream()
+                            .filter(option -> !option.isPairScoped())
+                            .toList();
+                    if (!globalOptions.isEmpty()) {
+                        JsonObject options = new JsonObject();
+                        for (ConfigOption<?> option : globalOptions) {
+                            options.add(option.key(), toJsonTyped(option));
+                        }
+                        childObj.add("options", options);
+                    }
+                }
+            } else {
                 JsonObject childrenObj = new JsonObject();
                 buildActionTree(childrenObj, child, false);
                 childObj.add("children", childrenObj);
             }
 
             parent.add(key, childObj);
+        }
+    }
+
+    /**
+     * 对通配符类型的 {@link ConfigOption} 做类型捕获转换后序列化，避免调用方处理泛型。
+     */
+    private static <T> JsonElement toJsonTyped(ConfigOption<T> option) {
+        return option.toJson(option.get());
+    }
+
+    /**
+     * 对通配符类型的 {@link ConfigOption} 做类型捕获转换后从 JSON 解析并设值；
+     * 解析失败时记录警告并保留原值（含默认值）。
+     */
+    private static <T> void applyJsonToOption(ConfigOption<T> option, JsonElement element) {
+        try {
+            option.set(option.fromJson(element));
+        } catch (Exception e) {
+            LOGGER.warn("Failed to parse config option '{}' from value '{}', keeping current value.", option.key(), element, e);
         }
     }
 
@@ -194,6 +256,25 @@ public class ConfigManager {
                     node.setEnabled(nodeObj.get("enabled").getAsBoolean());
                 }
 
+                if (nodeObj.has("options") && !nodeObj.has("children")) {
+                    try {
+                        Detection detection = ctx.protectionManager().getDetection(id);
+                        JsonObject options = nodeObj.getAsJsonObject("options");
+                        for (Map.Entry<String, JsonElement> oe : options.entrySet()) {
+                            Optional<ConfigOption<?>> option = detection.getOptions().stream()
+                                    .filter(o -> o.key().equals(oe.getKey()))
+                                    .findFirst();
+                            if (option.isPresent()) {
+                                applyJsonToOption(option.get(), oe.getValue());
+                            } else {
+                                LOGGER.warn("Unknown option '{}' for detection {}, skipping.", oe.getKey(), id);
+                            }
+                        }
+                    } catch (Exception e) {
+                        LOGGER.warn("Failed to restore options for detection {}, skipping.", id, e);
+                    }
+                }
+
                 if (nodeObj.has("actionBindings") && !nodeObj.has("children")) {
                     try {
                         Detection detection = ctx.protectionManager().getDetection(id);
@@ -204,6 +285,40 @@ public class ConfigManager {
                         }
                     } catch (Exception e) {
                         LOGGER.warn("Failed to restore bindings for detection {}, skipping.", id, e);
+                    }
+                }
+
+                if (nodeObj.has("actionOptions") && !nodeObj.has("children")) {
+                    try {
+                        Detection detection = ctx.protectionManager().getDetection(id);
+                        JsonObject actionOptions = nodeObj.getAsJsonObject("actionOptions");
+                        for (Map.Entry<String, JsonElement> ae : actionOptions.entrySet()) {
+                            Identifier actionId = Identifier.tryParse(ae.getKey());
+                            if (actionId == null || !(ae.getValue() instanceof JsonObject optsObj)) {
+                                LOGGER.warn("Invalid actionOptions entry '{}' for detection {}, skipping.", ae.getKey(), id);
+                                continue;
+                            }
+                            Optional<Action> action = detection.getBoundActions().stream()
+                                    .filter(a -> a.getId().equals(actionId))
+                                    .findFirst();
+                            if (action.isEmpty()) {
+                                LOGGER.warn("Detection {} has no bound action {}, skipping actionOptions.", id, actionId);
+                                continue;
+                            }
+                            for (Map.Entry<String, JsonElement> oe : optsObj.entrySet()) {
+                                Optional<ConfigOption<?>> option = action.get().getOptions().stream()
+                                        .filter(ConfigOption::isPairScoped)
+                                        .filter(o -> o.key().equals(oe.getKey()))
+                                        .findFirst();
+                                if (option.isPresent()) {
+                                    applyJsonToOption(option.get(), oe.getValue());
+                                } else {
+                                    LOGGER.warn("Unknown pair-scoped option '{}' for action {} (detection {}), skipping.", oe.getKey(), actionId, id);
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        LOGGER.warn("Failed to restore actionOptions for detection {}, skipping.", id, e);
                     }
                 }
             } else {
@@ -246,6 +361,30 @@ public class ConfigManager {
                 if (nodeObj.has("enabled")) {
                     node.setEnabled(nodeObj.get("enabled").getAsBoolean());
                 }
+
+                if (nodeObj.has("options") && !nodeObj.has("children")) {
+                    List<Action> instances = ctx.protectionManager().getActionInstances(id);
+                    if (instances.isEmpty()) {
+                        LOGGER.warn("Action {} in config has options but no registered instances, skipping.", id);
+                    } else {
+                        JsonObject options = nodeObj.getAsJsonObject("options");
+                        for (Map.Entry<String, JsonElement> oe : options.entrySet()) {
+                            // 全局配置项按 ID 扇出到所有同 ID 的动作实例，保持它们的值同步
+                            boolean found = false;
+                            for (Action instance : instances) {
+                                Optional<ConfigOption<?>> option = instance.getOptions().stream()
+                                        .filter(o -> !o.isPairScoped())
+                                        .filter(o -> o.key().equals(oe.getKey()))
+                                        .findFirst();
+                                if (option.isPresent()) {
+                                    found = true;
+                                    applyJsonToOption(option.get(), oe.getValue());
+                                }
+                            }
+                            if (!found) LOGGER.warn("Unknown global option '{}' for action {}, skipping.", oe.getKey(), id);
+                        }
+                    }
+                }
             } else {
                 LOGGER.warn("Action {} in config not found in tree, skipping.", id);
             }
@@ -275,16 +414,27 @@ public class ConfigManager {
         "category2": {
           "enabled": true,
           "children": {
-            // 叶节点，至少有 `enabled`，其他为该叶节点的特定配置，数量不限。
+            // 叶节点，至少有 `enabled`。
             "detection1": {
               "enabled": true,
-              // 对于检测项，还应该有 `actionBindings` 字段，储存 **与该检测项绑定的保护动作实例** 的开关状态。
+              // `options`：该检测项自身的配置项（ConfigOption），键为选项键名，缺省时使用默认值。
+              "options": {
+                "someThreshold": 12
+              },
+              // `actionBindings`：与该检测项绑定的保护动作实例的开关状态。
               // 这种绑定是单向的，检测项是 **事实单例** 而保护动作不是，检测项到保护动作是一对多的关系。
               "actionBindings": {
                 "namespace1:category3/action1": true,
                 "namespace1:category3/category4/action2": true
               },
-              "otherKey": "otherValue"
+              // `actionOptions`：检测项-动作对专属的配置项（如描边/高亮颜色）。
+              // 键为完整动作 ID，值为该动作实例上标记为 pairScoped() 的配置项集合。
+              // 未在此声明的同 ID 动作配置项，走 action 树下对应叶节点的全局 `options`。
+              "actionOptions": {
+                "namespace1:category3/action1": {
+                  "color": "#66FF4500"
+                }
+              }
             }
           }
         }
@@ -298,14 +448,18 @@ public class ConfigManager {
       "children": {
         "action1": {
           "enabled": true,
-          "otherKey": "otherValue"
+          // `options`：该动作 ID 的全局配置项（非 pairScoped）。
+          // 由于同一动作类可能被多个检测项各自 new 一份实例，全局配置项按 ID 在这些实例间保持一致，
+          // 加载时会扇出到全部实例。
+          "options": {
+            "minFallDistance": 3.0
+          }
         },
         "category4": {
           "enabled": true,
           "children": {
             "action2": {
-              "enabled": true,
-              "otherKey": "otherValue"
+              "enabled": true
             }
           }
         }
