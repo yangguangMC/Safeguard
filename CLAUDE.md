@@ -95,7 +95,9 @@ skipping all detections when the player is in creative/spectator, invulnerable, 
 5. Add translation keys in `src/main/resources/assets/safeguard/lang/`
 6. For any hardcoded threshold/range/color, declare a `ConfigOption` field (e.g.
    `private final IntOption distance = registerOption(IntOption.of("distance", 12).range(2, 32));`) instead of a plain
-   field, and read it via `.get()`. Add a matching `detection.safeguard.<path>.option.<key>` translation key.
+   field, and read it via `.get()`. Add a matching `detection.safeguard.<path>.option.<key>` translation key. If the
+   option deserves an extra free-text note in its description panel (e.g. a performance warning), add an optional
+   `detection.safeguard.<path>.option.<key>.details` translation key — it is picked up automatically if it exists.
 
 ### Adding a New Action
 

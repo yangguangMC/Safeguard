@@ -5,6 +5,7 @@ import dev.isxander.yacl3.api.controller.BooleanControllerBuilder;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.locale.Language;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -68,9 +69,9 @@ public class ConfigScreen {
         Detection detection = ctx.protectionManager().getDetection(leaf.getId());
         List<Option<?>> result = new ArrayList<>();
         for (ConfigOption<?> option : detection.getOptions()) {
-            Component name = Component.literal("    ".repeat(level + 1))
-                    .append(ctx.protectionManager().getDetectionOptionName(leaf.getId(), option.key()));
-            result.add(buildDirectOption(option, leaf.getId(), name));
+            String translationKey = ctx.protectionManager().getDetectionOptionTranslationKey(leaf.getId(), option.key());
+            Component name = Component.literal("    ".repeat(level + 1)).append(Component.translatable(translationKey));
+            result.add(buildDirectOption(option, leaf.getId(), translationKey, name));
         }
         return result;
     }
@@ -102,9 +103,9 @@ public class ConfigScreen {
         List<Option<?>> result = new ArrayList<>();
         for (ConfigOption<?> option : instances.getFirst().getOptions()) {
             if (option.isPairScoped()) continue;
-            Component name = Component.literal("    ".repeat(level + 1))
-                    .append(ctx.protectionManager().getActionOptionName(leaf.getId(), option.key()));
-            result.add(buildActionOption(option, instances, leaf.getId(), name));
+            String translationKey = ctx.protectionManager().getActionOptionTranslationKey(leaf.getId(), option.key());
+            Component name = Component.literal("    ".repeat(level + 1)).append(Component.translatable(translationKey));
+            result.add(buildActionOption(option, instances, leaf.getId(), translationKey, name));
         }
         return result;
     }
@@ -150,8 +151,9 @@ public class ConfigScreen {
 
             List<Option<Boolean>> chain = List.of(bindingOption);
             for (ConfigOption<?> pairOption : action.getOptions().stream().filter(ConfigOption::isPairScoped).toList()) {
-                Option<?> built = buildDirectOption(pairOption, action.getId(),
-                        Component.literal("    ").append(ctx.protectionManager().getActionOptionName(action.getId(), pairOption.key())));
+                String translationKey = ctx.protectionManager().getActionOptionTranslationKey(action.getId(), pairOption.key());
+                Component name = Component.literal("    ").append(Component.translatable(translationKey));
+                Option<?> built = buildDirectOption(pairOption, action.getId(), translationKey, name);
                 group.option(built);
                 wireAvailability(built, chain);
             }
@@ -224,15 +226,16 @@ public class ConfigScreen {
      * 构建一个直接绑定到给定 {@link ConfigOption} 的 YACL {@link Option}（单一宿主实例场景：
      * 检测项自身配置项、动作的成对专属配置项）。
      */
-    private static <T> Option<?> buildDirectOption(ConfigOption<T> option, Identifier ownerId, Component name) {
-        return option.buildYaclOption(name, buildOptionDescription(option, ownerId), option::get, option::set);
+    private static <T> Option<?> buildDirectOption(ConfigOption<T> option, Identifier ownerId, String translationKey, Component name) {
+        return option.buildYaclOption(name, buildOptionDescription(option, ownerId, translationKey), option::get, option::set);
     }
 
     /**
      * 构建一个动作全局配置项对应的 YACL {@link Option}：读取代表实例（第一个）的当前值，
      * 写入时扇出到全部同 ID 实例，使它们保持同步。
      */
-    private static <T> Option<?> buildActionOption(ConfigOption<T> option, List<Action> instances, Identifier ownerId, Component name) {
+    private static <T> Option<?> buildActionOption(ConfigOption<T> option, List<Action> instances, Identifier ownerId,
+                                                    String translationKey, Component name) {
         String key = option.key();
         Consumer<T> setter = value -> {
             for (Action instance : instances) {
@@ -242,7 +245,7 @@ public class ConfigScreen {
                         .ifPresent(target -> setOptionValueUnchecked(target, value));
             }
         };
-        return option.buildYaclOption(name, buildOptionDescription(option, ownerId), option::get, setter);
+        return option.buildYaclOption(name, buildOptionDescription(option, ownerId, translationKey), option::get, setter);
     }
 
     @SuppressWarnings("unchecked")
@@ -251,11 +254,19 @@ public class ConfigScreen {
     }
 
     /**
-     * 拼装配置项的描述面板：默认值、（有界数值类型的）取值范围、灰色的完整键名。
+     * 拼装配置项的描述面板：可选的补充说明（如性能警告）、默认值、（有界数值类型的）取值范围、灰色的完整键名。
+     * <p>
+     * 补充说明按约定读取 {@code translationKey + ".details"} 附属翻译键——若该键在语言文件中存在则显示，
+     * 否则静默省略，无需代码侧任何显式标记。
+     * </p>
      */
-    private static <T> OptionDescription buildOptionDescription(ConfigOption<T> option, Identifier ownerId) {
-        OptionDescription.Builder builder = OptionDescription.createBuilder()
-                .text(Component.translatable("screen.safeguard.default_value", option.formatValue(option.defaultValue())));
+    private static <T> OptionDescription buildOptionDescription(ConfigOption<T> option, Identifier ownerId, String translationKey) {
+        OptionDescription.Builder builder = OptionDescription.createBuilder();
+        String detailsKey = translationKey + ".details";
+        if (Language.getInstance().has(detailsKey)) {
+            builder.text(Component.translatable(detailsKey));
+        }
+        builder.text(Component.translatable("screen.safeguard.default_value", option.formatValue(option.defaultValue())));
         if (option instanceof IntOption intOption) {
             builder.text(Component.translatable("screen.safeguard.range",
                     Component.literal(String.valueOf(intOption.min())), Component.literal(String.valueOf(intOption.max()))));
